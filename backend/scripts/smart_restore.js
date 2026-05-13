@@ -14,6 +14,9 @@ async function restoreOldData() {
     try {
         await mongoose.connect(MONGO_URI);
         const backup = JSON.parse(fs.readFileSync(BACKUP_PATH, 'utf8'));
+
+        console.log('--- Clearing Existing Results for Fresh Import ---');
+        await Result.deleteMany({});
         
         console.log('--- Restoring Teacher 1 Connection ---');
         const teacher1 = await User.findOne({ email: 'teacher1@exam.com' });
@@ -41,22 +44,66 @@ async function restoreOldData() {
             await User.updateOne({ _id: teacher1._id }, { $addToSet: { courseIds: existingCourse._id } });
         }
 
-        console.log('--- Restoring MCQ Questions ---');
+        console.log('--- Restoring MCQ Questions (Direct) ---');
+        let questionCount = 0;
         if (backup.mcqquestions) {
             for (const q of backup.mcqquestions) {
                 const { _id, ...qData } = q;
                 await MCQQuestion.findOneAndUpdate({ question_text: q.question_text }, qData, { upsert: true });
+                questionCount++;
             }
-            console.log(`Restored ${backup.mcqquestions.length} MCQ Questions.`);
         }
 
-        console.log('--- Restoring Exam Results ---');
+        console.log('--- Restoring MCQ Banks ---');
+        if (backup.mcqbanks) {
+            for (const bank of backup.mcqbanks) {
+                if (bank.questions) {
+                    for (const q of bank.questions) {
+                        const qData = {
+                            question_text: q.questionText || q.question_text,
+                            question_image: q.image || q.question_image,
+                            explanation: q.explanation,
+                            difficulty: q.difficulty || 'medium',
+                            marks: q.marks || 1,
+                            options: (q.options || []).map(opt => ({
+                                option_text: opt.text,
+                                label: opt.label,
+                                is_correct: opt.label === q.correctAnswer
+                            })),
+                            // Default IDs if missing
+                            chapter_id: new mongoose.Types.ObjectId("69ea0c2e807d4e73dda82c3b"),
+                            school_id: new mongoose.Types.ObjectId("69ea0c2e807d4e73dda82c0b"),
+                            subject_id: new mongoose.Types.ObjectId("69ea0c2e807d4e73dda82c18")
+                        };
+                        await MCQQuestion.findOneAndUpdate({ question_text: qData.question_text }, qData, { upsert: true });
+                        questionCount++;
+                    }
+                }
+            }
+        }
+        console.log(`Restored total ${questionCount} MCQ Questions.`);
+
+        console.log('--- Restoring Exam Results with Explanation Enrichment ---');
         if (backup.results) {
             for (const r of backup.results) {
                 const { _id, ...rData } = r;
-                await Result.create(rData).catch(() => {}); // Skip duplicates
+                
+                // Enrich each answer with explanation if missing
+                if (rData.answers) {
+                    for (const ans of rData.answers) {
+                        if (!ans.explanation) {
+                            // Look up question by text (since IDs might have changed or to be safe)
+                            const q = await MCQQuestion.findOne({ question_text: ans.questionText });
+                            if (q && q.explanation) {
+                                ans.explanation = q.explanation;
+                            }
+                        }
+                    }
+                }
+
+                await Result.create(rData).catch(err => console.error(`Result creation failed for ${r._id}:`, err.message));
             }
-            console.log(`Restored ${backup.results.length} Exam Results.`);
+            console.log(`Restored and enriched ${backup.results.length} Exam Results.`);
         }
 
         console.log('✅ Restoration Complete! Teacher 1 now has all their old data back.');

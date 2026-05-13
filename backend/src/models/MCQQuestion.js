@@ -21,6 +21,7 @@ const mcqQuestionSchema = new mongoose.Schema({
   difficulty: { type: String, enum: ['easy', 'medium', 'hard'], default: 'medium' },
   marks: { type: Number, default: 1 },
   options: [optionSchema],
+  explanation: { type: String },
   createdAt: { type: Date, default: Date.now }
 });
 
