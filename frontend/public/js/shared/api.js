@@ -3,8 +3,10 @@
  * Centralized API handler for backend communication
  */
 
-const API_BASE_URL = 'http://localhost:5000/api';
-const SERVER_URL = 'http://localhost:5000';
+const SERVER_URL = window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1') 
+  ? 'http://localhost:5000' 
+  : window.location.origin;
+const API_BASE_URL = `${SERVER_URL}/api`;
 
 const api = {
   /**
