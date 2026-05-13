@@ -399,16 +399,119 @@ const ExamEngine = {
     this.renderQuestion();
   },
 
-  async confirmSubmit() {
+  confirmSubmit() {
     const answered = Object.keys(this.answers).length;
     const unanswered = this.questions.length - answered;
-    const msg = unanswered > 0
-      ? `⚠️ You have ${unanswered} unanswered question${unanswered > 1 ? 's' : ''}.\n\nAre you sure you want to submit?`
-      : '✅ All questions answered. Finalize your exam?';
+    
+    // Prevent duplicate modals if already open
+    if (document.getElementById('custom-confirm-modal')) return;
 
-    if (confirm(msg)) {
+    const overlay = document.createElement('div');
+    overlay.id = 'custom-confirm-modal';
+    overlay.style.cssText = `
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(12px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2147483647;
+      font-family: 'Inter', system-ui, sans-serif;
+    `;
+
+    const isComplete = unanswered === 0;
+    
+    overlay.innerHTML = `
+      <div style="
+        background: #ffffff;
+        border-radius: 24px;
+        padding: 36px 40px;
+        max-width: 440px;
+        width: 90%;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        text-align: center;
+        transition: transform 0.2s ease-out;
+      ">
+        <div style="
+          width: 72px;
+          height: 72px;
+          border-radius: 50%;
+          background: ${isComplete ? '#dcfce7' : '#fef9c3'};
+          color: ${isComplete ? '#16a34a' : '#eab308'};
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 32px;
+          margin: 0 auto 20px;
+        ">
+          ${isComplete ? '✓' : '⚠️'}
+        </div>
+        
+        <h3 style="font-size: 22px; font-weight: 800; color: #1e293b; margin: 0 0 12px;">
+          ${isComplete ? 'Submission Ready' : 'Unanswered Questions'}
+        </h3>
+        
+        <p style="font-size: 15px; color: #64748b; margin: 0 0 28px; line-height: 1.6;">
+          ${isComplete 
+            ? 'You have successfully answered all questions. Are you ready to finalize and grade your examination?' 
+            : `You still have <strong style="color:#ef4444;">${unanswered} unanswered question${unanswered > 1 ? 's' : ''}</strong>. Submitting now will leave them unattempted.`
+          }
+        </p>
+
+        <div style="display: flex; gap: 16px;">
+          <button id="btn-modal-cancel" style="
+            flex: 1;
+            padding: 14px 0;
+            border-radius: 14px;
+            border: 1.5px solid #e2e8f0;
+            background: #f8fafc;
+            color: #475569;
+            font-weight: 700;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+          ">Return to Exam</button>
+          
+          <button id="btn-modal-confirm" style="
+            flex: 1;
+            padding: 14px 0;
+            border-radius: 14px;
+            border: none;
+            background: ${isComplete ? '#10b981' : '#ef4444'};
+            color: #ffffff;
+            font-weight: 700;
+            font-size: 15px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px ${isComplete ? 'rgba(16, 185, 129, 0.25)' : 'rgba(239, 68, 68, 0.25)'};
+            transition: all 0.2s;
+          ">Yes, Submit</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    const cancelBtn = document.getElementById('btn-modal-cancel');
+    const confirmBtn = document.getElementById('btn-modal-confirm');
+
+    cancelBtn.onmouseover = () => { cancelBtn.style.background = '#f1f5f9'; };
+    cancelBtn.onmouseout = () => { cancelBtn.style.background = '#f8fafc'; };
+    
+    confirmBtn.onmouseover = () => { confirmBtn.style.opacity = '0.9'; };
+    confirmBtn.onmouseout = () => { confirmBtn.style.opacity = '1'; };
+
+    cancelBtn.onclick = () => {
+      overlay.remove();
+    };
+
+    confirmBtn.onclick = async () => {
+      confirmBtn.innerText = 'Submitting...';
+      confirmBtn.disabled = true;
+      cancelBtn.disabled = true;
       await this.submit();
-    }
+      if (overlay.parentElement) overlay.remove();
+    };
   },
 
   isSubmitting: false,
@@ -425,6 +528,12 @@ const ExamEngine = {
       // ── 1. Stop the proctoring immediately but DON'T destroy yet ──
       if (typeof ExamTimer !== 'undefined') ExamTimer.stop();
       
+      if (typeof Proctor !== 'undefined') {
+        Proctor.fullscreenRequired = false;
+        const fsModal = document.getElementById('proctor-fs-modal');
+        if (fsModal) fsModal.remove();
+      }
+      
       const payload = {
         sessionId: this.sessionId,
         answers: Object.entries(this.answers).map(([qId, label]) => ({
@@ -432,8 +541,8 @@ const ExamEngine = {
           selectedOption: label
         })),
         timeTaken: Math.floor((Date.now() - this.startTime) / 1000),
-        violations: Proctor.violations.length,
-        violationHistory: Proctor.violations
+        violations: Proctor ? Proctor.violations.length : 0,
+        violationHistory: Proctor ? Proctor.violations : []
       };
 
       const result = await api.post('/portal/student/exams/submit', payload);
@@ -479,6 +588,11 @@ const ExamEngine = {
 
           <p style="margin-top:24px; font-size:12px; color:#94a3b8;">🔒 Your result has been sealed to the blockchain.</p>
         `;
+      }
+
+      // Explicitly exit fullscreen mode immediately upon displaying the results
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {});
       }
 
       // ── 3. FINALLY Cleanup Proctoring ──
