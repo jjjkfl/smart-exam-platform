@@ -19,7 +19,19 @@ const app = express();
 connectDB();
 
 // Security Middleware
-app.use(helmet()); // Set security HTTP headers
+// Security Middleware (Relaxed CSP for Inline Handlers)
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+      "script-src": ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://cdn.socket.io", "https://cdnjs.cloudflare.com"],
+      "script-src-attr": ["'unsafe-inline'"],
+      "style-src": ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdnjs.cloudflare.com"],
+      "img-src": ["'self'", "data:", "blob:", "*"],
+      "connect-src": ["'self'", "https://*", "http://*", "ws://*", "wss://*"],
+    },
+  },
+}));
 app.use(mongoSanitize()); // Data sanitization against NoSQL query injection
 app.use(xss()); // Data sanitization against XSS
 

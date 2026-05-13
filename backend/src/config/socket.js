@@ -225,19 +225,17 @@ const initSocket = (httpServer) => {
       socket.emit('exam:studentList', { students: list });
     });
 
+    /* ── GLOBAL ANNOUNCEMENTS ───────────────────────────────────── */
+    socket.on('broadcast-announcement', (data) => {
+      if (role !== 'teacher') return;
+      io.emit('announcement', data);
+      logger.info(`Teacher ${userId} broadcasted announcement: ${data.title}`);
+    });
+
     /* ── DISCONNECT ──────────────────────────────────────────────── */
     socket.on('disconnect', (reason) => {
       userSocket.delete(userId);
       logger.info(`Socket disconnected: ${socket.id} | reason=${reason}`);
-
-      /* ── GLOBAL ANNOUNCEMENTS ───────────────────────────────────── */
-      socket.on('broadcast-announcement', (data) => {
-        if (role !== 'teacher') return;
-        io.emit('announcement', data);
-        logger.info(`Teacher ${userId} broadcasted announcement: ${data.title}`);
-      });
-
-      /* MARK student offline in all rooms they were in... */
     });
   });
 
