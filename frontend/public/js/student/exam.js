@@ -67,8 +67,23 @@ const ReadinessCheck = {
   },
 
   validate() {
-    const canStart = this.checks.camera && this.checks.fullscreen && this.checks.consent && this.checks.landmarks;
-    document.getElementById('btn-start-exam').disabled = !canStart;
+    const { camera, fullscreen, consent, landmarks } = this.checks;
+    const canStart = camera && fullscreen && consent && landmarks;
+    const btn = document.getElementById('btn-start-exam');
+    
+    if (btn) {
+      btn.disabled = !canStart;
+      if (!canStart) {
+        let missing = [];
+        if (!camera) missing.push('Camera');
+        if (!fullscreen) missing.push('Fullscreen');
+        if (!consent) missing.push('Consent');
+        if (!landmarks) missing.push('AI Sync');
+        btn.title = `Missing: ${missing.join(', ')}`;
+      } else {
+        btn.title = 'Ready to start!';
+      }
+    }
   },
 
   onLandmarksDetected() {

@@ -588,6 +588,12 @@ const TeacherDashboard = {
       }))
     };
 
+    const btn = event.target.querySelector('button[type="submit"]');
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+    }
+
     try {
       await api.request(`/portal/teacher/mcq-banks/${bankId}`, {
         method: 'PUT',
@@ -599,6 +605,10 @@ const TeacherDashboard = {
       await this.loadDashboardData();
       await this.loadMCQBanks();
     } catch (err) {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = 'Save All Changes';
+      }
       notifications.error(err.message || 'Failed to update MCQ bank');
     }
   },
@@ -1184,7 +1194,9 @@ const TeacherDashboard = {
     const courseId = document.getElementById('ann-courseId').value;
     const title = document.getElementById('ann-title').value;
     const content = document.getElementById('ann-content').value;
-    if (!courseId || !title || !content) return;
+    if (!courseId || !title || !content) {
+      return notifications.error('Please fill in all fields before broadcasting');
+    }
 
     try {
       // Emit via socket for real-time
