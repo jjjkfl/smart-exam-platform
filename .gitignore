@@ -1,0 +1,13 @@
+﻿node_modules/
+**/node_modules/
+dist/
+**/dist/
+build/
+**/build/
+.env
+**/.env
+*.log
+**/*.log
+.vite/
+**/uploads/
+**/full_database_backup.json

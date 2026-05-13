@@ -1,0 +1,19 @@
+/**
+ * css/admin.css
+ * Specific overrides for Admin Dashboard
+ */
+
+ .metric-card {
+  padding: 24px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-light);
+  transition: all 0.2s ease;
+}
+
+.metric-value {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text-main);
+}

@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Command Center | MCQ Pro</title>
+  <link rel="stylesheet" href="/css/common.css">
+  <link rel="stylesheet" href="/css/teacher.css">
+</head>
+
+<body>
+
+  <div class="container">
+    <div id="nav-container"></div>
+
+    <main class="view">
+      <header class="dashboard-header animate-fade-in">
+        <div class="monitor-info">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <h1 class="dashboard-title">System Admin</h1>
+            <div class="welcome-badge" style="margin-top: -12px;">
+              <i class="fas fa-shield-alt"></i> System Integrity Anchored
+            </div>
+          </div>
+          <p class="dashboard-subtitle">Manage users, curriculum modules, and oversee academic examination activity.</p>
+        </div>
+        <div class="dashboard-actions">
+          <button onclick="AdminDashboard.switchTab('overview')" class="btn btn-secondary">Overview</button>
+          <button onclick="AdminDashboard.switchTab('users')" class="btn btn-secondary">Users</button>
+          <button onclick="AdminDashboard.switchTab('courses')" class="btn btn-secondary">Courses</button>
+        </div>
+      </header>
+
+      <!-- VIEW: Overview -->
+      <div id="tab-overview" class="animate-fade-in">
+        <div class="metrics-grid">
+          <div class="metric-card" id="metric-teachers">
+            <div class="metric-icon blue"><i class="fas fa-chalkboard-teacher"></i></div>
+            <p class="metric-label">Total Faculty</p>
+            <div class="metric-value">--</div>
+          </div>
+          <div class="metric-card" id="metric-students">
+            <div class="metric-icon purple"><i class="fas fa-user-graduate"></i></div>
+            <p class="metric-label">Total Scholars</p>
+            <div class="metric-value">--</div>
+          </div>
+          <div class="metric-card" id="metric-courses">
+            <div class="metric-icon green"><i class="fas fa-book-medical"></i></div>
+            <p class="metric-label">Total Modules</p>
+            <div class="metric-value">--</div>
+          </div>
+          <div class="metric-card" id="metric-active">
+            <div class="metric-icon orange"><i class="fas fa-clock"></i></div>
+            <p class="metric-label">Live Sessions</p>
+            <div class="metric-value">--</div>
+          </div>
+        </div>
+
+        <section class="section-card" style="margin-top: 2.5rem;">
+          <div class="section-header">
+            <h3 class="section-title"><i class="fas fa-globe"></i> Global Academic Activity</h3>
+          </div>
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Title</th>
+                  <th>Module</th>
+                  <th>Div</th>
+                  <th>Scheduled</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="global-sessions">
+                <tr>
+                  <td colspan="5" class="text-muted" style="text-align:center; padding: 2rem;">Fetching global data...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+
+      <!-- VIEW: Users -->
+      <div id="tab-users" style="display: none;" class="animate-fade-in">
+        <section>
+          <div class="flex-between" style="margin-bottom: 24px;">
+            <h3 class="h3">User Management</h3>
+            <button onclick="AdminDashboard.showCreateUserModal()" class="btn btn-primary">+ Add User</button>
+          </div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Role</th>
+                  <th>Course / Div</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="users-list">
+                <tr>
+                  <td colspan="5" class="p-dim" style="text-align:center">Loading data...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+
+      <!-- VIEW: Courses -->
+      <div id="tab-courses" style="display: none;" class="animate-fade-in">
+        <section>
+          <div class="flex-between" style="margin-bottom: 24px;">
+            <h3 class="h3">Course Management</h3>
+            <button onclick="AdminDashboard.showCreateCourseModal()" class="btn btn-primary">+ Add Course</button>
+          </div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Course Name</th>
+                  <th>Assigned Teacher</th>
+                  <th>Created At</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="courses-list">
+                <tr>
+                  <td colspan="4" class="p-dim" style="text-align:center">Loading data...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+
+    </main>
+  </div>
+
+  <script src="/js/shared/api.js"></script>
+  <script src="/js/shared/auth.js"></script>
+  <script src="/js/shared/utils.js"></script>
+  <script src="/js/shared/notifications.js"></script>
+  <script src="/js/components/navbar.js"></script>
+  <script src="/js/components/modal.js"></script>
+  <script src="/js/admin/admin.js"></script>
+
+</body>
+
+</html>

@@ -1,0 +1,1052 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Live Exam | MCQ Pro</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --primary: #4f46e5;
+      --primary-dark: #4338ca;
+      --primary-light: #c7d2fe;
+      --secondary: #10b981;
+      --secondary-dark: #059669;
+      --accent: #f59e0b;
+      --danger: #ef4444;
+      --danger-light: #fef2f2;
+      --success: #10b981;
+      --success-light: #ecfdf5;
+      --warning: #f59e0b;
+      --warning-light: #fffbeb;
+      --info: #3b82f6;
+      --info-light: #eff6ff;
+      --gray-50: #f9fafb;
+      --gray-100: #f3f4f6;
+      --gray-200: #e5e7eb;
+      --gray-300: #d1d5db;
+      --gray-400: #9ca3af;
+      --gray-500: #6b7280;
+      --gray-600: #4b5563;
+      --gray-700: #374151;
+      --gray-800: #1f2937;
+      --gray-900: #111827;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --radius-xl: 18px;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      --transition: all 0.3s ease;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    input,
+    textarea {
+      user-select: text;
+      -webkit-user-select: text;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: linear-gradient(135deg, #f0f2f5 0%, #e6eef5 100%);
+      color: var(--gray-800);
+      line-height: 1.6;
+    }
+
+    /* ─── Layout ─── */
+    .exam-wrapper {
+      display: grid;
+      grid-template-columns: 1fr 280px;
+      gap: 32px;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 32px 24px;
+      min-height: 100vh;
+    }
+
+    .exam-main {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* ─── Top Bar ─── */
+    .exam-top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 28px;
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(229, 231, 235, 0.5);
+      position: sticky;
+      top: 24px;
+      z-index: 50;
+    }
+
+    .exam-title {
+      font-weight: 700;
+      font-size: 18px;
+      color: var(--gray-800);
+      letter-spacing: -0.02em;
+    }
+
+    .timer-pill {
+      padding: 8px 20px;
+      background: var(--danger-light);
+      border-radius: 24px;
+      color: var(--danger);
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      font-size: 17px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .timer-pill i {
+      font-size: 14px;
+    }
+
+    /* ─── Question Area ─── */
+    #question-area {
+      padding: 40px;
+      border-radius: var(--radius-lg);
+      background: #fff;
+      box-shadow: var(--shadow-sm);
+      min-height: 380px;
+      flex: 1;
+      border: 1px solid rgba(229, 231, 235, 0.6);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .exam-q-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .q-marks-badge {
+      font-size: 12px;
+      font-weight: 600;
+      padding: 5px 12px;
+      border-radius: var(--radius-md);
+      background: var(--info-light);
+      color: var(--info);
+    }
+
+    .question-text {
+      font-size: 16px;
+      color: var(--gray-800);
+      line-height: 1.7;
+      margin-bottom: 24px;
+    }
+
+    /* ─── Options ─── */
+    .options-list {
+      margin-top: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      flex: 1;
+    }
+
+    .option-item {
+      display: flex;
+      align-items: center;
+      padding: 18px 24px;
+      background: var(--gray-50);
+      border: 2px solid var(--gray-200);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .option-item:hover {
+      background: var(--gray-100);
+      border-color: var(--primary-light);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .option-item.selected {
+      background: var(--info-light);
+      border-color: var(--primary);
+    }
+
+    .option-label {
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-md);
+      background: var(--gray-200);
+      margin-right: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--gray-600);
+      flex-shrink: 0;
+      transition: var(--transition);
+    }
+
+    .selected .option-label {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .option-text {
+      font-size: 15px;
+      color: var(--gray-700);
+      line-height: 1.5;
+    }
+
+    /* ─── Navigation ─── */
+    .exam-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 12px 0 24px 0;
+    }
+
+    .btn {
+      padding: 12px 28px;
+      border-radius: var(--radius-md);
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      border: none;
+      transition: var(--transition);
+      font-family: inherit;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-dark);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .btn-outline {
+      background: transparent;
+      color: var(--gray-600);
+      border: 1px solid var(--gray-300);
+    }
+
+    .btn-outline:hover {
+      background: var(--gray-50);
+      border-color: var(--gray-400);
+    }
+
+    .btn-outline:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-finish {
+      background: linear-gradient(135deg, var(--secondary), var(--secondary-dark));
+      color: #fff;
+      padding: 14px 32px;
+      border-radius: var(--radius-md);
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .btn-finish:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(16, 185, 129, 0.3);
+    }
+
+    .btn-clear-answer {
+      background: none;
+      border: 1px solid var(--gray-300);
+      color: var(--gray-600);
+      padding: 8px 16px;
+      border-radius: var(--radius-md);
+      font-size: 12px;
+      cursor: pointer;
+      margin-left: auto;
+      display: block;
+      margin-top: 12px;
+    }
+
+    .btn-clear-answer:hover {
+      background: var(--gray-50);
+    }
+
+    /* ─── Progress Grid ─── */
+    #exam-progress {
+      padding: 24px 32px;
+      background: #fff;
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+      border: 1px solid rgba(229, 231, 235, 0.6);
+    }
+
+    .progress-legend {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--gray-600);
+    }
+
+    .legend-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+    }
+
+    .legend-dot.answered {
+      background: var(--success);
+    }
+
+    .legend-dot.skipped {
+      background: var(--warning);
+    }
+
+    .legend-dot.not-visited {
+      background: var(--gray-300);
+    }
+
+    .legend-dot.current {
+      background: var(--primary);
+    }
+
+    .question-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+      gap: 8px;
+    }
+
+    .q-dot {
+      width: 44px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .q-dot.answered {
+      background: var(--success-light);
+      color: var(--success);
+      border: 1px solid var(--success);
+    }
+
+    .q-dot.skipped {
+      background: var(--warning-light);
+      color: var(--warning);
+      border: 1px solid var(--warning);
+    }
+
+    .q-dot.not-visited {
+      background: var(--gray-100);
+      color: var(--gray-500);
+      border: 1px solid var(--gray-300);
+    }
+
+    .q-dot.current {
+      background: var(--primary-light);
+      color: var(--primary);
+      border: 2px solid var(--primary);
+      transform: scale(1.1);
+      box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.15);
+    }
+
+    .q-dot:hover:not(.current) {
+      transform: translateY(-2px);
+      border-color: var(--primary);
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* ─── Proctor Sidebar ─── */
+    .proctor-sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      position: sticky;
+      top: 32px;
+      height: fit-content;
+    }
+
+    .proctor-camera-box {
+      background: var(--gray-900);
+      border: 2px solid var(--gray-300);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      position: relative;
+      aspect-ratio: 4/3;
+      box-shadow: var(--shadow-md);
+    }
+
+    .proctor-camera-box.camera-active {
+      border-color: var(--success);
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+    }
+
+    .proctor-camera-box video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform: scaleX(-1);
+    }
+
+    .camera-header {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px;
+      background: linear-gradient(180deg, rgba(0, 0, 0, 0.7), transparent);
+      z-index: 2;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    .status-dot.active {
+      background: var(--success);
+      box-shadow: 0 0 6px var(--success);
+      animation: pulse-dot 2s infinite;
+    }
+
+    .status-dot.inactive {
+      background: var(--danger);
+    }
+
+    @keyframes pulse-dot {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.4;
+      }
+    }
+
+    .camera-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      padding: 3px 8px;
+      border-radius: 4px;
+    }
+
+    .camera-label.live {
+      background: rgba(16, 185, 129, 0.2);
+      color: var(--success);
+    }
+
+    .camera-label.off {
+      background: rgba(239, 68, 68, 0.2);
+      color: var(--danger);
+    }
+
+    .camera-denied {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: var(--danger);
+      padding: 20px;
+      text-align: center;
+    }
+
+    .security-box {
+      background: #fff;
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      box-shadow: var(--shadow-md);
+    }
+
+    .security-box h4 {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--gray-500);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .security-pills {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .sec-pill {
+      font-size: 12px;
+      padding: 8px 10px;
+      border-radius: var(--radius-md);
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .sec-pill.good {
+      background: #ecfdf5;
+      color: #059669;
+      border: 1px solid #10b981;
+    }
+
+    .sec-pill.bad,
+    .sec-pill.danger {
+      background: #fef2f2;
+      color: #dc2626;
+      border: 1px solid #ef4444;
+      font-weight: 700;
+      box-shadow: 0 2px 8px rgba(239, 68, 68, 0.15);
+    }
+
+    .sec-pill.secure {
+      background: #f0f9ff;
+      color: #0284c7;
+      border: 1px solid #0ea5e9;
+    }
+
+    .sec-pill.warning {
+      background: #fffbeb;
+      color: #d97706;
+      border: 1px solid #f59e0b;
+    }
+
+    .counter-box {
+      background: #fff;
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      text-align: center;
+      box-shadow: var(--shadow-md);
+    }
+
+    .counter-box .big-number {
+      font-size: 32px;
+      font-weight: 800;
+      color: var(--primary);
+      margin-bottom: 4px;
+    }
+
+    /* ─── Image ─── */
+    .exam-image-container {
+      margin: 0 0 24px;
+      text-align: center;
+    }
+
+    .exam-question-image {
+      max-width: 100%;
+      max-height: 300px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--gray-200);
+      object-fit: contain;
+      cursor: zoom-in;
+      transition: var(--transition);
+    }
+
+    .exam-question-image:hover {
+      box-shadow: var(--shadow-md);
+      transform: translateY(-2px);
+    }
+
+    /* Image Zoom */
+    .image-zoom-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .image-zoom-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(8px);
+      cursor: pointer;
+    }
+
+    .image-zoom-content {
+      position: relative;
+      z-index: 1;
+      max-width: 90vw;
+      max-height: 90vh;
+    }
+
+    .image-zoom-content img {
+      max-width: 90vw;
+      max-height: 85vh;
+      border-radius: var(--radius-md);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+    }
+
+    .image-zoom-close {
+      position: absolute;
+      top: -12px;
+      right: -12px;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #fff;
+      border: 1px solid var(--gray-200);
+      color: var(--gray-700);
+      font-size: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: var(--shadow-md);
+      transition: var(--transition);
+    }
+
+    .image-zoom-close:hover {
+      background: var(--danger-light);
+      color: var(--danger);
+      transform: rotate(90deg);
+    }
+
+    /* ─── Helpers ─── */
+    .p-dim {
+      color: var(--gray-500);
+    }
+
+    .animate-fade-in {
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .exam-loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 80px 20px;
+      text-align: center;
+    }
+
+    .spinner {
+      width: 36px;
+      height: 36px;
+      border: 3px solid var(--gray-200);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-bottom: 20px;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* ─── Readiness View ─── */
+    #readiness-view {
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(135deg, #f0f2f5 0%, #e6eef5 100%);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      overflow-y: auto;
+    }
+
+    .readiness-card {
+      background: #fff;
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius-lg);
+      width: 100%;
+      max-width: 640px;
+      padding: 48px;
+      box-shadow: var(--shadow-lg);
+      animation: fadeIn 0.5s ease;
+    }
+
+    .check-item {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 20px;
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius-md);
+      margin-bottom: 16px;
+      transition: var(--transition);
+    }
+
+    .check-item.done {
+      border-color: var(--success);
+      background: var(--success-light);
+    }
+
+    .check-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 2px solid var(--gray-300);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 600;
+      transition: var(--transition);
+    }
+
+    .done .check-icon {
+      background: var(--success);
+      border-color: var(--success);
+      color: #fff;
+    }
+
+    .camera-preview-mini {
+      width: 100%;
+      height: 180px;
+      background: var(--gray-900);
+      border-radius: var(--radius-md);
+      margin-top: 12px;
+      overflow: hidden;
+      display: none;
+    }
+
+    .camera-preview-mini video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform: scaleX(-1);
+    }
+
+    /* Checkbox styling */
+    input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      accent-color: var(--primary);
+      cursor: pointer;
+    }
+
+    /* Button adjustments for readiness view */
+    #btn-allow-camera,
+    #btn-enter-fullscreen {
+      padding: 8px 16px;
+      font-size: 13px;
+    }
+
+    #btn-start-exam {
+      padding: 16px;
+      font-size: 16px;
+      border-radius: var(--radius-md);
+      margin-top: 24px;
+      transition: var(--transition);
+    }
+
+    #btn-start-exam:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+
+    #btn-start-exam:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+
+    @media (max-width: 768px) {
+      .exam-wrapper {
+        grid-template-columns: 1fr;
+        padding: 16px;
+        gap: 16px;
+      }
+
+      .proctor-sidebar {
+        position: static;
+        flex-direction: row;
+        flex-wrap: wrap;
+      }
+
+      .proctor-camera-box {
+        width: 140px;
+      }
+
+      .security-box,
+      .counter-box {
+        flex: 1;
+        min-width: 140px;
+      }
+
+      .readiness-card {
+        padding: 32px 24px;
+      }
+
+      .check-item {
+        flex-direction: column;
+        text-align: center;
+        gap: 12px;
+      }
+
+      .check-item>div {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- 🛠️ Readiness View -->
+  <div id="readiness-view">
+    <div class="readiness-card animate-fade-in">
+      <div style="text-align: center; margin-bottom: 40px;">
+        <div style="font-size: 64px; margin-bottom: 16px;">🛡️</div>
+        <h2 style="font-size: 28px; font-weight: 800; color: var(--gray-800); margin-bottom: 12px;">System Readiness
+          Check</h2>
+        <p class="p-dim" style="font-size: 16px;">Please complete the following checks to start your exam securely</p>
+      </div>
+
+      <div class="check-list">
+        <!-- Camera Check -->
+        <div class="check-item" id="check-camera">
+          <div class="check-icon">1</div>
+          <div style="flex: 1">
+            <h4 style="font-size: 16px; font-weight: 600; margin-bottom: 4px;">Camera Permission</h4>
+            <p class="p-dim" style="font-size: 14px;">Mandatory for proctoring and integrity assurance</p>
+            <div id="camera-preview-box" class="camera-preview-mini"></div>
+          </div>
+          <button class="btn btn-outline" id="btn-allow-camera" onclick="ReadinessCheck.allowCamera()">
+            <i class="fas fa-camera"></i> Allow
+          </button>
+        </div>
+
+        <!-- Fullscreen Check -->
+        <div class="check-item" id="check-fullscreen">
+          <div class="check-icon">2</div>
+          <div style="flex: 1">
+            <h4 style="font-size: 16px; font-weight: 600; margin-bottom: 4px;">Fullscreen Mode</h4>
+            <p class="p-dim" style="font-size: 14px;">Prevent accidental exits and maintain focus</p>
+          </div>
+          <button class="btn btn-outline" id="btn-enter-fullscreen" onclick="ReadinessCheck.enterFullscreen()">
+            <i class="fas fa-expand"></i> Enter
+          </button>
+        </div>
+
+        <!-- Consent Check -->
+        <div class="check-item" id="check-consent">
+          <div class="check-icon">3</div>
+          <div style="flex: 1">
+            <h4 style="font-size: 16px; font-weight: 600; margin-bottom: 4px;">Proctoring Consent</h4>
+            <p class="p-dim" style="font-size: 14px;">I agree to be monitored during this examination</p>
+          </div>
+          <input type="checkbox" id="consent-checkbox" onchange="ReadinessCheck.updateConsent()">
+        </div>
+
+        <!-- AI Landmarks Check -->
+        <div class="check-item" id="check-landmarks">
+          <div class="check-icon">4</div>
+          <div style="flex: 1">
+            <h4 style="font-size: 16px; font-weight: 600; margin-bottom: 4px;">AI Landmarks Sync</h4>
+            <p class="p-dim" style="font-size: 14px;" id="landmarks-status">Waiting for AI initialization...</p>
+          </div>
+          <div id="landmarks-loader" class="spinner" style="width:20px; height:20px; margin:0; border-width:2px; display:none;"></div>
+          <span id="landmarks-done" style="display:none; color:var(--success); font-weight:700;">✅ Sync Active</span>
+        </div>
+      </div>
+
+      <button id="btn-start-exam" class="btn btn-primary" style="width: 100%; margin-top: 32px; padding: 18px;" disabled
+        onclick="ReadinessCheck.startExam()">
+        <i class="fas fa-play-circle"></i> Start Examination
+      </button>
+
+      <p style="font-size: 12px; color: var(--gray-400); text-align: center; margin-top: 20px;">
+        By starting, you acknowledge that your session is being recorded for integrity purposes. Any violation of exam
+        rules may result in disqualification.
+      </p>
+    </div>
+  </div>
+
+  <div class="exam-wrapper" id="main-exam-content" style="display: none;">
+    <!-- LEFT: Main Exam -->
+    <div class="exam-main">
+      <div class="exam-top-bar">
+        <div>
+          <div class="exam-title" id="exam-title">Loading Exam...</div>
+          <div class="p-dim" style="font-size: 12px; margin-top: 4px;" id="exam-subtitle"></div>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px;">
+          <span id="question-counter" style="font-size:13px; color:var(--gray-500);"></span>
+          <div id="exam-timer" class="timer-pill"><i class="fas fa-clock"></i> --:--</div>
+        </div>
+      </div>
+
+      <div id="question-area">
+        <div class="exam-loading">
+          <div class="spinner"></div>
+          <p style="font-weight: 600; color: var(--gray-800); margin-bottom: 8px;">Loading exam questions...</p>
+          <p class="p-dim" style="font-size: 14px;">Setting up proctoring environment</p>
+        </div>
+      </div>
+
+      <div class="exam-nav">
+        <button id="prev-btn" class="btn btn-outline" onclick="ExamEngine.prev()" disabled>
+          <i class="fas fa-arrow-left"></i> Previous
+        </button>
+        <button id="next-btn" class="btn btn-primary" onclick="ExamEngine.next()">
+          Next <i class="fas fa-arrow-right"></i>
+        </button>
+      </div>
+
+      <div id="exam-progress"></div>
+    </div>
+
+    <!-- RIGHT: Proctor Sidebar -->
+    <div class="proctor-sidebar">
+      <div class="proctor-camera-box" id="proctor-camera">
+        <div class="camera-header">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span class="status-dot inactive" id="camera-status-dot"></span>
+            <span class="camera-label off" id="camera-status-label">OFF</span>
+          </div>
+          <!-- Audio Monitor -->
+          <div id="audio-monitor" style="flex:1; margin: 0 10px; height:4px; background:rgba(255,255,255,0.1); border-radius:2px; overflow:hidden;">
+            <div id="audio-level-bar" style="height:100%; width:0%; background:#10b981; transition:width 0.1s ease;"></div>
+          </div>
+          <span style="font-size:10px; color:rgba(255,255,255,0.7);">v3.0</span>
+        </div>
+        <div class="camera-denied">
+          <div class="spinner"
+            style="width:24px;height:24px;border-width:2px;margin-bottom:12px;border-top-color:#fff;border-color:rgba(255,255,255,0.2);">
+          </div>
+          <p style="font-size:12px; color:#fff;">Camera initializing...</p>
+        </div>
+      </div>
+
+      <div class="security-box">
+        <h4><i class="fas fa-shield-alt"></i> Security Status</h4>
+        <div id="security-status">
+          <div class="security-pills">
+            <!-- Dynamic pills from Proctor v3.0 -->
+          </div>
+        </div>
+      </div>
+
+      <div class="counter-box">
+        <div class="big-number" id="answered-count">0</div>
+        <div class="p-dim" style="font-size:12px;">Questions Answered</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🏆 Result View (Clean replacement for body.innerHTML) -->
+  <div id="finish-view" style="display: none; position: fixed; inset: 0; background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); z-index: 9999; overflow-y: auto; align-items: center; justify-content: center; padding: 24px;">
+    <div id="result-container" class="animate-fade-in" style="background:#fff; border-radius:20px; box-shadow:0 20px 60px rgba(0,0,0,0.12); padding:48px 40px; max-width:520px; width:100%; text-align:center;">
+      <!-- Dynamic Content Injection -->
+    </div>
+  </div>
+
+  <!-- Shared Libs -->
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <script src="/js/shared/api.js"></script>
+  <script src="/js/shared/auth.js"></script>
+  <script src="/js/shared/utils.js"></script>
+  <script src="/js/shared/notifications.js"></script>
+  <script src="/js/components/loader.js"></script>
+  <script src="/js/components/modal.js"></script>
+  <script src="/js/student/timer.js"></script>
+  <!-- ULTRA-GRADE AI SECURITY ENGINE v3.0 -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.x/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/face-landmarks-detection@1.x/dist/face-landmarks-detection.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/hand-pose-detection@2.x/dist/hand-pose-detection.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.x/dist/coco-ssd.js"></script>
+  <script src="/js/student/proctor.js"></script>
+  <script src="/js/student/socket.js"></script>
+  <script src="/js/student/exam.js"></script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      if (auth.checkAuth()) {
+        ExamEngine.init();
+      }
+    });
+  </script>
+
+  <!-- Failsafe Security: Blurs screen if focus is lost (prevents snipping tool/alt-tab) -->
+  <script>
+    window.addEventListener('blur', () => { 
+      document.body.style.filter = 'blur(40px)'; 
+      document.body.style.transition = 'filter 0.1s ease';
+    });
+    window.addEventListener('focus', () => { 
+      document.body.style.filter = 'none'; 
+    });
+    // Block PrintScreen key globally
+    window.addEventListener('keyup', (e) => {
+      if (e.key === 'PrintScreen') {
+        navigator.clipboard.writeText('[SECURITY BLOCK: Screenshots are prohibited]');
+        document.body.style.filter = 'blur(40px)';
+        setTimeout(() => { document.body.style.filter = 'none'; }, 2000);
+      }
+    });
+  </script>
+</body>
+
+</html>

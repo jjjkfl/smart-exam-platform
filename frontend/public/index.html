@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Dashboard | MCQPro</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --primary-indigo:#4f46e5;--secondary-blue:#2563eb;--accent-cyan:#06b6d4;
+      --bg-light:#f4f7fb;--text-dark:#1e293b;--text-muted:#64748b;
+      --border-color:#e2e8f0;--glass-bg:rgba(255,255,255,0.7);--glass-border:rgba(255,255,255,0.4);
+      --success:#10b981;--danger:#ef4444;--warning:#f59e0b;
+    }
+    body{font-family:'Poppins',sans-serif;background:var(--bg-light);color:var(--text-dark);-webkit-font-smoothing:antialiased}
+
+    /* Layout */
+    .student-layout{display:grid;grid-template-columns:260px 1fr;min-height:100vh}
+
+    /* Sidebar */
+    .sidebar{background:linear-gradient(180deg,#1e293b 0%,#0f172a 100%);color:#fff;padding:1.5rem 1rem;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto}
+    .sidebar-logo{display:flex;align-items:center;gap:.6rem;font-size:1.4rem;font-weight:800;color:#fff;padding:.5rem;margin-bottom:2rem;text-decoration:none}
+    .sidebar-logo i{color:#818cf8;font-size:1.6rem}
+    .nav-item{display:flex;align-items:center;gap:.75rem;padding:.8rem 1rem;border-radius:10px;color:rgba(255,255,255,.65);font-size:.9rem;font-weight:500;cursor:pointer;transition:all .2s;margin-bottom:.25rem}
+    .nav-item:hover{background:rgba(255,255,255,.08);color:#fff}
+    .nav-item.active{background:linear-gradient(135deg,var(--primary-indigo),var(--secondary-blue));color:#fff;box-shadow:0 4px 15px rgba(79,70,229,.4)}
+    .nav-item i{width:18px;text-align:center}
+    .sidebar-footer{margin-top:auto;border-top:1px solid rgba(255,255,255,.1);padding-top:1rem}
+    .user-mini{display:flex;align-items:center;gap:.75rem;padding:.75rem;background:rgba(255,255,255,.06);border-radius:10px;margin-bottom:.75rem}
+    .user-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--primary-indigo),var(--secondary-blue));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem;color:#fff;flex-shrink:0}
+    .user-mini .uname{font-size:.85rem;font-weight:600;color:#fff}
+    .user-mini .urole{font-size:.75rem;color:rgba(255,255,255,.5)}
+    .board-badge{display:flex;align-items:center;gap:.5rem;padding:.5rem 1rem;background:rgba(16,185,129,.15);border-radius:8px;color:#4ade80;font-size:.8rem;font-weight:600;cursor:pointer;margin-bottom:.5rem}
+
+    /* Main */
+    .main-content{overflow-y:auto;min-height:100vh}
+    .view{display:none}
+    .view.active{display:block}
+
+    /* Topbar */
+    .topbar{background:#fff;border-bottom:1px solid var(--border-color);padding:1rem 2.5rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+    .topbar-title{font-size:1.1rem;font-weight:700}
+    .topbar-right{display:flex;align-items:center;gap:1rem}
+    .integrity-pill{display:flex;align-items:center;gap:.5rem;padding:.4rem 1rem;background:rgba(16,185,129,.1);color:var(--success);border-radius:20px;font-size:.8rem;font-weight:600}
+    .integrity-pill::before{content:'';width:8px;height:8px;background:var(--success);border-radius:50%;animation:pulse-dot 2s infinite}
+    @keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.4}}
+
+    /* Hero */
+    .dash-hero{display:grid;grid-template-columns:1fr 1fr;gap:3rem;align-items:center;padding:3rem 2.5rem;background:#fff;border-bottom:1px solid var(--border-color)}
+    .dash-subtitle{font-size:1rem;font-weight:600;color:var(--secondary-blue);margin-bottom:.5rem}
+    .dash-title{font-size:2.25rem;font-weight:800;color:var(--text-dark);margin-bottom:1rem;line-height:1.2}
+    .dash-title span{color:var(--primary-indigo)}
+    .dash-desc{font-size:.95rem;color:var(--text-muted);line-height:1.7;margin-bottom:1.5rem}
+    .hero-btns{display:flex;gap:.75rem;flex-wrap:wrap}
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:.4rem;padding:.6rem 1.4rem;border-radius:8px;font-family:inherit;font-weight:600;font-size:.9rem;cursor:pointer;transition:all .25s;text-decoration:none;border:none}
+    .btn-primary{background:linear-gradient(135deg,var(--secondary-blue),var(--primary-indigo));color:#fff;box-shadow:0 4px 12px rgba(79,70,229,.25)}
+    .btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(79,70,229,.35)}
+    .btn-outline{background:transparent;border:2px solid var(--border-color);color:var(--text-dark)}
+    .btn-outline:hover{border-color:var(--primary-indigo);color:var(--primary-indigo)}
+    .hero-image-side{position:relative;height:320px;display:flex;align-items:flex-end;justify-content:center}
+    .hero-blob-purple{position:absolute;width:260px;height:260px;border-radius:50%;background:var(--primary-indigo);opacity:.85;top:0;left:0;z-index:1}
+    .hero-blob-cyan{position:absolute;width:200px;height:200px;border-radius:50%;background:var(--accent-cyan);opacity:.75;bottom:0;right:0;z-index:1}
+    .hero-img{position:relative;z-index:2;max-height:100%;max-width:100%;object-fit:contain;mix-blend-mode:multiply;animation:float 4s ease-in-out infinite}
+    @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+
+    /* Boards */
+    .boards-section{padding:2.5rem}
+    .section-header{margin-bottom:1.5rem}
+    .section-header h3{font-size:1.25rem;font-weight:700}
+    .section-header p{font-size:.875rem;color:var(--text-muted);margin-top:.25rem}
+    .boards-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1.25rem}
+    .board-card{background:var(--glass-bg);backdrop-filter:blur(12px);border:1px solid var(--glass-border);border-radius:16px;padding:2rem 1.25rem;text-align:center;cursor:pointer;transition:all .3s cubic-bezier(.4,0,.2,1);box-shadow:0 4px 15px rgba(0,0,0,.04)}
+    .board-card:hover{transform:translateY(-8px);border-color:var(--secondary-blue);box-shadow:0 16px 40px rgba(37,99,235,.12)}
+    .board-card i{font-size:2.25rem;color:var(--secondary-blue);margin-bottom:.75rem;display:block}
+    .board-card h4{font-size:1.1rem;font-weight:700;margin-bottom:.25rem}
+    .board-card p{font-size:.8rem;color:var(--text-muted)}
+
+    /* Getting Started */
+    .split-section{display:grid;grid-template-columns:1fr 1.2fr;gap:4rem;align-items:center;padding:2.5rem}
+    .split-img-side{position:relative;height:400px;display:flex;align-items:center;justify-content:center}
+    .split-blob{position:absolute;width:280px;height:280px;border-radius:50%;background:linear-gradient(135deg,var(--primary-indigo),var(--secondary-blue));opacity:.85;z-index:1;filter:blur(30px)}
+    .split-photo{position:relative;z-index:2;max-height:100%;max-width:100%;object-fit:contain;mix-blend-mode:multiply;}
+    .feature-list{list-style:none;display:flex;flex-direction:column;gap:1.5rem}
+    .feature-list li{display:flex;gap:1rem;align-items:flex-start}
+    .feat-icon{width:50px;height:50px;background:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.3rem;box-shadow:0 6px 16px rgba(0,0,0,.08);flex-shrink:0}
+    .feat-text h4{font-size:1rem;font-weight:700;margin-bottom:.2rem}
+    .feat-text p{font-size:.875rem;color:var(--text-muted);line-height:1.5}
+
+    /* Live Exams Grid */
+    .live-section{padding:2.5rem}
+    .live-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1.5rem;margin-top:1.25rem}
+    .exam-item{background:#fff;border:1px solid var(--border-color);border-radius:16px;padding:1.5rem;transition:all .25s;box-shadow:0 2px 8px rgba(0,0,0,.04)}
+    .exam-item:hover{transform:translateY(-4px);box-shadow:0 12px 30px rgba(0,0,0,.08);border-color:rgba(79,70,229,.3)}
+    .exam-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1rem}
+    .exam-icon{width:44px;height:44px;background:linear-gradient(135deg,#e0e7ff,#dbeafe);border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--primary-indigo);font-size:1.1rem}
+    .live-badge{display:flex;align-items:center;gap:.4rem;background:rgba(16,185,129,.1);color:var(--success);font-size:.75rem;font-weight:700;padding:.35rem .75rem;border-radius:20px}
+    .live-dot{width:7px;height:7px;background:var(--success);border-radius:50%;animation:pulse-dot 1.5s infinite}
+    .exam-name{font-weight:700;font-size:1rem;margin-bottom:.25rem}
+    .exam-meta{font-size:.8rem;color:var(--text-muted);margin-bottom:1.25rem}
+    .empty-state{grid-column:1/-1;text-align:center;padding:3rem;background:#fff;border-radius:16px;border:1px dashed var(--border-color)}
+    .empty-state i{font-size:3rem;color:var(--border-color);margin-bottom:1rem;display:block}
+    .empty-state p{color:var(--text-muted);font-size:.95rem}
+    
+    /* Exam Card V2 */
+    .exam-card-v2 {
+      background: #fff;
+      border-radius: 20px;
+      padding: 2rem;
+      text-align: center;
+      transition: all 0.3s ease;
+      border: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.5rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+    }
+    .exam-card-v2:hover {
+      transform: translateY(-10px);
+      box-shadow: 0 20px 40px rgba(79,70,229,0.1);
+      border-color: var(--primary-indigo);
+    }
+    .exam-card-icon img {
+      width: 80px;
+      height: 80px;
+      object-fit: contain;
+    }
+    .exam-card-title {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--text-dark);
+      margin-bottom: 0.5rem;
+      line-height: 1.3;
+    }
+    .exam-card-meta {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      margin-bottom: 1rem;
+    }
+    .exam-card-meta p {
+      margin-bottom: 0.25rem;
+    }
+    .exam-card-meta strong {
+      color: var(--text-dark);
+    }
+
+    /* View: Live Exams */
+    .page-header{padding:2rem 2.5rem 0;display:flex;align-items:center;justify-content:space-between}
+    .page-header h1{font-size:1.5rem;font-weight:800}
+    .page-header p{font-size:.875rem;color:var(--text-muted);margin-top:.25rem}
+
+    /* Results view */
+    .results-list{padding:1.5rem 2.5rem;display:flex;flex-direction:column;gap:1rem}
+    .result-row{background:#fff;border:1px solid var(--border-color);border-radius:12px;padding:1.25rem 1.5rem;display:flex;align-items:center;gap:1rem;transition:all .2s}
+    .result-row:hover{box-shadow:0 4px 16px rgba(0,0,0,.06)}
+    .result-score{font-size:1.5rem;font-weight:800;min-width:60px;text-align:right}
+    .pass{color:var(--success)}.fail{color:var(--danger)}
+
+    @media(max-width:768px){
+      .student-layout{grid-template-columns:1fr}
+      .sidebar{display:none}
+      .dash-hero,.boards-grid,.split-section{grid-template-columns:1fr}
+      .boards-grid{grid-template-columns:1fr 1fr}
+    }
+  </style>
+</head>
+<body>
+
+<div class="student-layout">
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <a href="/landing.html" class="sidebar-logo">
+      <i class="fas fa-graduation-cap"></i> MCQPro
+    </a>
+
+    <div class="nav-item active" data-action="overview">
+      <i class="fas fa-home"></i> Overview
+    </div>
+    <div class="nav-item" data-action="live-exams">
+      <i class="fas fa-bolt"></i> Live Exams
+    </div>
+    <div class="nav-item" data-action="exam-results">
+      <i class="fas fa-clipboard-check"></i> My Results
+    </div>
+
+    <div style="margin: 1.5rem 0 .5rem 1rem; font-size: .7rem; font-weight: 700; color: rgba(255,255,255,.3); text-transform: uppercase; letter-spacing: 1px;">Exam Boards</div>
+    <div class="nav-item board-nav" data-board="" onclick="StudentDashboard.selectBoard('')">
+      <i class="fas fa-globe"></i> All Boards
+    </div>
+    <div class="nav-item board-nav" data-board="CBSE" onclick="StudentDashboard.selectBoard('CBSE')">
+      <i class="fas fa-book-open"></i> CBSE
+    </div>
+    <div class="nav-item board-nav" data-board="ICSE" onclick="StudentDashboard.selectBoard('ICSE')">
+      <i class="fas fa-microscope"></i> ICSE
+    </div>
+    <div class="nav-item board-nav" data-board="State Board" onclick="StudentDashboard.selectBoard('State Board')">
+      <i class="fas fa-university"></i> State Board
+    </div>
+    <div class="nav-item board-nav" data-board="TestStream" onclick="StudentDashboard.selectBoard('TestStream')">
+      <i class="fas fa-vial"></i> TestStream
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="user-mini">
+        <div class="user-avatar" id="sidebar-avatar">S</div>
+        <div>
+          <div class="uname" id="sidebar-name">Student</div>
+          <div class="urole">Online Learner</div>
+        </div>
+      </div>
+      <div class="nav-item" onclick="auth.logout()" style="margin-top:0.5rem">
+        <i class="fas fa-sign-out-alt"></i> Logout
+      </div>
+    </div>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <div class="main-content">
+
+    <!-- TOPBAR -->
+    <div class="topbar">
+      <span class="topbar-title" id="topbar-title">Dashboard</span>
+      <div class="topbar-right">
+        <div class="integrity-pill"><i class="fas fa-shield-alt"></i> Integrity Anchored</div>
+      </div>
+    </div>
+
+    <!-- VIEW: OVERVIEW -->
+    <div id="view-dashboard" class="view active">
+
+      <!-- Hero -->
+      <div class="dash-hero">
+        <div>
+          <p class="dash-subtitle">Welcome to Your Online Testing!</p>
+          <h1 class="dash-title">Thank You for Registering, <span id="prof-name">Student</span>!</h1>
+          <p class="dash-desc">We're thrilled to have you on board! Get ready to experience the most advanced AI-powered online testing platform — secure, seamless, and built for excellence.</p>
+          <div class="hero-btns">
+            <button class="btn btn-primary" onclick="StudentDashboard.scrollToSection('boards-section')">
+              <i class="fas fa-rocket"></i> Start Your Journey
+            </button>
+            <button class="btn btn-outline" onclick="StudentDashboard.switchView('live-exams')">
+              <i class="fas fa-bolt"></i> Live Exams
+            </button>
+          </div>
+        </div>
+        <div class="hero-image-side">
+          <div class="hero-blob-purple"></div>
+          <div class="hero-blob-cyan"></div>
+          <img src="/hero_students.png" alt="Students" class="hero-img">
+        </div>
+      </div>
+
+      <!-- Boards -->
+      <div class="boards-section" id="boards-section">
+        <div class="section-header">
+          <h3>Select Your Exams &amp; Boards</h3>
+          <p>Choose your educational stream to view relevant live exams</p>
+        </div>
+        <div class="boards-grid">
+          <div class="board-card" onclick="StudentDashboard.selectBoard('CBSE')">
+            <i class="fas fa-book-open"></i>
+            <h4>CBSE</h4>
+            <p>National Curriculum</p>
+          </div>
+          <div class="board-card" onclick="StudentDashboard.selectBoard('ICSE')">
+            <i class="fas fa-microscope"></i>
+            <h4>ICSE</h4>
+            <p>Council Examinations</p>
+          </div>
+          <div class="board-card" onclick="StudentDashboard.selectBoard('TestStream')">
+            <i class="fas fa-vial"></i>
+            <h4>TestStream</h4>
+            <p>Mock &amp; Practice Tests</p>
+          </div>
+          <div class="board-card" onclick="StudentDashboard.selectBoard('State Board')">
+            <i class="fas fa-university"></i>
+            <h4>State Board</h4>
+            <p>Regional Curriculum</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Getting Started -->
+      <div class="split-section">
+        <div class="split-img-side">
+          <div class="split-blob"></div>
+          <img src="/student_pointing.png" alt="Student" class="split-photo">
+        </div>
+        <div>
+          <h3 style="font-size:1.25rem;font-weight:700;margin-bottom:1.5rem">Getting Started with Your Account</h3>
+          <ul class="feature-list">
+            <li>
+              <div class="feat-icon">🔍</div>
+              <div class="feat-text"><h4>Explore Your Dashboard</h4><p>Navigate effortlessly through your personalized learning space.</p></div>
+            </li>
+            <li>
+              <div class="feat-icon">📝</div>
+              <div class="feat-text"><h4>Take Proctored Tests</h4><p>Engage in secure, AI-monitored exams with real-time integrity checks.</p></div>
+            </li>
+            <li>
+              <div class="feat-icon">📊</div>
+              <div class="feat-text"><h4>Analyze Your Results</h4><p>Gain deep insights into your performance with instant analytics.</p></div>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Live Now -->
+      <div class="live-section">
+        <div class="section-header" style="display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <h3><i class="fas fa-bolt" style="color:var(--warning)"></i> Live Now</h3>
+            <p>Active exams you can join right now</p>
+          </div>
+          <button class="btn btn-outline" onclick="StudentDashboard.switchView('live-exams')">View All</button>
+        </div>
+        <div id="priority-exams-list" class="live-grid">
+          <div class="empty-state"><i class="fas fa-search"></i><p>Searching for active sessions...</p></div>
+        </div>
+      </div>
+
+      <!-- Second image strip -->
+      <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:3rem;align-items:center;padding:2.5rem;background:#fff;border-top:1px solid var(--border-color)">
+        <div>
+          <h3 style="font-size:1.25rem;font-weight:700;margin-bottom:1rem">Security &amp; Privacy First</h3>
+          <p style="font-size:.9rem;color:var(--text-muted);line-height:1.7;margin-bottom:1.5rem">Your data is protected by enterprise-grade security protocols including blockchain result sealing and end-to-end encryption — ensuring maximum privacy and integrity for all your assessments.</p>
+          <button class="btn btn-primary" onclick="StudentDashboard.switchView('live-exams')">
+            <i class="fas fa-play-circle"></i> Get Started Now
+          </button>
+        </div>
+        <div style="position:relative;height:260px;display:flex;align-items:flex-end;justify-content:center">
+          <div style="position:absolute;width:200px;height:200px;border-radius:50%;background:linear-gradient(135deg,#f59e0b,#fbbf24);opacity:.7;z-index:1;right:0;bottom:0;filter:blur(25px)"></div>
+          <img src="/student_laptop.png" alt="Student with laptop" style="position:relative;z-index:2;max-height:100%;object-fit:contain;mix-blend-mode:multiply;">
+        </div>
+      </div>
+
+    </div><!-- end view-dashboard -->
+
+    <!-- VIEW: LIVE EXAMS -->
+    <div id="view-live-exams" class="view">
+      <div class="page-header">
+        <div>
+          <h1>Live Examinations</h1>
+          <p>Active sessions for <strong id="live-board-label">All Boards</strong></p>
+        </div>
+        <button class="btn btn-outline" onclick="StudentDashboard.showBoardSelection()">
+          <i class="fas fa-sync"></i> Switch Board
+        </button>
+      </div>
+      <div class="live-section">
+        <div id="live-exams-grid" class="live-grid">
+          <div class="empty-state"><i class="fas fa-hourglass-half"></i><p>Loading exams...</p></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEW: RESULTS -->
+    <div id="view-exam-results" class="view">
+      <div class="page-header"><div><h1>My Results</h1><p>Your completed examination history</p></div></div>
+      <div class="results-list" id="results-detailed-list">
+        <div class="empty-state"><i class="fas fa-clipboard"></i><p>No results yet. Complete an exam to see your scores here.</p></div>
+      </div>
+    </div>
+
+  </div><!-- end main-content -->
+</div><!-- end student-layout -->
+
+
+
+<div id="announcement-toast" style="position:fixed;top:20px;right:20px;z-index:9999"></div>
+
+<script src="/js/shared/api.js?v=5"></script>
+<script src="/js/shared/auth.js?v=5"></script>
+<script src="/js/shared/utils.js?v=5"></script>
+<script src="/js/shared/notifications.js?v=5"></script>
+<script src="/js/components/loader.js?v=5"></script>
+<script src="/js/student/proctor.js?v=5"></script>
+<script src="/js/student/student.js?v=5"></script>
+
+<script>
+  // Nav binding
+  document.querySelectorAll('.sidebar .nav-item[data-action]').forEach(item => {
+    item.addEventListener('click', () => {
+      const action = item.dataset.action;
+      StudentDashboard.switchView(action);
+    });
+  });
+
+  function switchView(id) { StudentDashboard.switchView(id); }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    if (auth.isAuthenticated()) {
+      StudentDashboard.init();
+    } else {
+      window.location.href = '/login.html';
+    }
+  });
+</script>
+</body>
+</html>

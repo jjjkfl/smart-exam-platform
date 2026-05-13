@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Teacher Dashboard | MCQ Pro</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/common.css">
+  <link rel="stylesheet" href="/css/student.css">
+  <link rel="stylesheet" href="/css/teacher.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --primary-indigo:#4f46e5;--secondary-blue:#2563eb;--accent-cyan:#06b6d4;
+      --bg-light:#f4f7fb;--text-dark:#1e293b;--text-muted:#64748b;
+      --border-color:#e2e8f0;--glass-bg:rgba(255,255,255,0.7);--glass-border:rgba(255,255,255,0.4);
+      --success:#10b981;--danger:#ef4444;--warning:#f59e0b;
+    }
+    body{font-family:'Poppins',sans-serif;background:var(--bg-light);color:var(--text-dark);-webkit-font-smoothing:antialiased}
+
+    /* Layout */
+    .student-layout{display:grid;grid-template-columns:260px 1fr;min-height:100vh}
+
+    /* Sidebar */
+    .sidebar{background:linear-gradient(180deg,#1e293b 0%,#0f172a 100%);color:#fff;padding:1.5rem 1rem;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto}
+    .sidebar-logo{display:flex;align-items:center;gap:.6rem;font-size:1.4rem;font-weight:800;color:#fff;padding:.5rem;margin-bottom:2rem;text-decoration:none}
+    .sidebar-logo i{color:#818cf8;font-size:1.6rem}
+    .nav-item{display:flex;align-items:center;gap:.75rem;padding:.8rem 1rem;border-radius:10px;color:rgba(255,255,255,.65);font-size:.9rem;font-weight:500;cursor:pointer;transition:all .2s;margin-bottom:.25rem}
+    .nav-item:hover{background:rgba(255,255,255,.08);color:#fff}
+    .nav-item.active{background:linear-gradient(135deg,var(--primary-indigo),var(--secondary-blue));color:#fff;box-shadow:0 4px 15px rgba(79,70,229,.4)}
+    .nav-item i{width:18px;text-align:center}
+    .sidebar-footer{margin-top:auto;border-top:1px solid rgba(255,255,255,.1);padding-top:1rem}
+    .user-mini{display:flex;align-items:center;gap:.75rem;padding:.75rem;background:rgba(255,255,255,.06);border-radius:10px;margin-bottom:.75rem}
+    .user-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--primary-indigo),var(--secondary-blue));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem;color:#fff;flex-shrink:0}
+    .user-mini .uname{font-size:.85rem;font-weight:600;color:#fff}
+    .user-mini .urole{font-size:.75rem;color:rgba(255,255,255,.5)}
+    .board-badge{display:flex;align-items:center;gap:.5rem;padding:.5rem 1rem;background:rgba(16,185,129,.15);border-radius:8px;color:#4ade80;font-size:.8rem;font-weight:600;cursor:pointer;margin-bottom:.5rem}
+
+    /* Main */
+    .main-content{overflow-y:auto;min-height:100vh}
+    .view{display:none}
+    .view.active{display:block}
+
+    /* Topbar */
+    .topbar{background:#fff;border-bottom:1px solid var(--border-color);padding:1rem 2.5rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+    .topbar-title{font-size:1.1rem;font-weight:700}
+    .topbar-right{display:flex;align-items:center;gap:1rem}
+    .integrity-pill{display:flex;align-items:center;gap:.5rem;padding:.4rem 1rem;background:rgba(16,185,129,.1);color:var(--success);border-radius:20px;font-size:.8rem;font-weight:600}
+    .integrity-pill::before{content:'';width:8px;height:8px;background:var(--success);border-radius:50%;animation:pulse-dot 2s infinite}
+    @keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.4}}
+
+    /* Buttons */
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:.4rem;padding:.6rem 1.4rem;border-radius:8px;font-family:inherit;font-weight:600;font-size:.9rem;cursor:pointer;transition:all .25s;text-decoration:none;border:none}
+    .btn-primary{background:linear-gradient(135deg,var(--secondary-blue),var(--primary-indigo));color:#fff;box-shadow:0 4px 12px rgba(79,70,229,.25)}
+    .btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(79,70,229,.35)}
+    .btn-secondary{background:rgba(37,99,235,.1);color:var(--secondary-blue)}
+    .btn-secondary:hover{background:rgba(37,99,235,.2)}
+    .btn-outline{background:transparent;border:2px solid var(--border-color);color:var(--text-dark)}
+    .btn-outline:hover{border-color:var(--primary-indigo);color:var(--primary-indigo)}
+    
+    /* Hero Override */
+    .dash-hero{padding:2.5rem;background:#fff;border-bottom:1px solid var(--border-color);display:flex;justify-content:space-between;align-items:center;}
+    .dash-hero h1{font-size:2rem;font-weight:800;color:var(--text-dark);margin-bottom:.5rem;}
+    .dash-hero h1 span{color:var(--primary-indigo)}
+    .dash-hero p{color:var(--text-muted);font-size:.95rem}
+    .dash-actions{display:flex;gap:1rem;}
+    
+    @media(max-width:768px){
+      .student-layout{grid-template-columns:1fr}
+      .sidebar{display:none}
+      .dash-hero{flex-direction:column;align-items:flex-start;gap:1.5rem}
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="student-layout">
+    <!-- Sidebar -->
+    <nav class="sidebar">
+      <a href="/teacher.html" class="sidebar-logo">
+        <i class="fas fa-chalkboard-teacher"></i> MCQPro
+      </a>
+
+      <div class="nav-item active" data-action="overview">
+        <i class="fas fa-chart-pie"></i> Dashboard
+      </div>
+      <div class="nav-item" data-action="courses">
+        <i class="fas fa-book"></i> Courses Management
+      </div>
+      <div class="nav-item" data-action="students">
+        <i class="fas fa-users"></i> Students
+      </div>
+      <div class="nav-item" data-action="timetable">
+        <i class="fas fa-calendar-alt"></i> Timetable
+      </div>
+      <div class="nav-item" data-action="forum">
+        <i class="fas fa-comments"></i> Forum
+      </div>
+      <div class="nav-item" data-action="analytics">
+        <i class="fas fa-chart-bar"></i> Global Analytics
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="user-mini">
+          <div class="user-avatar" id="sidebar-avatar">T</div>
+          <div>
+            <div class="uname" id="sidebar-name">Instructor</div>
+            <div class="urole">Educator Panel</div>
+          </div>
+        </div>
+        <div class="nav-item" onclick="auth.logout()">
+          <i class="fas fa-sign-out-alt"></i> Logout
+        </div>
+      </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="main-content">
+
+      <!-- TOPBAR -->
+      <div class="topbar">
+        <span class="topbar-title" id="topbar-title">Educator Dashboard</span>
+        <div class="topbar-right">
+          <div class="integrity-pill"><i class="fas fa-shield-alt"></i> Secure Session</div>
+        </div>
+      </div>
+
+      <!-- VIEW: Dashboard -->
+      <main id="view-dashboard" class="view active">
+        <div class="dash-hero">
+          <div>
+            <h1>Welcome Back, <span id="teacher-name">Educator</span>!</h1>
+            <p>Manage examinations, question banks, and monitor live proctored sessions.</p>
+          </div>
+          <div class="dash-actions">
+            <button onclick="TeacherDashboard.showBroadcastModal()" class="btn btn-secondary">
+              <i class="fas fa-bullhorn"></i> Broadcast
+            </button>
+            <button onclick="TeacherDashboard.showMCQUpload()" class="btn btn-outline" style="color:var(--primary-indigo);border-color:var(--primary-indigo)">
+              <i class="fas fa-robot"></i> Create Exam
+            </button>
+            <button onclick="TeacherDashboard.showUploadMaterial()" class="btn btn-primary">
+              <i class="fas fa-plus"></i> Upload Document
+            </button>
+            <input type="file" id="ai-mcq-upload" style="display: none" accept=".pdf,.doc,.docx"
+              onchange="PDFUpload.handleUpload(event)">
+          </div>
+        </div>
+
+        <div style="padding: 2.5rem;">
+          <div class="metrics-grid animate-fade-in" style="margin-bottom:2.5rem">
+            <div class="metric-card">
+              <div class="metric-icon blue"><i class="fas fa-satellite-dish"></i></div>
+              <p class="metric-label">Active Sessions</p>
+              <div class="metric-value" id="stat-active">0</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-icon purple"><i class="fas fa-users"></i></div>
+              <p class="metric-label">Total Students</p>
+              <div class="metric-value" id="stat-total-students">0</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-icon green"><i class="fas fa-database"></i></div>
+              <p class="metric-label">MCQ Banks</p>
+              <div class="metric-value" id="stat-banks">0</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-icon orange"><i class="fas fa-file-invoice"></i></div>
+              <p class="metric-label">Total Exams</p>
+              <div class="metric-value" id="stat-total-exams">0</div>
+            </div>
+          </div>
+
+          <div class="dashboard-grid stagger">
+            <section class="section-card">
+              <div class="section-header" style="display:flex; justify-content:space-between; align-items:center;">
+                <h3 class="section-title"><i class="fas fa-history"></i> Recent Sessions</h3>
+                <select id="filter-session-board" class="form-control" style="width: auto; padding: 4px 12px; font-size: 12px;" onchange="TeacherDashboard.setBoardFilter(this.value)">
+                  <option value="All">All Boards (Global)</option>
+                  <option value="CBSE">CBSE</option>
+                  <option value="ICSE">ICSE</option>
+                  <option value="State Board">State Board</option>
+                  <option value="TestStream">TestStream (Mock)</option>
+                </select>
+              </div>
+              <div class="table-wrapper">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Title</th>
+                      <th>Scheduled</th>
+                      <th>Status</th>
+                      <th>Subs</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="recent-sessions"></tbody>
+                </table>
+              </div>
+            </section>
+
+            <section class="section-card">
+              <div class="section-header">
+                <h3 class="section-title"><i class="fas fa-graduation-cap"></i> Recent Results</h3>
+              </div>
+              <div class="table-wrapper">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Student</th>
+                      <th>Exam</th>
+                      <th>Score</th>
+                      <th>Date</th>
+                    </tr>
+                  </thead>
+                  <tbody id="recent-results"></tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+
+          <section style="margin-top: 2.5rem;">
+            <div class="section-header">
+              <h3 class="section-title"><i class="fas fa-folder-open"></i> MCQ Banks</h3>
+              <span class="card-action" onclick="PDFUpload.togglePreview()">View Preview Log</span>
+            </div>
+            <div id="mcq-banks-grid" class="mcq-banks-grid"></div>
+          </section>
+        </div>
+      </main>
+
+      <!-- VIEW: Monitoring -->
+      <main id="view-monitor" class="view" style="display: none;">
+        <div style="margin-bottom: 24px;">
+          <button onclick="window.location.href='/teacher.html'" class="btn btn-outline"
+            style="padding: 6px 12px; font-size: 12px; margin-bottom: 16px;">← Back to Dashboard</button>
+        </div>
+        <header class="flex-between" style="margin-bottom: 32px;">
+          <div>
+            <h2 class="h2" id="session-title">Monitoring</h2>
+            <p id="student-count" class="p-dim"></p>
+          </div>
+          <div class="flex-center" style="gap:12px;">
+            <button onclick="TeacherSocket.pauseExam()" class="btn btn-outline">Pause</button>
+            <button onclick="TeacherSocket.resumeExam()" class="btn btn-primary">Resume</button>
+            <button onclick="TeacherSocket.forceEnd()" class="btn btn-outline"
+              style="color:var(--danger); border-color:var(--danger)">End Exam</button>
+          </div>
+        </header>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Student</th>
+                <th>Status</th>
+                <th>Progress</th>
+                <th>Proctor Alerts</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="monitor-list"></tbody>
+          </table>
+        </div>
+      </main>
+
+      <!-- VIEW: Analytics (Session Specific) -->
+      <main id="view-analytics" class="view" style="display: none;">
+        <div style="margin-bottom: 24px;">
+          <button onclick="window.location.href='/teacher.html'" class="btn btn-outline"
+            style="padding: 6px 12px; font-size: 12px; margin-bottom: 16px;">← Back to Dashboard</button>
+        </div>
+        <div id="analytics-overview"></div>
+        <div class="glass-card" style="margin-top:40px;">
+          <h3 class="h3" style="margin-bottom:24px;">Grade Distribution</h3>
+          <div class="chart-container">
+            <canvas id="grade-distribution-chart"></canvas>
+          </div>
+        </div>
+      </main>
+
+      <!-- VIEW: All Analytics (Global) -->
+      <main id="view-analytics-all" class="view" style="display: none;">
+        <header style="margin-bottom: 48px;">
+          <h2 class="h2">Academic Performance Overview</h2>
+          <p class="p-dim">Aggregated data across all active and completed exam sessions.</p>
+        </header>
+
+        <div id="global-analytics-stats"></div>
+
+        <div class="glass-card" style="margin-top:40px;">
+          <h3 class="h3" style="margin-bottom:24px;">Global Grade Distribution</h3>
+          <div class="chart-container">
+            <canvas id="global-grade-chart"></canvas>
+          </div>
+        </div>
+      </main>
+      <!-- VIEW: Timetable Management -->
+      <main id="view-timetable" class="view" style="display: none;">
+        <header class="flex-between" style="margin-bottom: 32px;">
+          <div>
+            <h2 class="h2">Class Timetable</h2>
+            <p class="p-dim">Manage your weekly teaching schedule.</p>
+          </div>
+          <button class="btn btn-primary" onclick="TeacherDashboard.showAddTimetableModal()">+ Add Schedule</button>
+        </header>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Day</th>
+                <th>Time</th>
+                <th>Subject/Class</th>
+                <th>Grade</th>
+                <th>Division</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="timetable-list">
+              <tr>
+                <td colspan="6" class="p-dim" style="text-align:center;">Loading timetable...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </main>
+
+      <!-- VIEW: Materials Management -->
+      <main id="view-materials" class="view" style="display: none;">
+        <header class="flex-between" style="margin-bottom: 32px;">
+          <div>
+            <h2 class="h2">Curriculum & Materials</h2>
+            <p class="p-dim">Manage and audit your division-wise academic resources.</p>
+          </div>
+          <div style="display:flex; gap:12px;">
+            <select id="filter-material-grade" class="input-control" style="padding: 8px 16px;"
+              onchange="TeacherDashboard.loadMaterials()">
+              <option value="">All Grades</option>
+              <option value="Grade 6">Grade 6</option>
+              <option value="Grade 7">Grade 7</option>
+              <option value="Grade 8">Grade 8</option>
+              <option value="Grade 9">Grade 9</option>
+              <option value="Grade 10">Grade 10</option>
+            </select>
+            <select id="filter-material-division" class="input-control" style="padding: 8px 16px;"
+              onchange="TeacherDashboard.loadMaterials()">
+              <option value="">All Divisions</option>
+              <option value="A">Div A</option>
+              <option value="B">Div B</option>
+              <option value="C">Div C</option>
+              <option value="D">Div D</option>
+              <option value="All">Global (All)</option>
+            </select>
+            <button class="btn btn-primary" onclick="TeacherDashboard.showUploadMaterial()">+ Upload Material</button>
+          </div>
+        </header>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th>Subject</th>
+                <th>Target</th>
+                <th>Type</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="materials-table-body"></tbody>
+          </table>
+        </div>
+      </main>
+
+      <!-- VIEW: Attendance & Analytics -->
+      <main id="view-students" class="view" style="display: none;">
+        <header class="flex-between" style="margin-bottom: 32px;">
+          <div>
+            <h2 class="h2">Student Tracking</h2>
+            <p class="p-dim">Monitor attendance and overall performance per session.</p>
+          </div>
+          <div style="display:flex; gap:12px;">
+            <select id="attendance-session-select" class="input-control" style="padding: 8px 16px;"
+              onchange="TeacherDashboard.loadAttendance(this.value)">
+              <option value="">Select Session...</option>
+            </select>
+          </div>
+        </header>
+        <div id="session-attendance-container" class="table-container">
+          <h3 class="h3" style="margin-bottom: 16px; font-size: 18px;">Session Attendance</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Student Name</th>
+                <th>Email</th>
+                <th>Status</th>
+                <th>Time</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="attendance-table-body"></tbody>
+          </table>
+        </div>
+
+        <div id="student-roster-container" class="table-container" style="margin-top: 40px;">
+          <div class="flex-between" style="margin-bottom: 20px;">
+            <h3 class="h3" style="font-size: 18px;">Master Student Roster</h3>
+            <div style="display:flex; gap:12px;">
+              <select id="filter-student-class" class="input-control" style="padding: 6px 12px; font-size: 13px;"
+                onchange="TeacherDashboard.loadStudentRoster()">
+                <option value="">All Students</option>
+                <option value="Class 1">Class 1</option>
+                <option value="Class 2">Class 2</option>
+                <option value="Class 3">Class 3</option>
+                <option value="Class 4">Class 4</option>
+                <option value="Class 5">Class 5</option>
+                <option value="Class 6">Class 6</option>
+                <option value="Class 7">Class 7</option>
+                <option value="Class 8">Class 8</option>
+                <option value="Class 9">Class 9</option>
+                <option value="Class 10">Class 10</option>
+                <option value="Class 11">Class 11</option>
+                <option value="Class 12">Class 12</option>
+                <option value="Class 13">Class 13</option>
+                <option value="Class 14">Class 14</option>
+                <option value="Class 15">Class 15</option>
+              </select>
+              <select id="filter-student-board" class="input-control" style="padding: 6px 12px; font-size: 13px;"
+                onchange="TeacherDashboard.loadStudentRoster()">
+                <option value="">All Boards</option>
+                <option value="CBSE">CBSE</option>
+                <option value="ICSE">ICSE</option>
+                <option value="State">State Board</option>
+                <option value="TestStream">TestStream (Mock)</option>
+              </select>
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Student Name</th>
+                <th>Email</th>
+                <th>Class</th>
+                <th>Board</th>
+                <th>Total Attendance</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="student-roster-table-body"></tbody>
+          </table>
+        </div>
+      </main>
+
+      <!-- VIEW: Forum -->
+      <main id="view-forum" class="view" style="display: none;">
+        <div id="teacher-forum-container"></div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Shared Libs -->
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="/js/shared/api.js?v=3"></script>
+  <script src="/js/shared/auth.js?v=3"></script>
+  <script src="/js/shared/utils.js?v=3"></script>
+  <script src="/js/shared/notifications.js?v=3"></script>
+
+  <!-- Components -->
+  <script src="/js/components/navbar.js?v=3"></script>
+  <script src="/js/components/modal.js?v=3"></script>
+  <script src="/js/components/loader.js?v=3"></script>
+  <script src="/js/components/chart.js?v=3"></script>
+
+  <!-- Teacher Modules -->
+  <script src="/js/teacher/socket.js?v=3"></script>
+  <script src="/js/teacher/upload.js?v=3"></script>
+  <script src="/js/teacher/examManager.js?v=3"></script>
+  <script src="/js/teacher/monitor.js?v=3"></script>
+  <script src="/js/teacher/analytics.js?v=3"></script>
+  <script src="/js/teacher/teacher.js?v=3"></script>
+
+</body>
+
+</html>

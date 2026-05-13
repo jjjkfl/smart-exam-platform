@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Exam Results | MCQ Pro</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #4f46e5;
+      --secondary: #10b981;
+      --secondary-ultralight: #ecfdf5;
+      --danger: #ef4444;
+      --neutral-50: #f9fafb;
+      --neutral-100: #f3f4f6;
+      --neutral-200: #e5e7eb;
+      --neutral-300: #d1d5db;
+      --neutral-400: #9ca3af;
+      --neutral-600: #4b5563;
+      --neutral-800: #1f2937;
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08);
+      --border-radius-lg: 16px;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--neutral-50);
+      color: var(--neutral-800);
+      line-height: 1.6;
+    }
+
+    .result-layout {
+      max-width: 880px;
+      margin: 0 auto;
+      padding: 32px 24px;
+      min-height: 100vh;
+    }
+
+    /* ─── Score Card ─── */
+    .score-card {
+      background: #fff;
+      border: 1px solid var(--neutral-200);
+      border-radius: var(--border-radius-lg);
+      padding: 44px 40px;
+      text-align: center;
+      margin-bottom: 24px;
+      box-shadow: var(--shadow-md);
+    }
+
+    .score-big {
+      font-size: 72px;
+      font-weight: 800;
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+
+    .score-big.passed {
+      color: var(--secondary);
+    }
+
+    .score-big.failed {
+      color: var(--danger);
+    }
+
+    .score-stats {
+      display: flex;
+      justify-content: center;
+      gap: 36px;
+      margin-top: 28px;
+      padding-top: 24px;
+      border-top: 1px solid var(--neutral-100);
+    }
+
+    .score-stat-val {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--neutral-800);
+    }
+
+    .score-stat-label {
+      font-size: 11px;
+      color: var(--neutral-400);
+      margin-top: 4px;
+    }
+
+    /* ─── Actions ─── */
+    .result-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      margin-bottom: 36px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 12px 24px;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .btn-outline {
+      background: transparent;
+      color: var(--neutral-600);
+      border: 1px solid var(--neutral-300);
+    }
+
+    .btn-danger {
+      background: transparent;
+      color: var(--danger);
+      border: 1px solid var(--danger);
+      opacity: 0.7;
+    }
+
+    /* ─── Answer Cards ─── */
+    .answers-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .answer-card {
+      background: #fff;
+      border: 1px solid var(--neutral-200);
+      border-radius: 14px;
+      padding: 24px;
+      margin-bottom: 14px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+      transition: all 0.2s;
+    }
+
+    .answer-card.correct {
+      border-left: 5px solid var(--secondary);
+    }
+
+    .answer-card.wrong {
+      border-left: 5px solid var(--danger);
+    }
+
+    .answer-card.unanswered {
+      border-left: 5px solid #f59e0b;
+    }
+
+    .answer-q-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .answer-q-num {
+      font-size: 13px;
+      font-weight: 700;
+      color: #94a3b8;
+    }
+
+    .answer-badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 6px;
+    }
+
+    .badge-correct {
+      background: var(--secondary-ultralight);
+      color: var(--secondary);
+    }
+
+    .badge-wrong {
+      background: #fef2f2;
+      color: var(--danger);
+    }
+
+    .badge-unanswered {
+      background: #fffbeb;
+      color: #d97706;
+    }
+
+    .answer-q-text {
+      font-size: 15px;
+      font-weight: 500;
+      color: #1e293b;
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+
+    .answer-q-image {
+      max-width: 100%;
+      max-height: 220px;
+      border-radius: 10px;
+      border: 1px solid #e2e8f0;
+      margin-bottom: 16px;
+      object-fit: contain;
+    }
+
+    .answer-options {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .answer-opt {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 11px 14px;
+      border-radius: 10px;
+      font-size: 13px;
+      border: 1px solid #e2e8f0;
+      background: #fafbfc;
+      color: #334155;
+    }
+
+    .answer-opt .opt-circle {
+      width: 26px;
+      height: 26px;
+      border-radius: 7px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      flex-shrink: 0;
+      background: #e2e8f0;
+      color: #475569;
+    }
+
+    .answer-opt.is-correct {
+      background: #f0fdf4;
+      border-color: var(--secondary);
+    }
+
+    .answer-opt.is-correct .opt-circle {
+      background: var(--secondary);
+      color: #fff;
+    }
+
+    .answer-opt.is-selected-wrong {
+      background: #fef2f2;
+      border-color: var(--danger);
+    }
+
+    .answer-opt.is-selected-wrong .opt-circle {
+      background: var(--danger);
+      color: #fff;
+    }
+
+    .your-answer-note {
+      margin-top: 10px;
+      font-size: 12px;
+      color: #94a3b8;
+    }
+
+    /* ─── Misc ─── */
+    .p-dim {
+      color: #64748b;
+    }
+
+    .animate-fade-in {
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(6px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .spinner {
+      width: 32px;
+      height: 32px;
+      border: 3px solid #e2e8f0;
+      border-top-color: #2563eb;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 16px;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @media (max-width: 600px) {
+      .answer-options {
+        grid-template-columns: 1fr;
+      }
+
+      .score-stats {
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="result-layout">
+    <div id="result-content">
+      <div style="text-align:center; padding:80px 20px;">
+        <div class="spinner"></div>
+        <p style="font-weight: 600;">Loading your results...</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/shared/api.js"></script>
+  <script src="/js/shared/auth.js"></script>
+  <script src="/js/shared/utils.js"></script>
+  <script src="/js/shared/notifications.js"></script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (!auth.checkAuth()) return;
+
+      const params = new URLSearchParams(window.location.search);
+      const resultId = params.get('resultId');
+
+      if (!resultId) {
+        window.location.href = '/index.html';
+        return;
+      }
+
+      try {
+        const res = await api.get(`/portal/student/results/${resultId}`);
+        if (!res.success) throw new Error(res.message);
+        renderResult(res.data);
+      } catch (err) {
+        document.getElementById('result-content').innerHTML = `
+          <div style="text-align:center; padding:60px;">
+            <p style="font-size:18px; color:#dc2626; font-weight:600;">Failed to load results</p>
+            <p class="p-dim" style="margin-top:8px;">${err.message}</p>
+            <a href="/index.html" class="btn btn-outline" style="margin-top:20px;">Go Home</a>
+          </div>`;
+      }
+    });
+
+    function renderResult(data) {
+      const isPassed = data.percentage >= 50;
+      const grade = data.grade || (isPassed ? 'A' : 'F');
+      const answers = data.answers || [];
+      const correctCount = data.correctCount || answers.filter(a => a.isCorrect).length;
+      const wrongCount = answers.filter(a => a.selectedAnswer && !a.isCorrect).length;
+      const unanswered = answers.filter(a => !a.selectedAnswer).length;
+
+      const fmt = (s) => { const m = Math.floor(s / 60); const sec = s % 60; return `${m}m ${sec}s`; };
+
+      document.getElementById('result-content').innerHTML = `
+        <div class="animate-fade-in">
+          <!-- Score Card -->
+          <div class="score-card">
+            <div class="score-big ${isPassed ? 'passed' : 'failed'}">${data.percentage}%</div>
+            <div style="font-size:20px; font-weight:700; margin-bottom:4px; color:${isPassed ? '#16a34a' : '#dc2626'};">
+              ${isPassed ? '✅ PASSED' : '❌ FAILED'} — Grade ${grade}
+            </div>
+            <div class="p-dim" style="font-size:14px;">${data.session ? data.session.title : data.examId}</div>
+
+            <div class="score-stats">
+              <div>
+                <div class="score-stat-val" style="color:#16a34a;">${correctCount}</div>
+                <div class="score-stat-label">Correct</div>
+              </div>
+              <div>
+                <div class="score-stat-val" style="color:#dc2626;">${wrongCount}</div>
+                <div class="score-stat-label">Wrong</div>
+              </div>
+              <div>
+                <div class="score-stat-val" style="color:#d97706;">${unanswered}</div>
+                <div class="score-stat-label">Unanswered</div>
+              </div>
+              <div>
+                <div class="score-stat-val">${answers.length}</div>
+                <div class="score-stat-label">Total</div>
+              </div>
+              <div>
+                <div class="score-stat-val">${fmt(data.timeTaken || 0)}</div>
+                <div class="score-stat-label">Time</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="result-actions">
+            <a href="/index.html" class="btn btn-primary">🏠 Go to Dashboard</a>
+            <button onclick="auth.logout()" class="btn btn-danger">🚪 Logout</button>
+          </div>
+
+          <!-- Answer Review -->
+          <div class="answers-header">
+            <h2 style="font-size:20px; font-weight:700; color:#1e293b;">📋 Answer Review</h2>
+            <div class="p-dim" style="font-size:13px;">${answers.length} questions</div>
+          </div>
+
+          ${answers.map((a, i) => {
+        const status = !a.selectedAnswer ? 'unanswered' : a.isCorrect ? 'correct' : 'wrong';
+        const badgeClass = status === 'correct' ? 'badge-correct' : status === 'wrong' ? 'badge-wrong' : 'badge-unanswered';
+        const badgeText = status === 'correct' ? '✓ Correct' : status === 'wrong' ? '✗ Wrong' : '— Skipped';
+
+        return `
+              <div class="answer-card ${status}">
+                <div class="answer-q-header">
+                  <span class="answer-q-num">Q${i + 1}</span>
+                  <span class="answer-badge ${badgeClass}">${badgeText}</span>
+                </div>
+                <div class="answer-q-text">${esc(a.questionText)}</div>
+                ${a.image ? `<img src="${a.image}" class="answer-q-image" onerror="this.style.display='none'">` : ''}
+                <div class="answer-options">
+                  ${(a.options || []).map(opt => {
+          const isCorrectOpt = opt.label === a.correctAnswer;
+          const isSelectedWrong = opt.label === a.selectedAnswer && !a.isCorrect;
+          let cls = '';
+          if (isCorrectOpt) cls = 'is-correct';
+          else if (isSelectedWrong) cls = 'is-selected-wrong';
+          return `
+                      <div class="answer-opt ${cls}">
+                        <div class="opt-circle">${opt.label}</div>
+                        <div>${esc(opt.text)}</div>
+                      </div>`;
+        }).join('')}
+                </div>
+                ${status === 'wrong' || status === 'unanswered' ? `
+                  <div class="your-answer-note">
+                    ${status === 'wrong' ? `Your answer: <strong style="color:#dc2626;">${a.selectedAnswer}</strong> · ` : ''}
+                    Correct: <strong style="color:#16a34a;">${a.correctAnswer}</strong>
+                  </div>` : ''}
+                
+                ${a.explanation ? `
+                  <div style="margin-top: 16px; padding: 12px; background: #eff6ff; border-radius: 10px; border: 1px dashed #bfdbfe;">
+                    <div style="display: flex; align-items: center; gap: 8px; color: #1e40af; font-weight: 700; font-size: 12px; margin-bottom: 4px;">
+                      <span>💡 EXPLANATION</span>
+                    </div>
+                    <div style="font-size: 13px; color: #1e3a8a; line-height: 1.5;">${esc(a.explanation)}</div>
+                  </div>
+                ` : ''}
+              </div>`;
+      }).join('')}
+
+          <div style="text-align:center; padding:32px 0;">
+            <a href="/index.html" class="btn btn-primary">🏠 Return to Dashboard</a>
+          </div>
+        </div>`;
+    }
+
+    function esc(t) { if (!t) return ''; const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
+  </script>
+</body>
+
+</html>
