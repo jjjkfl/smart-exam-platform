@@ -457,7 +457,9 @@ const TeacherDashboard = {
                 ">Answer Key: ${q.correctAnswer || '-'}</span>
               </div>
 
-              <div style="font-size: 18px; font-weight: 600; color: #1e293b; margin-bottom: 24px; line-height: 1.6;">${q.questionText || 'Untitled question'}</div>
+              <div style="font-size: 18px; font-weight: 600; color: #1e293b; margin-bottom: 24px; line-height: 1.6;">
+                ${q.questionText && q.questionText.trim() ? q.questionText : `<span style="color: #94a3b8; font-style: italic;">Question text unavailable</span>`}
+              </div>
               
               ${q.image ? `
                 <div style="margin-bottom: 20px; border-radius: 12px; overflow: hidden; border: 1px solid #f1f5f9;">

@@ -428,7 +428,7 @@
                   <span class="answer-q-num">Q${i + 1}</span>
                   <span class="answer-badge ${badgeClass}">${badgeText}</span>
                 </div>
-                <div class="answer-q-text">${esc(a.questionText)}</div>
+                <div class="answer-q-text">${a.questionText && a.questionText.trim() ? esc(a.questionText) : '<span style="color: #94a3b8; font-style: italic;">Question text unavailable</span>'}</div>
                 ${a.image ? `<img src="${a.image}" class="answer-q-image" onerror="this.style.display='none'">` : ''}
                 <div class="answer-options">
                   ${(a.options || []).map(opt => {

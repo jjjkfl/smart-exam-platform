@@ -571,9 +571,14 @@ exports.regexExtractFromText = (text) => {
     let qMatch = block.match(/^(?:Q(?:uestion)?\.?\s*\d+[\.\)\:\-]?\s*|\d+[\.\)\:\-]\s*)([\s\S]*?)(?=\s*[\(\[]?[A-Da-d][\.\)\:\-\]]\s+|[\n\s]?[A-Da-d][\.\)\:\-\]]\s+)/i);
     if (!qMatch)
       qMatch = block.match(/^([\s\S]*?)(?=\s*[\(\[]?[A-Da-d][\.\)\:\-\]]\s+|[\n\s]?[A-Da-d][\.\)\:\-\]]\s+)/i);
-    if (!qMatch) continue;
+    
+    let questionText = qMatch ? qMatch[1].trim().replace(/<[^>]+>/g, '').replace(/^[\d\:\s]{5,}/, '').trim() : '';
 
-    const questionText = qMatch[1].trim().replace(/<[^>]+>/g, '').replace(/^[\d\:\s]{5,}/, '').trim();
+    // If still empty but we have options, it's an unnumbered/tightly packed question
+    if (!questionText && block.length > 10) {
+      const parts = block.split(/[\(\[]?[A-Da-d][\.\)\:\-\]]/i);
+      if (parts[0]) questionText = parts[0].trim();
+    }
 
     const options = [];
     const optRx = /[\(\[]?([A-Da-d])[\.\)\:\-\]]\s*([\s\S]*?)(?=\s*[\(\[]?[A-Da-d][\.\)\:\-\]]\s+|[\n\s]?(?:Answer|Ans|Correct|Q|Key|Choice|Response)|$)/gi;
@@ -622,7 +627,7 @@ const finalizeMCQ = (q) => {
     return { label: l, text: txt || `Option ${l}`, image: (ex && ex.image) || '' };
   });
   return {
-    questionText: (q.questionText || 'Untitled Question').trim().substring(0, 5000),
+    questionText: (q.questionText && q.questionText.trim() ? q.questionText.trim() : `Question (Text Unavailable)`).substring(0, 5000),
     image: q.image || '',
     options: finalOptions,
     correctAnswer: q.correctAnswer || 'A',
