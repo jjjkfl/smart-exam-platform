@@ -345,12 +345,17 @@ const parseAdda247Format = (blocks) => {
     }
     if (!currentQ) continue;
 
-    // Correct answer line + potential inline explanation (supports A, (A), [A], Ans: A, etc.)
-    const ansM = text.match(/^Correct\s*:\s*([A-Da-d])\s*[\:\-\.\s]*(.*)/i) || 
-                 text.match(/(?:Answer|Ans|Correct|Key|Choice)\s*[\:\-\s]*[\(\[]?([A-Da-d])[\)\]]?\b\s*[\:\-\.\s]*(.*)/i);
+    // Correct answer line + potential inline explanation (supports A, A,B, Answer: A, C, etc.)
+    const ansM = text.match(/^Correct\s*:\s*([A-D](?:[\s\,\&]+[A-D])*)\b\s*[\:\-\.\s]*(.*)/i) || 
+                 text.match(/(?:Answer|Ans|Correct|Key|Choice)\s*[\:\-\s]*[\(\[]?([A-D](?:[\s\,\&]+[A-D])*)[\)\]]?\b\s*[\:\-\.\s]*(.*)/i);
     if (ansM && !currentQ.correctAnswer) {
-      currentQ.correctAnswer = ansM[1].toUpperCase(); 
-      if (ansM[2]) currentQ.explanation = ansM[2].trim();
+      const matchText = ansM[1] || ansM[2] || '';
+      const letters = matchText.toUpperCase().match(/[A-D]/g);
+      currentQ.correctAnswer = letters && letters.length > 0 ? [...new Set(letters)].sort().join(',') : 'A'; 
+      const expText = ansM[1] ? ansM[2] : ansM[3]; // If regex1 matched, exp is group2. If regex2 matched, exp is group3. Wait!
+      // Better:
+      const extractedExp = text.replace(ansM[0], '').trim() || (ansM.length > 2 ? ansM[ansM.length - 1] : '');
+      if (extractedExp) currentQ.explanation = extractedExp.trim();
       parserState = 'in_explanation'; 
       continue;
     }
@@ -524,13 +529,14 @@ const parseGenericFormat = (blocks) => {
     }
     if (foundOpt) continue;
 
-    // Answer line + potential inline explanation (supports A, (A), [A], Ans: A, etc.)
-    const ansM = text.match(/(?:Answer|Ans|Correct|Key|Choice)\s*[\:\-\s]*[\(\[]?([A-Da-d])[\)\]]?\b\s*[\:\-\.\s]*(.*)/i);
+    // Answer line + potential inline explanation (supports A, A,B, Answer: A, C, etc.)
+    const ansM = text.match(/(?:Answer|Ans|Correct|Key|Choice)\s*[\:\-\s]*[\(\[]?([A-D](?:[\s\,\&]+[A-D])*)[\)\]]?\b\s*[\:\-\.\s]*(.*)/i);
     if (ansM) { 
-        currentQ.correctAnswer = ansM[1].toUpperCase(); 
-        if (ansM[2]) currentQ.explanation = ansM[2].trim();
-        parserState = 'in_explanation';
-        continue; 
+      const letters = ansM[1].toUpperCase().match(/[A-D]/g);
+      currentQ.correctAnswer = letters && letters.length > 0 ? [...new Set(letters)].sort().join(',') : 'A'; 
+      if (ansM[2]) currentQ.explanation = ansM[2].trim();
+      parserState = 'in_explanation';
+      continue; 
     }
 
     // Explicit explanation line
