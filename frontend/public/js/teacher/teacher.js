@@ -78,6 +78,7 @@ const TeacherDashboard = {
 
   switchView(viewName) {
     this.currentBoardFolder = null; // Reset folder view on tab switch
+    this._forceBankRender = true; // Force render when switching back to materials
     utils.$all('.view').forEach(v => {
       v.style.display = 'none';
       v.classList.remove('active');
@@ -314,11 +315,22 @@ const TeacherDashboard = {
     const container = document.getElementById('mcq-banks-grid');
     if (!container) return;
     
-    // Show new global loader
-    Loader.show('mcq-banks-grid', 'Syncing MCQ Repositories...');
+    // Only show loader on initial load to prevent UI flickering during polling
+    if (this.banks.length === 0 && !this.currentBoardFolder) {
+      Loader.show('mcq-banks-grid', 'Syncing MCQ Repositories...');
+    }
 
     try {
       const { data } = await api.get('/portal/teacher/mcq-banks');
+      
+      const newHash = JSON.stringify(data || []);
+      if (this._lastBanksHash === newHash && !this._forceBankRender) {
+         this.banks = data || [];
+         return; 
+      }
+      this._lastBanksHash = newHash;
+      this._forceBankRender = false;
+
       this.banks = data || [];
 
       if (data.length === 0) {
@@ -407,11 +419,13 @@ const TeacherDashboard = {
 
   openBoardFolder(board) {
     this.currentBoardFolder = board;
+    this._forceBankRender = true;
     this.loadMCQBanks();
   },
 
   closeBoardFolder() {
     this.currentBoardFolder = null;
+    this._forceBankRender = true;
     this.loadMCQBanks();
   },
 
