@@ -6,7 +6,7 @@
 const socket = io(window.SERVER_URL || 'http://localhost:5000', {
   autoConnect: false,
   auth: (cb) => {
-    cb({ token: localStorage.getItem('token') });
+    cb({ token: sessionStorage.getItem('token') });
   }
 });
 

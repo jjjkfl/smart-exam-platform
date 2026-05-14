@@ -31,17 +31,17 @@ const auth = {
   },
 
   setSession(token, user) {
-    localStorage.setItem('token', token);
-    localStorage.setItem('user', JSON.stringify(user));
+    sessionStorage.setItem('token', token);
+    sessionStorage.setItem('user', JSON.stringify(user));
   },
 
   getUser() {
-    const user = localStorage.getItem('user');
+    const user = sessionStorage.getItem('user');
     return user ? JSON.parse(user) : null;
   },
 
   getToken() {
-    return localStorage.getItem('token');
+    return sessionStorage.getItem('token');
   },
 
   isAuthenticated() {
@@ -49,8 +49,8 @@ const auth = {
   },
 
   logout() {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('user');
     window.location.href = '/login.html';
   },
 
