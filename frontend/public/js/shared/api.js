@@ -4,10 +4,12 @@
  */
 
 const origin = window.location.origin;
-const SERVER_URL = origin.includes('localhost') || origin.includes('127.0.0.1') || origin === 'null' || origin.includes('file://') || window.location.protocol === 'file:'
-  ? 'http://localhost:5000' 
-  : origin;
+// If we are not on the production domain, force localhost:5000 for backend requests
+const SERVER_URL = (origin.includes('mcqpro.com') || origin.includes('render.com')) 
+  ? origin 
+  : 'http://localhost:5000';
 const API_BASE_URL = `${SERVER_URL}/api`;
+console.log('API configuring SERVER_URL to:', SERVER_URL);
 
 const api = {
   /**
