@@ -311,8 +311,8 @@ const ExamEngine = {
 
         <div class="options-list">
           ${q.options.map(opt => `
-            <div class="option-item ${selectedAnswer === opt.label ? 'selected' : ''}" 
-                 onclick="ExamEngine.selectOption('${q._id}', '${opt.label}')">
+            <div class="option-item ${(Array.isArray(selectedAnswer) ? selectedAnswer.includes(opt.label) : selectedAnswer === opt.label) ? 'selected' : ''}" 
+                 onclick="ExamEngine.selectOption('${q._id}', '${opt.label}', ${q.isMSQ || false})">
               <div class="option-label">${opt.label}</div>
               <div class="option-content-wrapper">
                 <div class="option-text">${this._escapeHtml(opt.text)}</div>
@@ -343,10 +343,23 @@ const ExamEngine = {
     this.updateCounters();
   },
 
-  selectOption(qId, label) {
-    this.answers[qId] = label;
+  selectOption(qId, label, isMSQ = false) {
+    if (isMSQ) {
+      if (!Array.isArray(this.answers[qId])) this.answers[qId] = [];
+      const idx = this.answers[qId].indexOf(label);
+      if (idx > -1) {
+        this.answers[qId].splice(idx, 1);
+        if (this.answers[qId].length === 0) delete this.answers[qId];
+      } else {
+        this.answers[qId].push(label);
+      }
+    } else {
+      this.answers[qId] = label;
+    }
     this.renderQuestion();
-    ExamSocket.sendAnswer(this.currentIdx, label);
+    if (this.answers[qId]) {
+      ExamSocket.sendAnswer(this.currentIdx, this.answers[qId]);
+    }
   },
 
   clearAnswer(qId) {

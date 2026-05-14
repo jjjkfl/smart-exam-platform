@@ -432,8 +432,9 @@
                 ${a.image ? `<img src="${a.image}" class="answer-q-image" onerror="this.style.display='none'">` : ''}
                 <div class="answer-options">
                   ${(a.options || []).map(opt => {
-          const isCorrectOpt = opt.label === a.correctAnswer;
-          const isSelectedWrong = opt.label === a.selectedAnswer && !a.isCorrect;
+          const isCorrectOpt = a.correctAnswer && a.correctAnswer.includes(opt.label);
+          const isSelected = Array.isArray(a.selectedAnswer) ? a.selectedAnswer.includes(opt.label) : a.selectedAnswer === opt.label;
+          const isSelectedWrong = isSelected && !isCorrectOpt;
           let cls = '';
           if (isCorrectOpt) cls = 'is-correct';
           else if (isSelectedWrong) cls = 'is-selected-wrong';
@@ -446,7 +447,7 @@
                 </div>
                 ${status === 'wrong' || status === 'unanswered' ? `
                   <div class="your-answer-note">
-                    ${status === 'wrong' ? `Your answer: <strong style="color:#dc2626;">${a.selectedAnswer}</strong> · ` : ''}
+                    ${status === 'wrong' ? `Your answer: <strong style="color:#dc2626;">${Array.isArray(a.selectedAnswer) ? a.selectedAnswer.join(', ') : (a.selectedAnswer || 'None')}</strong> · ` : ''}
                     Correct: <strong style="color:#16a34a;">${a.correctAnswer}</strong>
                   </div>` : ''}
                 

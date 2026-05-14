@@ -214,8 +214,8 @@ const PDFUpload = {
               align-items: flex-start; 
               gap: 16px; 
               padding: 18px; 
-              background: ${opt.label === q.correctAnswer ? 'var(--success-soft)' : '#f8fafc'}; 
-              border: 1px solid ${opt.label === q.correctAnswer ? 'rgba(16, 185, 129, 0.3)' : '#f1f5f9'}; 
+              background: ${q.correctAnswer && q.correctAnswer.includes(opt.label) ? 'var(--success-soft)' : '#f8fafc'}; 
+              border: 1px solid ${q.correctAnswer && q.correctAnswer.includes(opt.label) ? 'rgba(16, 185, 129, 0.3)' : '#f1f5f9'}; 
               border-radius: 14px;
               min-height: 64px;
               transition: transform 0.2s ease;
@@ -223,8 +223,8 @@ const PDFUpload = {
               <span style="
                 width: 32px; 
                 height: 32px; 
-                background: ${opt.label === q.correctAnswer ? 'var(--success)' : '#fff'}; 
-                color: ${opt.label === q.correctAnswer ? '#fff' : '#64748b'}; 
+                background: ${q.correctAnswer && q.correctAnswer.includes(opt.label) ? 'var(--success)' : '#fff'}; 
+                color: ${q.correctAnswer && q.correctAnswer.includes(opt.label) ? '#fff' : '#64748b'}; 
                 display: flex; 
                 align-items: center; 
                 justify-content: center; 
@@ -235,7 +235,7 @@ const PDFUpload = {
                 box-shadow: 0 2px 6px rgba(0,0,0,0.06);
               ">${opt.label}</span>
               <div style="flex: 1;">
-                <div style="font-size: 15px; font-weight: 500; color: ${opt.label === q.correctAnswer ? '#065f46' : '#334155'}; line-height: 1.5; word-break: break-word;">
+                <div style="font-size: 15px; font-weight: 500; color: ${q.correctAnswer && q.correctAnswer.includes(opt.label) ? '#065f46' : '#334155'}; line-height: 1.5; word-break: break-word;">
                   ${this._escapeHtml(opt.text)}
                 </div>
                 ${opt.image ? `

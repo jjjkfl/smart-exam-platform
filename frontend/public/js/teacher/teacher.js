@@ -649,12 +649,13 @@ const TeacherDashboard = {
                 <div style="display: flex; gap: 12px; margin-top: 8px;">
                   <div style="flex: 1;">
                     <label style="font-size: 11px; font-weight: 700;">CORRECT KEY</label>
-                    <select name="q_${i}_correct" class="form-control" style="padding: 6px 12px; font-size: 13px;">
-                      <option value="A" ${q.correctAnswer === 'A' ? 'selected' : ''}>Option A</option>
-                      <option value="B" ${q.correctAnswer === 'B' ? 'selected' : ''}>Option B</option>
-                      <option value="C" ${q.correctAnswer === 'C' ? 'selected' : ''}>Option C</option>
-                      <option value="D" ${q.correctAnswer === 'D' ? 'selected' : ''}>Option D</option>
-                    </select>
+                    <div style="display: flex; gap: 8px; align-items: center; padding: 6px 0;">
+                      ${['A','B','C','D'].map(opt => `
+                        <label style="display:flex; align-items:center; gap:4px; font-size:12px; cursor:pointer;">
+                          <input type="checkbox" name="q_${i}_correct" value="${opt}" ${q.correctAnswer && q.correctAnswer.includes(opt) ? 'checked' : ''}> ${opt}
+                        </label>
+                      `).join('')}
+                    </div>
                   </div>
                   <div style="flex: 2;">
                     <label style="font-size: 11px; font-weight: 700;">EXPLANATION</label>
@@ -682,7 +683,7 @@ const TeacherDashboard = {
       questions: (bank.questions || []).map((q, i) => ({
         ...q,
         questionText: formData.get(`q_${i}_text`),
-        correctAnswer: formData.get(`q_${i}_correct`),
+        correctAnswer: formData.getAll(`q_${i}_correct`).join(','),
         explanation: formData.get(`q_${i}_explanation`)
       }))
     };

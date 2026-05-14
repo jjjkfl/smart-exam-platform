@@ -173,8 +173,21 @@ exports.getAvailableExams = async (req, res) => {
       ];
     }
 
-    const exams = await Session.find(query).select('-questions.correctAnswer');
-    res.json({ success: true, data: exams });
+    const exams = await Session.find(query).lean();
+    
+    const safeExams = exams.map(exam => {
+      if (exam.questions) {
+        exam.questions = exam.questions.map(q => {
+          const isMSQ = q.correctAnswer && q.correctAnswer.includes(',');
+          const safeQ = { ...q, isMSQ };
+          delete safeQ.correctAnswer;
+          return safeQ;
+        });
+      }
+      return exam;
+    });
+
+    res.json({ success: true, data: safeExams });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -183,9 +196,17 @@ exports.getAvailableExams = async (req, res) => {
 exports.getExamQuestions = async (req, res) => {
   try {
     const query = { _id: req.params.sessionId };
-    const exam = await Session.findOne(query).select('-questions.correctAnswer');
-
+    const exam = await Session.findOne(query).lean();
     if (!exam) return res.status(404).json({ success: false, message: 'Exam not found or access denied' });
+
+    // Inject isMSQ flag and sanitize correct answers
+    exam.questions = exam.questions.map(q => {
+      const isMSQ = q.correctAnswer && q.correctAnswer.includes(',');
+      const safeQ = { ...q, isMSQ };
+      delete safeQ.correctAnswer;
+      return safeQ;
+    });
+
     res.json({ success: true, data: exam });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -205,7 +226,16 @@ exports.submitExam = async (req, res) => {
     const answerBreakdown = session.questions.map((q) => {
       const userAns = answers.find(a => String(a.questionId) === String(q._id));
       const selectedOption = userAns ? userAns.selectedOption : null;
-      const isCorrect = selectedOption === q.correctAnswer;
+      
+      const isCorrect = (() => {
+        if (!selectedOption || !q.correctAnswer) return false;
+        const correctArr = q.correctAnswer.split(',').map(s => s.trim()).sort().join(',');
+        const selectedArr = Array.isArray(selectedOption) 
+          ? selectedOption.map(s => s.trim()).sort().join(',') 
+          : String(selectedOption || '').trim();
+        return correctArr === selectedArr;
+      })();
+      
       if (isCorrect) correct++;
 
       return {

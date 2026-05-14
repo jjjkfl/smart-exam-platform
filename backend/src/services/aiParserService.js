@@ -210,7 +210,7 @@ Return ONLY a valid JSON array (no markdown, no explanation):
       { "label": "C", "text": "Option C text", "image": "" },
       { "label": "D", "text": "Option D text", "image": "" }
     ],
-    "correctAnswer": "B",
+    "correctAnswer": "A,C", // Comma-separated if multiple answers are correct, else just "A"
     "explanation": "Brief rationale",
     "difficulty": "medium",
     "topic": "inferred topic",
@@ -267,7 +267,7 @@ TEXT:
 ${text.substring(0, 12000)}
 
 JSON format:
-[{"questionText":"...","image":"","options":[{"label":"A","text":"...","image":""},...],"correctAnswer":"B","explanation":"...","difficulty":"medium","topic":"...","marks":1}]`
+[{"questionText":"...","image":"","options":[{"label":"A","text":"...","image":""},...],"correctAnswer":"B,C","explanation":"...","difficulty":"medium","topic":"...","marks":1}]`
       }],
     });
 
@@ -590,8 +590,14 @@ exports.regexExtractFromText = (text) => {
         options.push({ label: lbl, text: optText || `Option ${lbl}` });
     }
 
-    const ansM = block.match(/(?:Answer|Ans|Correct|Key|Choice|Response)\s*[\:\-\s]*[\(\[]?([A-Da-d])[\)\]]?\b/i);
-    const correct = ansM ? ansM[1].toUpperCase() : (options.length > 0 ? options[0].label : 'A');
+    let correct = 'A';
+    const ansM = block.match(/(?:Answer|Ans|Correct|Key|Choice|Response)\s*[\:\-\s]*([A-Da-d\s\,\&]+)\b/i);
+    if (ansM) {
+      const letters = ansM[1].toUpperCase().match(/[A-D]/g);
+      if (letters && letters.length > 0) correct = [...new Set(letters)].sort().join(',');
+    } else if (options.length > 0) {
+      correct = options[0].label;
+    }
     
     // Extract explanation for PDF/Text
     const expM = block.match(/(?:Explanation|Exp|Rationale|Solution|Detail|Ans Detail|Ans Explanation)\s*[\:\-\s]*([\s\S]*?)(?=\s*(?:\d+[\.\)\:\-]\s*|Q(?:uestion)?\.?\s*\d+|$))/i);
@@ -639,7 +645,8 @@ const finalizeMCQ = (q) => {
 const isValidMCQ = (q) => {
   if (!q?.questionText || typeof q.questionText !== 'string') return false;
   if (!Array.isArray(q.options) || q.options.length !== 4) return false;
-  if (!['A', 'B', 'C', 'D'].includes(q.correctAnswer)) return false;
+  // Validate correct answer (allow comma separated like 'A,C')
+  if (!/^[A-D](,[A-D])*$/.test(q.correctAnswer)) return false;
   return ['A', 'B', 'C', 'D'].every(l => q.options.find(o => o.label === l));
 };
 
