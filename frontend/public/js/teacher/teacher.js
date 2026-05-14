@@ -49,7 +49,6 @@ const TeacherDashboard = {
       const viewMap = {
         'materials': () => this.loadMaterials(),
         'students': () => this.loadStudentsView(),
-        'timetable': () => this.loadTimetable(),
         'forum': () => this.loadForum()
       };
 
@@ -93,7 +92,6 @@ const TeacherDashboard = {
       'monitor': 'Live Monitoring',
       'analytics': 'Session Analytics',
       'analytics-all': 'Global Analytics',
-      'timetable': 'Class Timetable',
       'materials': 'Curriculum Management',
       'students': 'Student Roster',
       'forum': 'Teacher Forum'
@@ -386,6 +384,105 @@ const TeacherDashboard = {
 
       if (typeof Charts !== 'undefined') {
         Charts.renderGrades('global-grade-chart', data.gradeBreakdown);
+      }
+
+      const listContainer = document.getElementById('global-exams-list-container');
+      if (listContainer && data.sessions) {
+        const formatTime = (s) => {
+          const m = Math.floor(s / 60);
+          const sec = s % 60;
+          return `${m}m ${sec}s`;
+        };
+
+        listContainer.innerHTML = `
+          <h2 class="h2" style="margin-bottom: 32px; border-top: 1px solid rgba(0,0,0,0.1); padding-top: 32px;">Individual Exam Breakdowns</h2>
+          ${data.sessions.map((session) => {
+            const normalized = Analytics.normalizePayload({ results: session.results, sessionTitle: session.title });
+            const stats = normalized.stats;
+            const results = normalized.results;
+            const passRate = stats.total > 0 ? ((stats.passed / stats.total) * 100).toFixed(1) : '0.0';
+
+            return `
+              <div class="glass-card" style="margin-bottom: 48px; padding: 32px;">
+                <div style="margin-bottom: 24px;">
+                  <h3 class="h3">${normalized.sessionTitle}</h3>
+                  <p class="p-dim">${stats.total} student${stats.total !== 1 ? 's' : ''} submitted</p>
+                </div>
+                
+                <div class="metrics-grid" style="margin-bottom: 24px;">
+                  <div class="glass-card metric-card" style="padding: 16px;">
+                    <p class="p-dim" style="font-size:12px">Pass Rate</p>
+                    <div class="metric-value" style="font-size:20px">${passRate}%</div>
+                    <p class="p-dim" style="font-size:11px">${stats.passed || 0} of ${stats.total || 0} Passed</p>
+                  </div>
+                  <div class="glass-card metric-card" style="padding: 16px;">
+                    <p class="p-dim" style="font-size:12px">Average Score</p>
+                    <div class="metric-value" style="font-size:20px">${stats.avgPercent || 0}%</div>
+                  </div>
+                  <div class="glass-card metric-card" style="padding: 16px;">
+                    <p class="p-dim" style="font-size:12px">Highest Score</p>
+                    <div class="metric-value" style="font-size:20px; color: var(--success)">${stats.highScore || 0}%</div>
+                  </div>
+                  <div class="glass-card metric-card" style="padding: 16px;">
+                    <p class="p-dim" style="font-size:12px">Lowest Score</p>
+                    <div class="metric-value" style="font-size:20px; color: var(--danger)">${stats.lowScore || 0}%</div>
+                  </div>
+                </div>
+
+                ${results.length === 0 ? `
+                  <div style="padding: 20px; text-align: center; background: rgba(0,0,0,0.02); border-radius: 10px;">
+                    <p class="p-dim" style="font-size:13px">No student submissions yet.</p>
+                  </div>
+                ` : `
+                  <div class="table-container">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>#</th>
+                          <th>Student</th>
+                          <th>Score</th>
+                          <th>Correct</th>
+                          <th>Time</th>
+                          <th>Violations</th>
+                          <th>Grade</th>
+                          <th>Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        ${results.map((r, i) => `
+                          <tr>
+                            <td>${i + 1}</td>
+                            <td>
+                              <div style="font-weight:600">${r.studentName}</div>
+                              <div class="p-dim" style="font-size:11px">${r.studentEmail}</div>
+                            </td>
+                            <td style="font-weight:700; color:${r.isPassed ? 'var(--success)' : 'var(--danger)'}">${r.score}%</td>
+                            <td>${r.correctCount}/${r.totalQuestions}</td>
+                            <td>${formatTime(r.timeTaken)}</td>
+                            <td>
+                              ${r.violations > 0
+                                ? `<span class="status-pill status-warning" style="cursor:help" 
+                                        title="${(r.violationHistory || []).map(v => `${v.type || v.violationType || 'Violation'}: ${v.detail || ''}`).join('\n')}">
+                                     ⚠️ ${r.violations}
+                                   </span>`
+                                : '<span class="p-dim">0</span>'}
+                            </td>
+                            <td><strong>${r.grade}</strong></td>
+                            <td>
+                              <span class="status-pill ${r.isPassed ? 'status-online' : 'status-offline'}">
+                                ${r.isPassed ? 'PASSED' : 'FAILED'}
+                              </span>
+                            </td>
+                          </tr>
+                        `).join('')}
+                      </tbody>
+                    </table>
+                  </div>
+                `}
+              </div>
+            `;
+          }).join('')}
+        `;
       }
     } catch (err) {
       notifications.error('Failed to load global analytics: ' + err.message);
@@ -1243,7 +1340,6 @@ const TeacherDashboard = {
       'dashboard': 'overview',
       'materials': 'courses',
       'students': 'students',
-      'timetable': 'timetable',
       'forum': 'forum',
       'analytics-all': 'analytics',
       'analytics': 'analytics'
@@ -1252,110 +1348,6 @@ const TeacherDashboard = {
     const action = mapping[viewName] || 'overview';
     const navItem = document.querySelector(`.sidebar .nav-item[data-action="${action}"]`);
     if (navItem) navItem.classList.add('active');
-  },
-
-  // ─── Timetable Management ────────────────────────────────────────────────
-
-  async loadTimetable() {
-    const body = document.getElementById('timetable-list');
-    if (!body) return;
-    Loader.show('timetable-list', 'Syncing timetable...');
-
-    try {
-      const { data } = await api.get('/portal/teacher/timetable');
-      if (!data || data.length === 0) {
-        body.innerHTML = '<tr><td colspan="6" class="p-dim" style="text-align:center">No scheduled classes found.</td></tr>';
-        return;
-      }
-
-      body.innerHTML = data.map(entry => `
-        <tr>
-          <td><strong>${entry.day}</strong></td>
-          <td>${entry.time}</td>
-          <td style="color:var(--primary); font-weight:600;">${entry.title}</td>
-          <td><span class="badge" style="background:rgba(79, 70, 229, 0.1); color:var(--primary); font-size:10px;">${entry.targetClass}</span></td>
-          <td>
-            <button onclick="TeacherDashboard.deleteTimetableEntry('${entry._id}')" class="btn btn-outline btn-sm" style="color:var(--danger); border-color:rgba(239, 68, 68, 0.2);"><i class="fas fa-trash"></i></button>
-          </td>
-        </tr>
-      `).join('');
-    } catch (err) {
-      notifications.error('Failed to load timetable');
-    }
-  },
-
-  showAddTimetableModal() {
-    Modal.show('add-timetable', `
-      <form onsubmit="TeacherDashboard.handleCreateTimetable(event)">
-        <div class="form-group">
-          <label>Day of Week</label>
-          <select name="day" class="form-control" required>
-            <option value="Monday">Monday</option>
-            <option value="Tuesday">Tuesday</option>
-            <option value="Wednesday">Wednesday</option>
-            <option value="Thursday">Thursday</option>
-            <option value="Friday">Friday</option>
-            <option value="Saturday">Saturday</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Time (e.g., 09:00 AM - 10:30 AM)</label>
-          <input type="text" name="time" class="form-control" placeholder="09:00 AM" required>
-        </div>
-        <div class="form-group">
-          <label>Subject / Class Title</label>
-          <input type="text" name="title" class="form-control" placeholder="e.g. Surgical Rounds" required>
-        </div>
-        <div class="form-group">
-          <label>Target Class</label>
-          <select name="targetClass" class="form-control" required>
-            <option value="All">All Registered Students</option>
-            <option value="Class 1">Class 1</option>
-            <option value="Class 2">Class 2</option>
-            <option value="Class 3">Class 3</option>
-            <option value="Class 4">Class 4</option>
-            <option value="Class 5">Class 5</option>
-            <option value="Class 6">Class 6</option>
-            <option value="Class 7">Class 7</option>
-            <option value="Class 8">Class 8</option>
-            <option value="Class 9">Class 9</option>
-            <option value="Class 10">Class 10</option>
-            <option value="Class 11">Class 11</option>
-            <option value="Class 12">Class 12</option>
-            <option value="Class 13">Class 13</option>
-            <option value="Class 14">Class 14</option>
-            <option value="Class 15">Class 15</option>
-          </select>
-        </div>
-        <button type="submit" class="btn btn-primary" style="width:100%;">Add to Schedule</button>
-      </form>
-    `, { title: 'Add Class Schedule' });
-  },
-
-  async handleCreateTimetable(event) {
-    event.preventDefault();
-    const formData = new FormData(event.target);
-    const data = Object.fromEntries(formData.entries());
-
-    try {
-      await api.post('/portal/teacher/timetable', data);
-      notifications.success('Schedule added successfully');
-      Modal.close();
-      this.loadTimetable();
-    } catch (err) {
-      notifications.error('Failed to add schedule: ' + err.message);
-    }
-  },
-
-  async deleteTimetableEntry(id) {
-    if (!confirm('Are you sure you want to remove this scheduled class?')) return;
-    try {
-      await api.delete(`/portal/teacher/timetable/${id}`);
-      notifications.success('Schedule removed');
-      this.loadTimetable();
-    } catch (err) {
-      notifications.error('Failed to remove schedule');
-    }
   }
 };
 

@@ -94,9 +94,7 @@
       <div class="nav-item" data-action="students">
         <i class="fas fa-users"></i> Students
       </div>
-      <div class="nav-item" data-action="timetable">
-        <i class="fas fa-calendar-alt"></i> Timetable
-      </div>
+
       <div class="nav-item" data-action="forum">
         <i class="fas fa-comments"></i> Forum
       </div>
@@ -297,36 +295,10 @@
             <canvas id="global-grade-chart"></canvas>
           </div>
         </div>
+
+        <div id="global-exams-list-container" style="margin-top: 48px;"></div>
       </main>
-      <!-- VIEW: Timetable Management -->
-      <main id="view-timetable" class="view" style="display: none;">
-        <header class="flex-between" style="margin-bottom: 32px;">
-          <div>
-            <h2 class="h2">Class Timetable</h2>
-            <p class="p-dim">Manage your weekly teaching schedule.</p>
-          </div>
-          <button class="btn btn-primary" onclick="TeacherDashboard.showAddTimetableModal()">+ Add Schedule</button>
-        </header>
-        <div class="table-container">
-          <table>
-            <thead>
-              <tr>
-                <th>Day</th>
-                <th>Time</th>
-                <th>Subject/Class</th>
-                <th>Grade</th>
-                <th>Division</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody id="timetable-list">
-              <tr>
-                <td colspan="6" class="p-dim" style="text-align:center;">Loading timetable...</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </main>
+
 
       <!-- VIEW: Materials Management -->
       <main id="view-materials" class="view" style="display: none;">

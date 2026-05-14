@@ -5,6 +5,7 @@
 
 const ReadinessCheck = {
   checks: { camera: false, fullscreen: false, consent: false, landmarks: false },
+  inRulesView: false,
 
   async allowCamera() {
     try {
@@ -106,6 +107,42 @@ const ReadinessCheck = {
 
   async startExam() {
     document.getElementById('readiness-view').style.display = 'none';
+    const rulesView = document.getElementById('rules-view');
+    if (rulesView) {
+      rulesView.style.display = 'flex';
+      this.inRulesView = true;
+    } else {
+      this.proceedToExam();
+    }
+  },
+
+  onFullscreenExitDuringRules() {
+    if (this.inRulesView && !document.fullscreenElement) {
+      notifications.error('⚠️ Fullscreen exited. You must re-enable fullscreen permissions to proceed.');
+      this.inRulesView = false;
+      const rulesView = document.getElementById('rules-view');
+      if (rulesView) rulesView.style.display = 'none';
+      document.getElementById('readiness-view').style.display = 'flex';
+
+      // Reset fullscreen state to require re-clicking permissions
+      this.checks.fullscreen = false;
+      const checkFs = document.getElementById('check-fullscreen');
+      if (checkFs) checkFs.classList.remove('done');
+
+      const btnFs = document.getElementById('btn-enter-fullscreen');
+      if (btnFs) {
+        btnFs.innerText = '🖥️ Enter Fullscreen';
+        btnFs.disabled = false;
+      }
+      this.validate();
+    }
+  },
+
+  async proceedToExam() {
+    this.inRulesView = false;
+    const rulesView = document.getElementById('rules-view');
+    if (rulesView) rulesView.style.display = 'none';
+
     document.getElementById('main-exam-content').style.display = 'grid';
 
     // Resume original exam flow
@@ -119,6 +156,7 @@ const ReadinessCheck = {
 };
 
 window.ReadinessCheck = ReadinessCheck;
+document.addEventListener('fullscreenchange', () => ReadinessCheck.onFullscreenExitDuringRules());
 
 const ExamEngine = {
   sessionId: null,

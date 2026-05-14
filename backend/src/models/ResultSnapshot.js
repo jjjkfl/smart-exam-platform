@@ -18,7 +18,7 @@ const resultSnapshotSchema = new mongoose.Schema({
     },
     // Frozen copy of all critical fields
     studentId: { type: mongoose.Schema.Types.ObjectId, required: true },
-    courseId: { type: mongoose.Schema.Types.ObjectId, required: true },
+    courseId: { type: mongoose.Schema.Types.ObjectId, required: false },
     sessionId: { type: mongoose.Schema.Types.ObjectId, required: true },
     score: { type: Number, required: true },
     timeTaken: { type: Number, default: 0 },

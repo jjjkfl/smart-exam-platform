@@ -51,45 +51,51 @@ const runAuditPulse = async () => {
             return;
         }
 
-        // 5. STATE CHANGE DETECTED — Mark the previous record as TAMPERED
+        // 5. STATE CHANGE DETECTED — Determine if legitimate insertion or tamper
+        let isTampering = false;
         if (lastAudit) {
-            logger.warn(`🚨 AuditPulse: TAMPER DETECTED! Previous root=${lastAudit.merkleRoot} | New root=${currentRoot}`);
+            if (results.length > lastAudit.recordCount) {
+                logger.info(`AuditPulse: ${results.length - lastAudit.recordCount} new result(s) securely appended. Sealing updated root.`);
+            } else {
+                isTampering = true;
+                logger.warn(`🚨 AuditPulse: TAMPER DETECTED! Previous root=${lastAudit.merkleRoot} | New root=${currentRoot}`);
 
-            // Mark the last clean audit as compromised
-            lastAudit.status = 'tamper_detected';
-            await lastAudit.save();
+                // Mark the last clean audit as compromised
+                lastAudit.status = 'tamper_detected';
+                await lastAudit.save();
 
-            // Set the global tamper alert
-            latestTamperAlert = {
-                detectedAt: new Date(),
-                previousRoot: lastAudit.merkleRoot,
-                currentRoot,
-                recordCount: results.length
-            };
+                // Set the global tamper alert
+                latestTamperAlert = {
+                    detectedAt: new Date(),
+                    previousRoot: lastAudit.merkleRoot,
+                    currentRoot,
+                    recordCount: results.length
+                };
+            }
         }
 
-        // 6. Anchor the new (potentially tampered) state to the blockchain as evidence
+        // 6. Anchor the new state to the blockchain as evidence/continuation
         let anchorResult = { txHash: 'N/A', blockNumber: null, signature: null };
         try {
             anchorResult = await blockchainService.anchorStateRoot(currentRoot);
         } catch (bcErr) {
-            logger.warn(`AuditPulse: Blockchain anchor failed (offline?): ${bcErr.message}`);
+            logger.warn(`AuditPulse: Blockchain anchor skipped (offline/local mode): ${bcErr.message}`);
         }
 
-        // 7. Save a new tamper evidence record
+        // 7. Save a new state record
         await AuditLog.create({
             merkleRoot: currentRoot,
             txHash: anchorResult.txHash || 'N/A',
             blockNumber: anchorResult.blockNumber,
             signature: anchorResult.signature,
             recordCount: results.length,
-            status: lastAudit ? 'tamper_detected' : 'sealed'
+            status: isTampering ? 'tamper_detected' : 'sealed'
         });
 
-        if (lastAudit) {
-            logger.warn(`🔒 AuditPulse: Tamper evidence anchored to blockchain. Tx=${anchorResult.txHash}`);
+        if (isTampering) {
+            logger.warn(`🔒 AuditPulse: Tamper evidence anchored. Tx=${anchorResult.txHash}`);
         } else {
-            logger.info(`AuditPulse: Initial state sealed to blockchain. Tx=${anchorResult.txHash}`);
+            logger.info(`AuditPulse: Database state root sealed. Tx=${anchorResult.txHash}`);
         }
 
     } catch (err) {

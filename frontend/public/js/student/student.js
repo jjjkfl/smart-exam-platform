@@ -396,14 +396,12 @@ const StudentDashboard = {
     if (!container) return;
     Loader.show('live-exams-grid', 'Initializing proctored session list...');
 
-    const selectedBoard = localStorage.getItem('mcqpro_selected_board') || '';
-
     try {
-      const res = await api.get(`/portal/student/exams?board=${selectedBoard}`);
+      const res = await api.get('/portal/student/exams');
       const exams = res.data || [];
 
       if (exams.length === 0) {
-        container.innerHTML = `<div class="glass-card" style="grid-column: 1 / -1; text-align:center; padding:60px;"><i class="fas fa-check-circle" style="font-size:48px; color:var(--secondary); margin-bottom:20px;"></i><h3 class="h2">No Active Exams</h3><p class="p-dim">There are no live exams scheduled for ${selectedBoard || 'the global'} stream right now.</p></div>`;
+        container.innerHTML = '<div class="glass-card" style="grid-column: 1 / -1; text-align:center; padding:60px;"><i class="fas fa-check-circle" style="font-size:48px; color:var(--secondary); margin-bottom:20px;"></i><h3 class="h2">No Active Exams</h3><p class="p-dim">There are no live exams scheduled globally across any board stream right now.</p></div>';
         return;
       }
 
@@ -708,9 +706,7 @@ const StudentDashboard = {
   },
 
   async joinExam(sessionId) {
-    if (confirm('You are about to enter a secure examination hall. Please ensure you are in a quiet environment and ready to proceed. Enter Hall?')) {
-      window.location.href = `/exam.html?sessionId=${sessionId}`;
-    }
+    window.location.href = `/exam.html?sessionId=${sessionId}`;
   },
 
   bindDashboardNav() {

@@ -867,7 +867,7 @@
       <div class="check-list">
         <!-- Camera Check -->
         <div class="check-item" id="check-camera">
-          <div class="check-icon">1</div>
+
           <div style="flex: 1">
             <h4 style="font-size: 16px; font-weight: 600; margin-bottom: 4px;">Camera Permission</h4>
             <p class="p-dim" style="font-size: 14px;">Mandatory for proctoring and integrity assurance</p>
@@ -880,7 +880,7 @@
 
         <!-- Fullscreen Check -->
         <div class="check-item" id="check-fullscreen">
-          <div class="check-icon">2</div>
+
           <div style="flex: 1">
             <h4 style="font-size: 16px; font-weight: 600; margin-bottom: 4px;">Fullscreen Mode</h4>
             <p class="p-dim" style="font-size: 14px;">Prevent accidental exits and maintain focus</p>
@@ -892,7 +892,7 @@
 
         <!-- Consent Check -->
         <div class="check-item" id="check-consent">
-          <div class="check-icon">3</div>
+
           <div style="flex: 1">
             <h4 style="font-size: 16px; font-weight: 600; margin-bottom: 4px;">Proctoring Consent</h4>
             <p class="p-dim" style="font-size: 14px;">I agree to be monitored during this examination</p>
@@ -902,12 +902,13 @@
 
         <!-- AI Landmarks Check -->
         <div class="check-item" id="check-landmarks">
-          <div class="check-icon">4</div>
+
           <div style="flex: 1">
             <h4 style="font-size: 16px; font-weight: 600; margin-bottom: 4px;">AI Landmarks Sync</h4>
             <p class="p-dim" style="font-size: 14px;" id="landmarks-status">Waiting for AI initialization...</p>
           </div>
-          <div id="landmarks-loader" class="spinner" style="width:20px; height:20px; margin:0; border-width:2px; display:none;"></div>
+          <div id="landmarks-loader" class="spinner"
+            style="width:20px; height:20px; margin:0; border-width:2px; display:none;"></div>
           <span id="landmarks-done" style="display:none; color:var(--success); font-weight:700;">✅ Sync Active</span>
         </div>
       </div>
@@ -921,6 +922,73 @@
         By starting, you acknowledge that your session is being recorded for integrity purposes. Any violation of exam
         rules may result in disqualification.
       </p>
+    </div>
+  </div>
+
+  <!-- 📜 Rules & Regulations View -->
+  <div id="rules-view"
+    style="display: none; position: fixed; inset: 0; background: linear-gradient(135deg, #f0f2f5 0%, #e6eef5 100%); z-index: 1000; align-items: center; justify-content: center; padding: 24px; overflow-y: auto;">
+    <div class="readiness-card animate-fade-in" style="max-width: 720px; padding: 40px;">
+      <div style="margin-bottom: 24px; border-bottom: 1px solid var(--gray-200); padding-bottom: 16px;">
+        <h2 style="font-size: 22px; font-weight: 700; color: var(--gray-800);">Examination Rules &amp; Guidelines</h2>
+        <p class="p-dim" style="font-size: 14px; margin-top: 4px;">Please read the following instructions carefully
+          before proceeding.</p>
+      </div>
+
+      <div style="margin-bottom: 28px;">
+        <h3 style="font-size: 15px; font-weight: 600; color: var(--gray-800); margin-bottom: 12px;">General Regulations
+        </h3>
+        <ul
+          style="list-style-type: disc; padding-left: 20px; font-size: 14px; color: var(--gray-700); line-height: 1.7; display: flex; flex-direction: column; gap: 8px;">
+          <li>Once the examination starts, the timer cannot be paused. Automatic submission takes place upon timer
+            expiration.</li>
+          <li>Continuous AI proctoring monitors facial presence. Complete occlusion or multiple detected persons logs
+            real-time security warnings.</li>
+          <li>Exiting Fullscreen mode or switching browser tabs blurs the screen and records a proctoring violation.
+          </li>
+          <li><strong>Critical Disqualification Rule:</strong> If a tab switch happens 3 times, or the Fullscreen window
+            is exited 3 times, the system will directly finish the exam, submit attempted items automatically, and
+            display the final evaluation results.</li>
+        </ul>
+      </div>
+
+      <div style="margin-bottom: 32px;">
+        <h3 style="font-size: 15px; font-weight: 600; color: var(--gray-800); margin-bottom: 12px;">Question Status
+          Indicators</h3>
+        <div
+          style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; padding: 16px; background: #fff; border: 1px solid var(--gray-200); border-radius: var(--radius-sm);">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div
+              style="width: 20px; height: 20px; border-radius: 4px; background: var(--success); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold;">
+              ✓</div>
+            <span style="font-size: 13px; color: var(--gray-800);">Attempted</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div
+              style="width: 20px; height: 20px; border-radius: 4px; background: var(--gray-400); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold;">
+              -</div>
+            <span style="font-size: 13px; color: var(--gray-800);">Not Visited</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div
+              style="width: 20px; height: 20px; border-radius: 4px; background: var(--warning); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold;">
+              !</div>
+            <span style="font-size: 13px; color: var(--gray-800);">Skipped</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div
+              style="width: 20px; height: 20px; border-radius: 4px; background: var(--primary); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold;">
+              ★</div>
+            <span style="font-size: 13px; color: var(--gray-800);">Current Option</span>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn btn-primary"
+        style="width: 100%; padding: 14px; justify-content: center; font-size: 15px; font-weight: 600;"
+        onclick="ReadinessCheck.proceedToExam()">
+        Proceed to Exam Hall
+      </button>
     </div>
   </div>
 
@@ -967,8 +1035,10 @@
             <span class="camera-label off" id="camera-status-label">OFF</span>
           </div>
           <!-- Audio Monitor -->
-          <div id="audio-monitor" style="flex:1; margin: 0 10px; height:4px; background:rgba(255,255,255,0.1); border-radius:2px; overflow:hidden;">
-            <div id="audio-level-bar" style="height:100%; width:0%; background:#10b981; transition:width 0.1s ease;"></div>
+          <div id="audio-monitor"
+            style="flex:1; margin: 0 10px; height:4px; background:rgba(255,255,255,0.1); border-radius:2px; overflow:hidden;">
+            <div id="audio-level-bar" style="height:100%; width:0%; background:#10b981; transition:width 0.1s ease;">
+            </div>
           </div>
           <span style="font-size:10px; color:rgba(255,255,255,0.7);">v3.0</span>
         </div>
@@ -997,8 +1067,10 @@
   </div>
 
   <!-- 🏆 Result View (Clean replacement for body.innerHTML) -->
-  <div id="finish-view" style="display: none; position: fixed; inset: 0; background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); z-index: 9999; overflow-y: auto; align-items: center; justify-content: center; padding: 24px;">
-    <div id="result-container" class="animate-fade-in" style="background:#fff; border-radius:20px; box-shadow:0 20px 60px rgba(0,0,0,0.12); padding:48px 40px; max-width:520px; width:100%; text-align:center;">
+  <div id="finish-view"
+    style="display: none; position: fixed; inset: 0; background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); z-index: 9999; overflow-y: auto; align-items: center; justify-content: center; padding: 24px;">
+    <div id="result-container" class="animate-fade-in"
+      style="background:#fff; border-radius:20px; box-shadow:0 20px 60px rgba(0,0,0,0.12); padding:48px 40px; max-width:520px; width:100%; text-align:center;">
       <!-- Dynamic Content Injection -->
     </div>
   </div>
@@ -1014,8 +1086,10 @@
   <script src="/js/student/timer.js?v=20"></script>
   <!-- ULTRA-GRADE AI SECURITY ENGINE v3.0 -->
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.x/dist/tf.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/face-landmarks-detection@1.x/dist/face-landmarks-detection.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/hand-pose-detection@2.x/dist/hand-pose-detection.js"></script>
+  <script
+    src="https://cdn.jsdelivr.net/npm/@tensorflow-models/face-landmarks-detection@1.x/dist/face-landmarks-detection.js"></script>
+  <script
+    src="https://cdn.jsdelivr.net/npm/@tensorflow-models/hand-pose-detection@2.x/dist/hand-pose-detection.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.x/dist/coco-ssd.js"></script>
   <script src="/js/student/proctor.js?v=20"></script>
   <script src="/js/student/socket.js?v=20"></script>
@@ -1031,12 +1105,12 @@
 
   <!-- Failsafe Security: Blurs screen if focus is lost (prevents snipping tool/alt-tab) -->
   <script>
-    window.addEventListener('blur', () => { 
-      document.body.style.filter = 'blur(40px)'; 
+    window.addEventListener('blur', () => {
+      document.body.style.filter = 'blur(40px)';
       document.body.style.transition = 'filter 0.1s ease';
     });
-    window.addEventListener('focus', () => { 
-      document.body.style.filter = 'none'; 
+    window.addEventListener('focus', () => {
+      document.body.style.filter = 'none';
     });
     // Block PrintScreen key globally
     window.addEventListener('keyup', (e) => {

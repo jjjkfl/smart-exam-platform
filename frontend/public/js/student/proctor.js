@@ -50,6 +50,8 @@ const Proctor = {
   // Security
   tabSwitchCount: 0,
   maxTabSwitches: 3,
+  fullscreenExitCount: 0,
+  maxFullscreenExits: 3,
 
   // Intervals
   detectionInterval: null,
@@ -96,6 +98,7 @@ const Proctor = {
   _resetState() {
     this.isDestroyed = false;
     this.tabSwitchCount = 0;
+    this.fullscreenExitCount = 0;
     this.violations = [];
     this.noFaceCount = 0;
     this.lookingAwayCount = 0;
@@ -1405,10 +1408,28 @@ const Proctor = {
     document.addEventListener('fullscreenchange', () => {
       if (this.isDestroyed || !this.fullscreenRequired) return;
       if (!document.fullscreenElement) {
-        this._logViolation('fullscreen', 'Exited fullscreen');
-        this.enforceFullscreen();
+        this.fullscreenExitCount++;
+        const left = Math.max(0, this.maxFullscreenExits - this.fullscreenExitCount);
+
+        this._logViolation('fullscreen', `Exited fullscreen ${this.fullscreenExitCount}/${this.maxFullscreenExits}`);
+
+        if (typeof ExamSocket !== 'undefined' && ExamSocket.socket?.connected) {
+          ExamSocket.socket.emit('exam:violation', {
+            sessionId: this.sessionId,
+            type: 'fullscreen-exit',
+            count: this.fullscreenExitCount
+          });
+        }
+
+        this.updateSecurityBar();
+
+        if (this.fullscreenExitCount >= this.maxFullscreenExits) {
+          this._terminateExam('Maximum fullscreen exits exceeded');
+        } else {
+          this._notify('warn', `⚠️ Fullscreen exited ${this.fullscreenExitCount}/${this.maxFullscreenExits}. ${left} warning(s) left.`);
+          this.enforceFullscreen();
+        }
       }
-      this.updateSecurityBar();
     });
 
     // Copy/Paste/Cut

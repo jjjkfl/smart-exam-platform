@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const fs = require('fs').promises;
 const path = require('path');
 const crypto = require('crypto');
@@ -323,6 +324,21 @@ exports.getGeneralAnalytics = async (req, res) => {
   try {
     const courseIds = (req.user.courseIds || []).map(id => new mongoose.Types.ObjectId(id));
 
+    const sessions = await Session.find({}).sort({ startTime: -1 }).lean();
+    const allResults = await Result.find({}).populate('studentId', 'name email').lean();
+    const resultsBySession = {};
+    allResults.forEach(r => {
+      const sid = String(r.sessionId);
+      if (!resultsBySession[sid]) resultsBySession[sid] = [];
+      resultsBySession[sid].push(r);
+    });
+
+    const sessionsWithResults = sessions.map(s => ({
+      _id: s._id,
+      title: s.title,
+      results: resultsBySession[String(s._id)] || []
+    }));
+
     if (courseIds.length === 0) {
       return res.json({
         success: true,
@@ -330,7 +346,8 @@ exports.getGeneralAnalytics = async (req, res) => {
           totalSubmissions: 0,
           avgScore: 0,
           passRate: 0,
-          gradeBreakdown: { A: 0, B: 0, C: 0, D: 0, F: 0 }
+          gradeBreakdown: { A: 0, B: 0, C: 0, D: 0, F: 0 },
+          sessions: sessionsWithResults
         }
       });
     }
@@ -402,7 +419,8 @@ exports.getGeneralAnalytics = async (req, res) => {
         passRate,
         gradeBreakdown,
         topPerformers: topStudents.map(s => ({ name: s.studentId?.name, score: s.score })),
-        commonViolations: violationStats
+        commonViolations: violationStats,
+        sessions: sessionsWithResults
       }
     });
   } catch (err) {

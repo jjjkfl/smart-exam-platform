@@ -45,7 +45,7 @@ app.use(cors());
 app.use(express.json());
 
 // Static Files
-app.use(express.static(path.join(__dirname, '..', 'frontend', 'public')));
+app.use(express.static(path.join(__dirname, '..', 'frontend', 'public'), { index: false }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // API Routes
