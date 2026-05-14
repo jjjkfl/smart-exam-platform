@@ -324,36 +324,54 @@ const TeacherDashboard = {
         return;
       }
 
-      container.innerHTML = data.map(bank => `
-        <div class="mcq-bank-card animate-slide-up" onclick="TeacherDashboard.previewMCQBank('${bank._id}')">
-          <div class="mcq-bank-header">
-            <div class="mcq-bank-icon">
-              <i class="fas fa-file-medical"></i>
-            </div>
-            <div class="mcq-bank-info">
-              <h4 class="mcq-bank-title">${bank.title || 'Untitled Bank'}</h4>
-              <p class="mcq-bank-course">
-                ${bank.subject || 'General Academic'} 
-                ${bank.board ? `<span class="badge" style="margin-left:8px; font-size:10px; background:rgba(79, 70, 229, 0.1); color:var(--primary);">${bank.board}</span>` : ''}
-              </p>
-            </div>
-          </div>
-          <div class="mcq-bank-stats">
-            <div class="mcq-bank-stat">
-              <div class="mcq-bank-stat-value">${bank.questions ? bank.questions.length : 0}</div>
-              <div class="mcq-bank-stat-label">MCQs</div>
-            </div>
-            <div class="mcq-bank-stat">
-              <div class="mcq-bank-stat-value">${bank.usageCount || 0}</div>
-              <div class="mcq-bank-stat-label">Used</div>
-            </div>
-          </div>
-          <div class="mcq-bank-actions">
-            <button onclick="event.stopPropagation(); ExamManager.showCreateSession('${bank._id}')" class="btn btn-primary btn-sm">Create Exam</button>
-            <button onclick="event.stopPropagation(); TeacherDashboard.editMCQBank('${bank._id}')" class="btn btn-secondary btn-sm"><i class="fas fa-edit"></i></button>
-            <button onclick="event.stopPropagation(); TeacherDashboard.deleteMCQBank('${bank._id}')" class="btn btn-secondary btn-sm" style="color: var(--danger);"><i class="fas fa-trash"></i></button>
-          </div>
+      const groupedBanks = data.reduce((acc, bank) => {
+        const board = bank.board || 'Uncategorized';
+        if (!acc[board]) acc[board] = [];
+        acc[board].push(bank);
+        return acc;
+      }, {});
+
+      container.innerHTML = Object.keys(groupedBanks).sort().map(board => `
+        <div style="grid-column: 1/-1; margin-top: 16px; margin-bottom: 8px; border-bottom: 2px solid #f1f5f9; padding-bottom: 8px; display: flex; align-items: center; justify-content: space-between;">
+          <h3 style="font-size: 18px; font-weight: 800; color: #1e293b; display: flex; align-items: center; gap: 8px;">
+            <i class="fas fa-layer-group" style="color: var(--primary); font-size: 16px;"></i> 
+            ${board === 'All' || board === 'Uncategorized' ? 'Global / Cross-Board' : board + ' Board'}
+          </h3>
+          <span style="background: var(--primary-soft); color: var(--primary); font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 20px;">
+            ${groupedBanks[board].length} Bank${groupedBanks[board].length > 1 ? 's' : ''}
+          </span>
         </div>
+        ${groupedBanks[board].map(bank => `
+          <div class="mcq-bank-card animate-slide-up" onclick="TeacherDashboard.previewMCQBank('${bank._id}')">
+            <div class="mcq-bank-header">
+              <div class="mcq-bank-icon">
+                <i class="fas fa-file-medical"></i>
+              </div>
+              <div class="mcq-bank-info">
+                <h4 class="mcq-bank-title">${bank.title || 'Untitled Bank'}</h4>
+                <p class="mcq-bank-course">
+                  ${bank.subject || 'General Academic'} 
+                  ${bank.board ? `<span class="badge" style="margin-left:8px; font-size:10px; background:rgba(79, 70, 229, 0.1); color:var(--primary);">${bank.board}</span>` : ''}
+                </p>
+              </div>
+            </div>
+            <div class="mcq-bank-stats">
+              <div class="mcq-bank-stat">
+                <div class="mcq-bank-stat-value">${bank.questions ? bank.questions.length : 0}</div>
+                <div class="mcq-bank-stat-label">MCQs</div>
+              </div>
+              <div class="mcq-bank-stat">
+                <div class="mcq-bank-stat-value">${bank.usageCount || 0}</div>
+                <div class="mcq-bank-stat-label">Used</div>
+              </div>
+            </div>
+            <div class="mcq-bank-actions">
+              <button onclick="event.stopPropagation(); ExamManager.showCreateSession('${bank._id}')" class="btn btn-primary btn-sm">Create Exam</button>
+              <button onclick="event.stopPropagation(); TeacherDashboard.editMCQBank('${bank._id}')" class="btn btn-secondary btn-sm"><i class="fas fa-edit"></i></button>
+              <button onclick="event.stopPropagation(); TeacherDashboard.deleteMCQBank('${bank._id}')" class="btn btn-secondary btn-sm" style="color: var(--danger);"><i class="fas fa-trash"></i></button>
+            </div>
+          </div>
+        `).join('')}
       `).join('');
     } catch (err) {
       console.error(err);
