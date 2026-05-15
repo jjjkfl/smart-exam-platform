@@ -63,16 +63,16 @@ router.get('/portal/teacher/blockchain/status', rbac(['teacher']), async (req, r
   try {
     const { getGuardianStats } = require('../services/blockchain/changeStreamGuardian');
     const { getBlockchainStats } = require('../services/blockchain/blockchainService');
-    const { getMerkleRoot } = require('../services/blockchain/merkleService');
+    const { getLatestMerkleRoot } = require('../services/blockchain/auditPulse');
     
     const guardian = getGuardianStats ? getGuardianStats() : {};
     const chain = getBlockchainStats ? await getBlockchainStats() : {};
-    const root = getMerkleRoot ? await getMerkleRoot() : 'Pending Computation';
+    const root = getLatestMerkleRoot ? await getLatestMerkleRoot() : 'Pending Computation';
 
     res.json({
       success: true,
       guardian,
-      chain,
+      chain: chain.error ? { totalSealed: 0, status: 'OFFLINE' } : chain,
       merkleRoot: root
     });
   } catch (err) {

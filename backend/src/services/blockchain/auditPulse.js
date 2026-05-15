@@ -109,6 +109,15 @@ const runAuditPulse = async () => {
 const getTamperAlert = () => latestTamperAlert;
 
 /**
+ * Get the latest computed Merkle Root
+ */
+const getLatestMerkleRoot = async () => {
+    const AuditLog = require('../../models/AuditLog');
+    const lastAudit = await AuditLog.findOne().sort({ createdAt: -1 });
+    return lastAudit ? lastAudit.merkleRoot : 'Pending Computation...';
+};
+
+/**
  * Initialize the periodic pulse
  * @param {number} intervalMs - Frequency of audit (default 5 minutes)
  */
@@ -125,5 +134,6 @@ const initAuditPulse = (intervalMs = 300000) => {
 module.exports = {
     runAuditPulse,
     initAuditPulse,
-    getTamperAlert
+    getTamperAlert,
+    getLatestMerkleRoot
 };
