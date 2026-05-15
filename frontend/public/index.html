@@ -973,11 +973,14 @@
 
     function switchView(id) { StudentDashboard.switchView(id); }
 
+    // Strict Auth Guard - Run immediately before DOM is fully loaded
+    if (!auth.isAuthenticated()) {
+      window.location.replace('/login.html');
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
-      if (auth.isAuthenticated()) {
+      if (auth.checkAuth()) {
         StudentDashboard.init();
-      } else {
-        window.location.href = '/login.html';
       }
     });
   </script>

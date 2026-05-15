@@ -1116,6 +1116,16 @@
   <script src="/js/teacher/analytics.js?v=20"></script>
   <script src="/js/teacher/teacher.js?v=20"></script>
 
+  <script>
+    // Strict Auth Guard - Run immediately before DOM is fully loaded
+    if (!auth.isAuthenticated()) {
+      window.location.replace('/login.html');
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      TeacherDashboard.init();
+    });
+  </script>
 </body>
 
 </html>

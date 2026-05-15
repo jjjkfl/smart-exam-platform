@@ -51,16 +51,17 @@ const auth = {
   logout() {
     sessionStorage.removeItem('token');
     sessionStorage.removeItem('user');
-    window.location.href = '/login.html';
+    // Use replace to prevent the user from clicking "Back" to a logged-out session
+    window.location.replace('/login.html');
   },
 
   redirectByRole(role) {
     if (role === 'teacher') {
-      window.location.href = '/teacher.html';
+      window.location.replace('/teacher.html');
     } else if (role === 'admin') {
-      window.location.href = '/admin.html';
+      window.location.replace('/admin.html');
     } else {
-      window.location.href = '/index.html';
+      window.location.replace('/index.html');
     }
   },
 
