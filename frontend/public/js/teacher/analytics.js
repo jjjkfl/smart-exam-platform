@@ -71,10 +71,12 @@ const Analytics = {
     const passRate = stats.total > 0 ? ((stats.passed / stats.total) * 100).toFixed(1) : '0.0';
 
     container.innerHTML = `
-      <div style="margin-bottom: 24px;">
-        <h2 class="h2">${title || 'Session'} — Results</h2>
-        <p class="p-dim">${stats.total} student${stats.total !== 1 ? 's' : ''} submitted</p>
-      </div>
+      <header class="flex-between" style="margin-bottom: 32px;">
+        <div>
+          <h2 class="h2">${title || 'Session'} — Results</h2>
+          <p class="p-dim">${stats.total} student${stats.total !== 1 ? 's' : ''} submitted</p>
+        </div>
+      </header>
       <div class="metrics-grid">
         <div class="glass-card metric-card">
           <p class="p-dim">Pass Rate</p>
