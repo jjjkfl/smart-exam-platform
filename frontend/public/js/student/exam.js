@@ -368,12 +368,20 @@ const ExamEngine = {
     this.renderQuestion();
     if (this.answers[qId]) {
       ExamSocket.sendAnswer(this.currentIdx, this.answers[qId]);
+    } else {
+      // Send null/empty if cleared
+      ExamSocket.sendAnswer(this.currentIdx, null);
     }
+    
+    // Persist to local storage
+    localStorage.setItem(`exam_answers_${this.sessionId}`, JSON.stringify(this.answers));
   },
 
   clearAnswer(qId) {
     delete this.answers[qId];
     this.renderQuestion();
+    ExamSocket.sendAnswer(this.currentIdx, null);
+    localStorage.setItem(`exam_answers_${this.sessionId}`, JSON.stringify(this.answers));
   },
 
   /* ─── Color-Coded Progress ─────────────────────────────────────── */

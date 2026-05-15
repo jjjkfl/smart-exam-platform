@@ -75,7 +75,7 @@ const initSocket = (httpServer) => {
         examRooms.get(sessionId).students.set(userId, {
           socketId: socket.id,
           joinedAt: Date.now(),
-          answersGiven: 0,
+          answeredIndices: new Set(),
           tabSwitches: 0,
           online: true,
         });
@@ -146,12 +146,22 @@ const initSocket = (httpServer) => {
 
       const student = room.students.get(userId);
       if (student) {
-        student.answersGiven++;
+        if (!student.answeredIndices) student.answeredIndices = new Set();
+        
+        // If answerId is an empty array or null, they cleared the answer
+        const isCleared = !answerId || (Array.isArray(answerId) && answerId.length === 0);
+        
+        if (isCleared) {
+          student.answeredIndices.delete(questionIndex);
+        } else {
+          student.answeredIndices.add(questionIndex);
+        }
+
         /* Notify teacher of progress */
         socket.to(sessionId).emit('exam:studentProgress', {
           userId,
           questionIndex,
-          answersGiven: student.answersGiven,
+          answersGiven: student.answeredIndices.size,
         });
       }
     });

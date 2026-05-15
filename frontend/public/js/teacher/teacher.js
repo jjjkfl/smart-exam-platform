@@ -641,15 +641,15 @@ const TeacherDashboard = {
                     align-items: flex-start; 
                     gap: 16px; 
                     padding: 18px; 
-                    background: ${opt.label === q.correctAnswer ? 'var(--success-soft)' : '#f8fafc'}; 
-                    border: 1px solid ${opt.label === q.correctAnswer ? 'rgba(16, 185, 129, 0.3)' : '#f1f5f9'}; 
+                    background: ${(q.correctAnswer || '').split(',').map(s => s.trim()).includes(opt.label) ? 'var(--success-soft)' : '#f8fafc'}; 
+                    border: 1px solid ${(q.correctAnswer || '').split(',').map(s => s.trim()).includes(opt.label) ? 'rgba(16, 185, 129, 0.3)' : '#f1f5f9'}; 
                     border-radius: 14px;
                   ">
                     <span style="
                       width: 32px; 
                       height: 32px; 
-                      background: ${opt.label === q.correctAnswer ? 'var(--success)' : '#fff'}; 
-                      color: ${opt.label === q.correctAnswer ? '#fff' : '#64748b'}; 
+                      background: ${(q.correctAnswer || '').split(',').map(s => s.trim()).includes(opt.label) ? 'var(--success)' : '#fff'}; 
+                      color: ${(q.correctAnswer || '').split(',').map(s => s.trim()).includes(opt.label) ? '#fff' : '#64748b'}; 
                       display: flex; 
                       align-items: center; 
                       justify-content: center; 
@@ -660,7 +660,7 @@ const TeacherDashboard = {
                       box-shadow: 0 2px 6px rgba(0,0,0,0.06);
                     ">${opt.label}</span>
                     <div style="flex: 1;">
-                      <div style="font-size: 15px; font-weight: 500; color: ${opt.label === q.correctAnswer ? '#065f46' : '#334155'}; line-height: 1.5; word-break: break-word;">
+                      <div style="font-size: 15px; font-weight: 500; color: ${(q.correctAnswer || '').split(',').map(s => s.trim()).includes(opt.label) ? '#065f46' : '#334155'}; line-height: 1.5; word-break: break-word;">
                         ${opt.text}
                       </div>
                       ${opt.image ? `

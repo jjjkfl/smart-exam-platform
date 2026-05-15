@@ -483,6 +483,43 @@ exports.updateMCQBank = async (req, res) => {
   }
 };
 
+// ─── MSQ Post-Processing Repair ──────────────────────────────────────────
+// Guarantees that every uploaded question has correct MSQ flags and clean
+// explanations, regardless of parser output quality.
+const repairMSQLeakage = (questions) => {
+  return questions.map(q => {
+    let correctAnswer = q.correctAnswer || 'A';
+    let explanation = q.explanation || '';
+
+    // Pattern: explanation starts with leaked answer letters like ", B, D" or "& C"
+    const leakedMatch = explanation.match(/^[\s\,\&\/\-]+([A-D](?:[\s\,\&\/\-]+[A-D])*)\b\s*/i);
+    if (leakedMatch) {
+      const leakedLetters = leakedMatch[1].toUpperCase().match(/[A-D]/g) || [];
+      const existingLetters = correctAnswer.toUpperCase().match(/[A-D]/g) || [];
+      const combined = [...new Set([...existingLetters, ...leakedLetters])].sort();
+      correctAnswer = combined.join(',');
+      explanation = explanation.slice(leakedMatch[0].length).trim();
+    }
+
+    // Also handle format like "Answer: A, B, D" appearing inside explanation
+    const inlineAnsMatch = explanation.match(/^(?:Answer|Ans|Correct)\s*[:\-]\s*([A-D](?:[\s,&]+[A-D])*)\b\s*/i);
+    if (inlineAnsMatch) {
+      const inlineLetters = inlineAnsMatch[1].toUpperCase().match(/[A-D]/g) || [];
+      const existingLetters = correctAnswer.toUpperCase().match(/[A-D]/g) || [];
+      const combined = [...new Set([...existingLetters, ...inlineLetters])].sort();
+      correctAnswer = combined.join(',');
+      explanation = explanation.slice(inlineAnsMatch[0].length).trim();
+    }
+
+    return {
+      ...q,
+      correctAnswer,
+      explanation,
+      isMSQ: correctAnswer.includes(',')
+    };
+  });
+};
+
 exports.uploadMCQ = async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ success: false, message: 'No file uploaded (use field "pdf")' });
@@ -493,12 +530,19 @@ exports.uploadMCQ = async (req, res) => {
     const n = Math.min(500, Math.max(1, parseInt(String(numQuestions || 20), 10) || 20));
 
     // Using the unified aiParserService which handles DOCX, PDF, Images, and Regex fallbacks
-    const { questions, meta } = await aiParserSvc.extractMCQsFromDocument(
+    const { questions: rawQuestions, meta } = await aiParserSvc.extractMCQsFromDocument(
       filePath,
       subject || 'General',
       n,
       req.file.originalname
     );
+
+    // ── GUARANTEED POST-PROCESSING: Fix leaked answers & set isMSQ ──
+    const questions = repairMSQLeakage(rawQuestions);
+    const msqCount = questions.filter(q => q.isMSQ).length;
+    if (msqCount > 0) {
+      console.log(`[Upload] Post-repair: ${msqCount} MSQ(s) identified out of ${questions.length} questions.`);
+    }
 
     const doc = await MCQBank.create({
       title: title || 'MCQ Bank',
@@ -506,7 +550,7 @@ exports.uploadMCQ = async (req, res) => {
       board: board || 'All',
       questions,
       createdBy: req.user._id,
-      meta: { ...meta, originalTitle: title }
+      meta: { ...meta, originalTitle: title, msqCount }
     });
 
     // Anchor new content to blockchain
@@ -519,6 +563,7 @@ exports.uploadMCQ = async (req, res) => {
         _id: doc._id,
         title: doc.title,
         questionCount: questions.length,
+        msqCount,
         questions: doc.questions,
         meta: doc.meta
       }

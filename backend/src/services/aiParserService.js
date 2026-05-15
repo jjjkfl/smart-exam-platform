@@ -335,6 +335,8 @@ const parseAdda247Format = (blocks) => {
   for (const { text, imgSrc } of blocks) {
     if (/SECTION\s*-\s*[A-Z]/i.test(text) || /\(\d+\s*QUESTIONS\s*-\d+MINUTES\)/i.test(text)) continue;
 
+    const isNewQ = /^(?:QUESTION\s+(?:NO\.?\s*)?\d+|Q\.?\s*\d+[\.\:\)\-]|\d+[\.\)\:\-]\s)/i.test(text);
+
     if (isNewQ) {
       save();
       currentQ = { questionText: '', image: '', options: [], correctAnswer: '' };
@@ -527,7 +529,7 @@ const parseGenericFormat = (blocks) => {
     if (foundOpt) continue;
 
     // Answer line + potential inline explanation (supports A, A,B, Answer: A, C, etc.)
-    const ansM = text.match(/(?:Answer|Ans|Correct(?:\s+Key)?|Key|Choice|Response)\s*[\:\-\s]*[\(\[]?([A-D](?:[\s\,\&]+[A-D])*)[\)\]]?\b\s*[\:\-\.\s]*(.*)/i);
+    const ansM = text.match(/(?:Answer|Ans|Correct(?:\s+Key)?|Key|Choice|Response)\s*[\:\-\s]*[\(\[]?([A-D](?:[\s\,\&]+[A-D])*)\b[\)\]]?\s*[\:\-\.\s]*(.*)/i);
     if (ansM) { 
       const letters = (ansM[1] || '').toUpperCase().match(/[A-D]/g);
       currentQ.correctAnswer = letters && letters.length > 0 ? [...new Set(letters)].sort().join(',') : 'A'; 
@@ -594,17 +596,33 @@ exports.regexExtractFromText = (text) => {
     }
 
     let correct = 'A';
-    const ansM = block.match(/(?:Answer|Ans|Correct(?:\s+Key)?|Key|Choice|Response)\s*[\:\-\s]*([A-Da-d\s\,\&]+)\b/i);
+    let explanation = '';
+
+    // Improved Answer + Explanation extraction
+    // This regex looks for an Answer keyword and then captures:
+    // 1. The answer letters (A-D, spaces, commas, ampersands)
+    // 2. The remaining text (potential explanation)
+    const ansM = block.match(/(?:Answer|Ans|Correct(?:\s+Key)?|Key|Choice|Response)\s*[\:\-\s]*([A-Da-d](?:[\s\,\&]+[A-Da-d])*)\b\s*([\s\S]*)/i);
+    
     if (ansM) {
       const letters = (ansM[1] || '').toUpperCase().match(/[A-D]/g);
-      if (letters && letters.length > 0) correct = [...new Set(letters)].sort().join(',');
+      if (letters && letters.length > 0) {
+        correct = [...new Set(letters)].sort().join(',');
+      }
+      // If there's text after the letters, use it as initial explanation
+      explanation = (ansM[2] || '').trim();
     } else if (options.length > 0) {
       correct = options[0].label;
     }
     
-    // Extract explanation for PDF/Text
-    const expM = block.match(/(?:Explanation|Exp|Rationale|Solution|Detail|Ans Detail|Ans Explanation)\s*[\:\-\s]*([\s\S]*?)(?=\s*(?:\d+[\.\)\:\-]\s*|Q(?:uestion)?\.?\s*\d+|$))/i);
-    const explanation = expM ? expM[1].trim() : '';
+    // Traditional explanation keyword search (overwrites if a dedicated block exists)
+    const dedicatedExpM = block.match(/(?:Explanation|Exp|Rationale|Solution|Detail|Ans Detail|Ans Explanation)\s*[\:\-\s]*([\s\S]*?)(?=\s*(?:\d+[\.\)\:\-]\s*|Q(?:uestion)?\.?\s*\d+|$))/i);
+    if (dedicatedExpM) {
+      explanation = dedicatedExpM[1].trim();
+    }
+
+    // Final clean-up: if explanation starts with leftover answer indicators (e.g. ", D"), strip them
+    explanation = explanation.replace(/^[\s\,\&\-]+[A-D]\b/i, '').trim();
 
     const imgM = block.match(/\[IMAGE:([^\]]+)\]/) || block.match(/<img[^>]+src=["']([^"']+)["']/i);
 
@@ -630,20 +648,35 @@ exports.regexExtractFromText = (text) => {
 ══════════════════════════════════════════════════════════════════ */
 
 const finalizeMCQ = (q) => {
+  let correctAnswer = q.correctAnswer || 'A';
+  let explanation = q.explanation || '';
+
+  // SELF-HEALING: If explanation starts with leftover answer indicators (e.g. ", D"), move them to answer
+  const leakedMatch = explanation.match(/^[\s\,\&\-]+([A-D](?:[\s\,\&\-]+[A-D])*)\b/i);
+  if (leakedMatch) {
+    const leakedLetters = leakedMatch[1].toUpperCase().match(/[A-D]/g);
+    const existingLetters = correctAnswer.toUpperCase().match(/[A-D]/g) || [];
+    const combined = [...new Set([...existingLetters, ...leakedLetters])].sort();
+    correctAnswer = combined.join(',');
+    explanation = explanation.replace(leakedMatch[0], '').trim();
+    logger.info(`[Self-Heal] Fixed leaked answers: ${correctAnswer}`);
+  }
+
   const labels = ['A', 'B', 'C', 'D'];
   const finalOptions = labels.map(l => {
     const ex = q.options.find(o => o.label === l);
     const txt = ex ? (ex.text || '').trim() : '';
     return { label: l, text: txt || `Option ${l}`, image: (ex && ex.image) || '' };
   });
+
   return {
     questionText: (q.questionText && q.questionText.trim() ? q.questionText.trim() : `Question (Text Unavailable)`).substring(0, 5000),
     image: q.image || '',
     options: finalOptions,
-    correctAnswer: q.correctAnswer || 'A',
+    correctAnswer: correctAnswer,
     marks: typeof q.marks === 'number' ? q.marks : 1,
-    explanation: q.explanation || '',
-    isMSQ: (q.correctAnswer || '').includes(',')
+    explanation: explanation,
+    isMSQ: (correctAnswer || '').includes(',')
   };
 };
 
@@ -771,7 +804,7 @@ exports.extractMCQsFromDocument = async (filePath, subject = 'General', count = 
       }
 
       // Stage 2: Regex on raw DOCX text
-      const rawText = await extractWordText(filePath);
+      const rawText = await extractWordTextFn(filePath);
       const regexQs = exports.regexExtractFromText(rawText);
       logger.info(`[DOCX] Regex fallback → ${regexQs.length} questions`);
       if (regexQs.length >= 1)
@@ -886,10 +919,11 @@ exports.validateMCQs = (questions) => {
 };
 
 // Re-export legacy text helpers for backward compatibility
-exports.extractWordText = async (filePath) => {
+const extractWordTextFn = async (filePath) => {
   const result = await mammoth.extractRawText({ buffer: fs.readFileSync(filePath) });
   return result.value;
 };
+exports.extractWordText = extractWordTextFn;
 
 exports.extractPDFText = async (filePath) => {
   const data = await pdfParse(fs.readFileSync(filePath));
