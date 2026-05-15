@@ -346,15 +346,12 @@ const parseAdda247Format = (blocks) => {
     if (!currentQ) continue;
 
     // Correct answer line + potential inline explanation (supports A, A,B, Answer: A, C, etc.)
-    const ansM = text.match(/^Correct\s*:\s*([A-D](?:[\s\,\&]+[A-D])*)\b\s*[\:\-\.\s]*(.*)/i) || 
-                 text.match(/(?:Answer|Ans|Correct|Key|Choice)\s*[\:\-\s]*[\(\[]?([A-D](?:[\s\,\&]+[A-D])*)[\)\]]?\b\s*[\:\-\.\s]*(.*)/i);
+    const ansM = text.match(/(?:Answer|Ans|Correct(?:\s+Key)?|Key|Choice|Response)\s*[\:\-\s]*[\(\[]?([A-D](?:[\s\,\&]+[A-D])*)[\)\]]?\b\s*[\:\-\.\s]*(.*)/i);
     if (ansM && !currentQ.correctAnswer) {
-      const matchText = ansM[1] || ansM[2] || '';
+      const matchText = ansM[1] || '';
       const letters = matchText.toUpperCase().match(/[A-D]/g);
       currentQ.correctAnswer = letters && letters.length > 0 ? [...new Set(letters)].sort().join(',') : 'A'; 
-      const expText = ansM[1] ? ansM[2] : ansM[3]; // If regex1 matched, exp is group2. If regex2 matched, exp is group3. Wait!
-      // Better:
-      const extractedExp = text.replace(ansM[0], '').trim() || (ansM.length > 2 ? ansM[ansM.length - 1] : '');
+      const extractedExp = ansM[2] || '';
       if (extractedExp) currentQ.explanation = extractedExp.trim();
       parserState = 'in_explanation'; 
       continue;
@@ -530,9 +527,9 @@ const parseGenericFormat = (blocks) => {
     if (foundOpt) continue;
 
     // Answer line + potential inline explanation (supports A, A,B, Answer: A, C, etc.)
-    const ansM = text.match(/(?:Answer|Ans|Correct|Key|Choice)\s*[\:\-\s]*[\(\[]?([A-D](?:[\s\,\&]+[A-D])*)[\)\]]?\b\s*[\:\-\.\s]*(.*)/i);
+    const ansM = text.match(/(?:Answer|Ans|Correct(?:\s+Key)?|Key|Choice|Response)\s*[\:\-\s]*[\(\[]?([A-D](?:[\s\,\&]+[A-D])*)[\)\]]?\b\s*[\:\-\.\s]*(.*)/i);
     if (ansM) { 
-      const letters = ansM[1].toUpperCase().match(/[A-D]/g);
+      const letters = (ansM[1] || '').toUpperCase().match(/[A-D]/g);
       currentQ.correctAnswer = letters && letters.length > 0 ? [...new Set(letters)].sort().join(',') : 'A'; 
       if (ansM[2]) currentQ.explanation = ansM[2].trim();
       parserState = 'in_explanation';
@@ -597,9 +594,9 @@ exports.regexExtractFromText = (text) => {
     }
 
     let correct = 'A';
-    const ansM = block.match(/(?:Answer|Ans|Correct|Key|Choice|Response)\s*[\:\-\s]*([A-Da-d\s\,\&]+)\b/i);
+    const ansM = block.match(/(?:Answer|Ans|Correct(?:\s+Key)?|Key|Choice|Response)\s*[\:\-\s]*([A-Da-d\s\,\&]+)\b/i);
     if (ansM) {
-      const letters = ansM[1].toUpperCase().match(/[A-D]/g);
+      const letters = (ansM[1] || '').toUpperCase().match(/[A-D]/g);
       if (letters && letters.length > 0) correct = [...new Set(letters)].sort().join(',');
     } else if (options.length > 0) {
       correct = options[0].label;

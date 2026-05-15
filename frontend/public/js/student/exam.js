@@ -314,7 +314,13 @@ const ExamEngine = {
           ${q.options.map(opt => `
             <div class="option-item ${(Array.isArray(selectedAnswer) ? selectedAnswer.includes(opt.label) : selectedAnswer === opt.label) ? 'selected' : ''}" 
                  onclick="ExamEngine.selectOption('${q._id}', '${opt.label}', ${q.isMSQ || false})">
-              <div class="option-label">${opt.label}</div>
+              <div class="option-label">
+                ${q.isMSQ 
+                  ? `<input type="checkbox" ${(Array.isArray(selectedAnswer) ? selectedAnswer.includes(opt.label) : selectedAnswer === opt.label) ? 'checked' : ''} style="pointer-events:none; margin-right:6px;">`
+                  : `<input type="radio" ${selectedAnswer === opt.label ? 'checked' : ''} style="pointer-events:none; margin-right:6px;">`
+                }
+                ${opt.label}
+              </div>
               <div class="option-content-wrapper">
                 <div class="option-text">${this._escapeHtml(opt.text)}</div>
                 ${opt.image ? `
