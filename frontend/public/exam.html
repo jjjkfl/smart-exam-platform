@@ -798,6 +798,81 @@
     #btn-start-exam {
       padding: 16px;
       font-size: 16px;
+    }
+
+    /* ─── Privacy Guard: Watermark ─── */
+    .privacy-watermark {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 9998;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-around;
+      align-content: space-around;
+      opacity: 0.05;
+      user-select: none;
+      overflow: hidden;
+    }
+
+    .watermark-item {
+      transform: rotate(-30deg);
+      font-size: 18px;
+      font-weight: 800;
+      color: #000;
+      white-space: nowrap;
+      margin: 40px;
+    }
+
+    /* ─── Privacy Guard: Security Overlay ─── */
+    #security-lock-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.98);
+      backdrop-filter: blur(20px);
+      z-index: 10000;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      text-align: center;
+      padding: 40px;
+    }
+
+    #security-lock-overlay i {
+      font-size: 80px;
+      color: var(--danger);
+      margin-bottom: 24px;
+      animation: pulse-security 2s infinite;
+    }
+
+    @keyframes pulse-security {
+      0% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.1); opacity: 0.7; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    #security-lock-overlay h2 {
+      font-size: 28px;
+      font-weight: 800;
+      margin-bottom: 12px;
+    }
+
+    #security-lock-overlay p {
+      font-size: 16px;
+      color: var(--gray-400);
+      max-width: 400px;
+      margin-bottom: 32px;
+    }
+
+    .blur-active #question-area, .blur-active .proctor-sidebar {
+      filter: blur(40px);
+      pointer-events: none;
+    }
       border-radius: var(--radius-md);
       margin-top: 24px;
       transition: var(--transition);
@@ -1076,6 +1151,18 @@
     </div>
   </div>
 
+  <!-- ─── Privacy Guard Elements ─── -->
+  <div id="security-lock-overlay">
+    <i class="fas fa-user-shield"></i>
+    <h2 id="lock-title">Security Focus Active</h2>
+    <p id="lock-msg">Your exam content is protected. Please ensure your camera is ON and this window remains in full focus to continue.</p>
+    <button class="btn btn-primary" id="btn-resume-security" style="margin: 0 auto;">Resume Exam</button>
+  </div>
+
+  <div class="privacy-watermark" id="watermark-container">
+    <!-- Items generated dynamically -->
+  </div>
+
   <!-- Shared Libs -->
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
   <script src="/js/shared/api.js?v=23"></script>
@@ -1094,34 +1181,20 @@
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.x/dist/coco-ssd.js"></script>
   <script src="/js/student/proctor.js?v=23"></script>
   <script src="/js/student/socket.js?v=23"></script>
+  <script src="/js/student/privacyGuard.js?v=3.0"></script>
   <script src="/js/student/exam.js?v=3.0"></script>
 
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       if (auth.checkAuth()) {
+        const user = auth.getUser();
+        PrivacyGuard.init(user.email);
         ExamEngine.init();
       }
     });
   </script>
 
-  <!-- Failsafe Security: Blurs screen if focus is lost (prevents snipping tool/alt-tab) -->
-  <script>
-    window.addEventListener('blur', () => {
-      document.body.style.filter = 'blur(40px)';
-      document.body.style.transition = 'filter 0.1s ease';
-    });
-    window.addEventListener('focus', () => {
-      document.body.style.filter = 'none';
-    });
-    // Block PrintScreen key globally
-    window.addEventListener('keyup', (e) => {
-      if (e.key === 'PrintScreen') {
-        navigator.clipboard.writeText('[SECURITY BLOCK: Screenshots are prohibited]');
-        document.body.style.filter = 'blur(40px)';
-        setTimeout(() => { document.body.style.filter = 'none'; }, 2000);
-      }
-    });
-  </script>
+  <!-- Privacy Guard is now handled via privacyGuard.js -->
 </body>
 
 </html>

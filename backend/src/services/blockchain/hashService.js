@@ -23,7 +23,11 @@ exports.computeResultHash = (resultData) => {
     violationCount: Number(resultData.violationCount || 0),
     // Hash the answer correctness pattern — any change to answers is detected
     answersHash: resultData.answers
-      ? resultData.answers.map(a => `${a.selectedAnswer}:${a.correctAnswer}:${a.isCorrect}`).join('|')
+      ? resultData.answers.map(a => {
+          const sel = typeof a.selectedAnswer === 'object' ? JSON.stringify(a.selectedAnswer) : String(a.selectedAnswer || '');
+          const cor = typeof a.correctAnswer === 'object' ? JSON.stringify(a.correctAnswer) : String(a.correctAnswer || '');
+          return `${sel}:${cor}:${a.isCorrect}`;
+        }).join('|')
       : '',
   };
 

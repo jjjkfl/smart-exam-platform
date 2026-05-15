@@ -532,13 +532,8 @@
                 <label>City</label>
                 <input type="text" name="city" class="auth-input" placeholder="Your city">
               </div>
-              <div class="auth-group">
-                <label>Account Type</label>
-                <select name="role" class="auth-input">
-                  <option value="student">Student</option>
-                  <option value="teacher">Teacher</option>
-                </select>
-              </div>
+              <!-- Hardcoded to Student only as per requirements -->
+              <input type="hidden" name="role" value="student">
               <div class="auth-group password-group" style="grid-column: 1 / -1;">
                 <label>Password *</label>
                 <div class="input-wrapper">

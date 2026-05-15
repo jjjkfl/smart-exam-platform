@@ -271,55 +271,69 @@ exports.submitExam = async (req, res) => {
     };
 
     // Calculate SHA256 Result Hash
-    const resHash = hashService.computeResultHash(resultData);
-
-    const result = await Result.create({
-      ...resultData,
-      blockchainHash: resHash,
-      resultHash: resHash // For rapid Merkle auditing
-    });
-
-    // Anchor to Blockchain (Local Node)
+    let resHash = '0x';
     try {
-      const sealRes = await blockchain.storeResultHash(resHash, result._id.toString());
-      result.blockchainTx = sealRes.txHash;
-      await result.save();
-    } catch (bcErr) {
-      console.warn('Blockchain anchoring failed, result saved off-chain:', bcErr.message);
+      resHash = hashService.computeResultHash(resultData);
+    } catch (hErr) {
+      console.warn('[Integrity] Hashing failed for this submission:', hErr.message);
     }
 
-    // 🔒 Create immutable snapshot for self-healing protection
     try {
-      await ResultSnapshot.create({
-        resultId: result._id,
-        studentId: result.studentId,
-        courseId: result.courseId,
-        sessionId: result.sessionId,
-        score: result.score,
-        timeTaken: result.timeTaken,
-        violationCount: result.violationCount,
-        answers: result.answers,
+      const result = await Result.create({
+        ...resultData,
         blockchainHash: resHash,
+        resultHash: resHash // For rapid Merkle auditing
       });
-    } catch (snapErr) {
-      // Snapshot creation failed (e.g., duplicate key on retry) — non-blocking
-      logger.warn(`Snapshot creation skipped: ${snapErr.message}`);
-    }
 
-    res.status(201).json({
-      success: true,
-      data: {
-        resultId: result._id,
-        percentage,
-        correctCount: correct,
-        totalQuestions,
-        isPassed,
-        blockchainTx: result.blockchainTx
+      // Anchor to Blockchain (Local Node)
+      try {
+        const sealRes = await blockchain.storeResultHash(resHash, result._id.toString());
+        result.blockchainTx = sealRes.txHash;
+        await result.save();
+      } catch (bcErr) {
+        console.warn('Blockchain anchoring failed, result saved off-chain:', bcErr.message);
       }
-    });
+
+      // 🔒 Create immutable snapshot for self-healing protection
+      try {
+        await ResultSnapshot.create({
+          resultId: result._id,
+          studentId: result.studentId,
+          courseId: result.courseId,
+          sessionId: result.sessionId,
+          score: result.score,
+          timeTaken: result.timeTaken,
+          violationCount: result.violationCount,
+          answers: result.answers,
+          blockchainHash: resHash,
+        });
+      } catch (snapErr) {
+        console.warn(`Snapshot creation skipped: ${snapErr.message}`);
+      }
+
+      res.status(201).json({
+        success: true,
+        data: {
+          resultId: result._id,
+          percentage,
+          correctCount: correct,
+          totalQuestions,
+          isPassed,
+          blockchainTx: result.blockchainTx
+        }
+      });
+    } catch (dbErr) {
+      if (dbErr.code === 11000) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'You have already submitted this exam. Duplicate submissions are not allowed.' 
+        });
+      }
+      throw dbErr;
+    }
   } catch (err) {
-    console.error('Submission error:', err);
-    res.status(400).json({ success: false, message: err.message });
+    console.error('Submission fatal error:', err);
+    res.status(500).json({ success: false, message: 'Internal server error during submission' });
   }
 };
 

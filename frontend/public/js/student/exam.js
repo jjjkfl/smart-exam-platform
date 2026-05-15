@@ -147,6 +147,7 @@ const ReadinessCheck = {
 
     // Resume original exam flow
     await ExamEngine.loadExam();
+    ExamEngine.examStarted = true; // Signal PrivacyGuard to start strict monitoring
     ExamEngine.setupProctoring();
     ExamSocket.init(ExamEngine.sessionId);
 
@@ -165,6 +166,7 @@ const ExamEngine = {
   answers: {},       // { questionId: selectedOption }
   visited: new Set(), // Track visited question indices
   startTime: null,
+  examStarted: false,
 
   async init() {
     const params = new URLSearchParams(window.location.search);

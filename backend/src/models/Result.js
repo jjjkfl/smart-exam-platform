@@ -9,8 +9,8 @@ const resultSchema = new mongoose.Schema({
     questionText: String,
     image: String,
     options: [{ label: String, text: String }],
-    selectedAnswer: String,
-    correctAnswer: String,
+    selectedAnswer: mongoose.Schema.Types.Mixed,
+    correctAnswer: mongoose.Schema.Types.Mixed,
     explanation: String,
     isCorrect: Boolean
   }],
