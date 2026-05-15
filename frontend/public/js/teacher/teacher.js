@@ -234,12 +234,13 @@ const TeacherDashboard = {
 
     let filteredSessions = this.sessions || [];
     if (selectedBoard && selectedBoard !== 'All') {
-      filteredSessions = filteredSessions.filter(s => 
-        s.board === selectedBoard || 
-        s.board === 'All' || 
-        !s.board || 
-        s.board === ''
-      );
+      const targetBoard = selectedBoard.toLowerCase().trim();
+      filteredSessions = filteredSessions.filter(s => {
+        if (!s.board) return false; // Hide unassigned sessions when a specific board is selected
+        const sessionBoard = s.board.toLowerCase().trim();
+        // Support partial matches in case "State Board" is stored as "State"
+        return sessionBoard === targetBoard || sessionBoard.includes(targetBoard) || targetBoard.includes(sessionBoard);
+      });
     }
 
     if (filteredSessions.length === 0) {
