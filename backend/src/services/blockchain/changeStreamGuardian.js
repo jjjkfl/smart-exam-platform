@@ -9,6 +9,14 @@ const logger = require('../../utils/logger');
 
 let guardianInterval = null;
 
+const guardianStats = {
+    totalScans: 0,
+    tampersFound: 0,
+    tampersReverted: 0,
+    lastScanTime: null,
+    status: 'ACTIVE'
+};
+
 const runGuardianScan = async () => {
     // Lazy-require to avoid circular dependencies / model load order issues
     const Result = require('../../models/Result');
@@ -18,10 +26,14 @@ const runGuardianScan = async () => {
     try {
         const snapshots = await ResultSnapshot.find().lean();
 
-        if (snapshots.length === 0) return;
+        if (snapshots.length === 0) {
+            guardianStats.lastScanTime = new Date();
+            return;
+        }
 
         let tampersFound = 0;
         let tampersReverted = 0;
+        guardianStats.totalScans++;
 
         for (const snapshot of snapshots) {
             const result = await Result.findById(snapshot.resultId).lean();
@@ -97,8 +109,11 @@ const runGuardianScan = async () => {
         }
 
         if (tampersFound > 0) {
+            guardianStats.tampersFound += tampersFound;
+            guardianStats.tampersReverted += tampersReverted;
             logger.warn(`🔒 Guardian scan complete: ${tampersReverted}/${tampersFound} tampers reverted and alerts sent.`);
         }
+        guardianStats.lastScanTime = new Date();
 
     } catch (err) {
         logger.error(`Guardian scan failed: ${err.message}`);
@@ -118,4 +133,6 @@ const initChangeStreamGuardian = () => {
     logger.info('🛡️  ChangeStreamGuardian: Protection ACTIVE — any unauthorized score change will be reverted automatically.');
 };
 
-module.exports = { initChangeStreamGuardian };
+const getGuardianStats = () => guardianStats;
+
+module.exports = { initChangeStreamGuardian, getGuardianStats };

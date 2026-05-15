@@ -50,7 +50,8 @@ const TeacherDashboard = {
       const viewMap = {
         'materials': () => this.loadMaterials(),
         'students': () => this.loadStudentsView(),
-        'forum': () => this.loadForum()
+        'forum': () => this.loadForum(),
+        'blockchain': () => this.loadBlockchain()
       };
 
       this.highlightSidebar(view || 'dashboard');
@@ -97,7 +98,8 @@ const TeacherDashboard = {
       'analytics-all': 'Global Analytics',
       'materials': 'Curriculum Management',
       'students': 'Student Roster',
-      'forum': 'Teacher Forum'
+      'forum': 'Teacher Forum',
+      'blockchain': 'Blockchain Security Guard'
     };
     const tb = document.getElementById('topbar-title');
     if (tb) tb.textContent = titles[viewName] || 'Educator Dashboard';
@@ -1413,12 +1415,36 @@ const TeacherDashboard = {
       'students': 'students',
       'forum': 'forum',
       'analytics-all': 'analytics',
-      'analytics': 'analytics'
+      'analytics': 'analytics',
+      'blockchain': 'blockchain'
     };
 
     const action = mapping[viewName] || 'overview';
     const navItem = document.querySelector(`.sidebar .nav-item[data-action="${action}"]`);
     if (navItem) navItem.classList.add('active');
+  },
+
+  async loadBlockchain() {
+    try {
+      const { data } = await api.get('/portal/teacher/blockchain/status');
+      if (data && data.success) {
+        document.getElementById('bc-total-scans').textContent = data.guardian.totalScans || 0;
+        document.getElementById('bc-tampers-blocked').textContent = data.guardian.tampersFound || 0;
+        document.getElementById('bc-total-sealed').textContent = data.chain.totalSealed || 0;
+        document.getElementById('bc-merkle-root').textContent = data.merkleRoot || 'N/A';
+        
+        const statusEl = document.getElementById('bc-guardian-status');
+        if (data.guardian.status === 'ACTIVE') {
+           statusEl.textContent = 'ACTIVE';
+           statusEl.style.color = '#10b981';
+        } else {
+           statusEl.textContent = 'OFFLINE';
+           statusEl.style.color = '#ef4444';
+        }
+      }
+    } catch (err) {
+      notifications.error('Failed to load blockchain metrics');
+    }
   }
 };
 

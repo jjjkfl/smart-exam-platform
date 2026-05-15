@@ -101,6 +101,9 @@
       <div class="nav-item" data-action="analytics">
         <i class="fas fa-chart-bar"></i> Global Analytics
       </div>
+      <div class="nav-item" data-action="blockchain">
+        <i class="fas fa-link"></i> Blockchain Guard
+      </div>
 
       <div class="sidebar-footer">
         <div class="user-mini">
@@ -427,6 +430,45 @@
       <!-- VIEW: Forum -->
       <main id="view-forum" class="view" style="display: none;">
         <div id="teacher-forum-container"></div>
+      </main>
+
+      <!-- VIEW: Blockchain Guard -->
+      <main id="view-blockchain" class="view" style="display: none;">
+        <header class="dashboard-header" style="margin-bottom: 24px;">
+          <h2 class="h2"><i class="fas fa-link" style="color:var(--primary);"></i> Immutable Database Integrity</h2>
+          <p class="p-dim">Live metrics from the ChangeStreamGuardian and Ethereum Smart Contract.</p>
+        </header>
+
+        <div class="metrics-grid" style="margin-bottom: 2rem;">
+          <div class="metric-card" style="background: #111827; color: white; border: 1px solid #374151;">
+            <div class="metric-icon" style="background: rgba(16, 185, 129, 0.2); color: #10b981;"><i class="fas fa-shield-alt"></i></div>
+            <p class="metric-label" style="color: #9ca3af;">Guardian Status</p>
+            <div class="metric-value" id="bc-guardian-status" style="color: #10b981; font-size: 24px;">Polling</div>
+          </div>
+          <div class="metric-card" style="background: #111827; color: white; border: 1px solid #374151;">
+            <div class="metric-icon" style="background: rgba(59, 130, 246, 0.2); color: #3b82f6;"><i class="fas fa-search"></i></div>
+            <p class="metric-label" style="color: #9ca3af;">Total DB Scans</p>
+            <div class="metric-value" id="bc-total-scans" style="color: white; font-size: 24px;">0</div>
+          </div>
+          <div class="metric-card" style="background: #111827; color: white; border: 1px solid #374151;">
+            <div class="metric-icon" style="background: rgba(239, 68, 68, 0.2); color: #ef4444;"><i class="fas fa-ban"></i></div>
+            <p class="metric-label" style="color: #9ca3af;">Tampers Blocked</p>
+            <div class="metric-value" id="bc-tampers-blocked" style="color: #ef4444; font-size: 24px;">0</div>
+          </div>
+          <div class="metric-card" style="background: #111827; color: white; border: 1px solid #374151;">
+            <div class="metric-icon" style="background: rgba(139, 92, 246, 0.2); color: #8b5cf6;"><i class="fas fa-cube"></i></div>
+            <p class="metric-label" style="color: #9ca3af;">Records Sealed</p>
+            <div class="metric-value" id="bc-total-sealed" style="color: white; font-size: 24px;">0</div>
+          </div>
+        </div>
+
+        <section class="section-card" style="background: #1e293b; color: white; border: 1px solid #334155;">
+          <h3 class="section-title" style="color: white; border-bottom: 1px solid #334155; padding-bottom: 16px;"><i class="fas fa-project-diagram"></i> Global Merkle Root</h3>
+          <p style="color: #94a3b8; font-size: 14px; margin-bottom: 16px;">This is the cryptographically secure snapshot of your entire examination database. It is anchored to the Ethereum blockchain to prevent retroactive tampering.</p>
+          <div style="background: #0f172a; padding: 16px; border-radius: 8px; font-family: monospace; font-size: 16px; word-break: break-all; color: #10b981; border: 1px solid #1e293b;" id="bc-merkle-root">
+            Loading...
+          </div>
+        </section>
       </main>
     </div>
   </div>

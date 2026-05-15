@@ -53,11 +53,32 @@ router.get('/portal/teacher/mcq-banks', rbac(['teacher']), (req, res) => teacher
 router.post('/portal/teacher/mcq-banks/upload', rbac(['teacher']), upload.single('pdf'), (req, res) => teacherCtrl().uploadMCQ(req, res));
 router.put('/portal/teacher/mcq-banks/:id', rbac(['teacher']), (req, res) => teacherCtrl().updateMCQBank(req, res));
 router.delete('/portal/teacher/mcq-banks/:id', rbac(['teacher']), (req, res) => teacherCtrl().deleteMCQBank(req, res));
-
 // Marks Management (Teacher)
 router.get('/portal/teacher/marks', rbac(['teacher']), (req, res) => teacherCtrl().getMarks(req, res));
 router.post('/portal/teacher/marks', rbac(['teacher']), (req, res) => teacherCtrl().addMark(req, res));
 router.post('/portal/teacher/marks/bulk', rbac(['teacher']), (req, res) => teacherCtrl().addBulkMarks(req, res));
+
+// Blockchain Guard (Teacher)
+router.get('/portal/teacher/blockchain/status', rbac(['teacher']), async (req, res) => {
+  try {
+    const { getGuardianStats } = require('../services/blockchain/changeStreamGuardian');
+    const { getBlockchainStats } = require('../services/blockchain/blockchainService');
+    const { getMerkleRoot } = require('../services/blockchain/merkleService');
+    
+    const guardian = getGuardianStats ? getGuardianStats() : {};
+    const chain = getBlockchainStats ? await getBlockchainStats() : {};
+    const root = getMerkleRoot ? await getMerkleRoot() : 'Pending Computation';
+
+    res.json({
+      success: true,
+      guardian,
+      chain,
+      merkleRoot: root
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Failed to retrieve blockchain stats: ' + err.message });
+  }
+});
 router.delete('/portal/teacher/marks/:id', rbac(['teacher']), (req, res) => teacherCtrl().deleteMark(req, res));
 
 // Student Management (Teacher)
