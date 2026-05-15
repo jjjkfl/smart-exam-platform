@@ -22,7 +22,6 @@ const StudentDashboard = {
     this.checkBoardPreference();
 
     // Attach listeners immediately so UI is responsive even if data fails
-    this.bindDashboardNav();
     this.handleUrlView();
     this.initAnnouncements();
 
@@ -60,7 +59,7 @@ const StudentDashboard = {
 
     this.loadPriorityExams();
     this.loadLiveExams();
-    
+
     // Immediately open the live exams view for the selected board
     this.switchView('live-exams');
   },
@@ -77,9 +76,15 @@ const StudentDashboard = {
         el.classList.add('active');
       }
     });
-    
+
     const labelEl = document.getElementById('user-board-label');
     if (labelEl) labelEl.textContent = `${board || 'All'} Board Candidate`;
+
+    // Update topbar if in live-exams view
+    const tb = document.getElementById('topbar-title');
+    if (tb && document.getElementById('view-live-exams').classList.contains('active')) {
+      tb.textContent = board || 'All Boards';
+    }
   },
 
   async checkUnreadMessages() {
@@ -87,10 +92,10 @@ const StudentDashboard = {
       const res = await api.get('/portal/student/announcements');
       const messages = res.data || [];
       const totalMessages = messages.length;
-      
+
       const lastReadCount = parseInt(localStorage.getItem('mcqpro_messages_read_count') || '0', 10);
       const unreadCount = Math.max(0, totalMessages - lastReadCount);
-      
+
       const badge = document.getElementById('unread-messages-badge');
       if (badge) {
         if (unreadCount > 0) {
@@ -150,19 +155,20 @@ const StudentDashboard = {
     if (navItem) navItem.classList.add('active');
 
     // Show target view
-    const target = document.getElementById(`view-${viewId}`);
+    const elementId = viewId === 'overview' ? 'dashboard' : viewId;
+    const target = document.getElementById(`view-${elementId}`);
     if (target) {
       target.style.display = 'block';
       target.classList.add('active');
     }
 
     // Update topbar title
-    const titles = { dashboard: 'Dashboard', 'live-exams': 'Live Examinations', 'exam-results': 'My Results' };
+    const titles = { dashboard: 'Overview', overview: 'Overview', 'live-exams': 'Live Exams', 'exam-results': 'My Results' };
     const tb = document.getElementById('topbar-title');
-    if (tb) tb.textContent = titles[viewId] || 'Dashboard';
+    if (tb) tb.textContent = titles[viewId] || 'Overview';
 
     // Load data
-    if (viewId === 'dashboard') this.renderAll();
+    if (viewId === 'dashboard' || viewId === 'overview') this.renderAll();
     if (viewId === 'live-exams') this.loadLiveExams();
     if (viewId === 'exam-results') this.loadResults();
   },
@@ -276,7 +282,7 @@ const StudentDashboard = {
           </div>
         `;
       }).join('');
-      
+
       // Reset unread count
       const totalMessages = (res.data || []).length;
       localStorage.setItem('mcqpro_messages_read_count', totalMessages.toString());
@@ -410,14 +416,14 @@ const StudentDashboard = {
           <div class="exam-card-icon">
             <img src="https://img.icons8.com/color/96/trophy.png" alt="trophy" />
           </div>
-          <div class="exam-card-content">
+          <div class="exam-card-content" style="width: 100%;">
             <h3 class="exam-card-title">${e.title}</h3>
             <div class="exam-card-meta">
-              <p><strong>Stream:</strong> ${e.board && e.board !== 'All' ? e.board : 'Global (All Boards)'}</p>
-              <p><strong>Class:</strong> ${e.division || 'All Classes'}</p>
-              <p><strong>Subject:</strong> ${e.subject || 'General Assessment'}</p>
+              <div class="meta-pill"><i class="fas fa-globe"></i> ${e.board && e.board !== 'All' ? e.board : 'Global'}</div>
+              <div class="meta-pill"><i class="fas fa-users"></i> ${e.division || 'All Classes'}</div>
+              <div class="meta-pill"><i class="fas fa-book-open"></i> ${e.subject || 'General'}</div>
             </div>
-            <button onclick="StudentDashboard.joinExam('${e._id}')" class="btn btn-primary" style="padding: 10px 24px; border-radius: 6px;">Take Test</button>
+            <button onclick="StudentDashboard.joinExam('${e._id}')" class="btn btn-primary">Take Test</button>
           </div>
         </div>
       `).join('');
@@ -448,14 +454,14 @@ const StudentDashboard = {
           <div class="exam-card-icon">
             <img src="https://img.icons8.com/color/96/trophy.png" alt="trophy" />
           </div>
-          <div class="exam-card-content">
+          <div class="exam-card-content" style="width: 100%;">
             <h3 class="exam-card-title">${e.title}</h3>
             <div class="exam-card-meta">
-              <p><strong>Stream:</strong> ${e.board && e.board !== 'All' ? e.board : 'Global (All Boards)'}</p>
-              <p><strong>Class:</strong> ${e.division || 'All Classes'}</p>
-              <p><strong>Subject:</strong> ${e.subject || 'General Assessment'}</p>
+              <div class="meta-pill"><i class="fas fa-globe"></i> ${e.board && e.board !== 'All' ? e.board : 'Global'}</div>
+              <div class="meta-pill"><i class="fas fa-users"></i> ${e.division || 'All Classes'}</div>
+              <div class="meta-pill"><i class="fas fa-book-open"></i> ${e.subject || 'General'}</div>
             </div>
-            <button onclick="StudentDashboard.joinExam('${e._id}')" class="btn btn-primary" style="padding: 10px 24px; border-radius: 6px;">Take Test</button>
+            <button onclick="StudentDashboard.joinExam('${e._id}')" class="btn btn-primary">Take Test</button>
           </div>
         </div>
       `).join('');
@@ -467,7 +473,12 @@ const StudentDashboard = {
   async loadResults() {
     const container = document.getElementById('results-detailed-list');
     if (!container) return;
-    Loader.show('results-detailed-list', 'Calculating academic Standing...');
+
+    // Restore the global page-header if it was hidden by detailed view
+    const globalHeader = document.querySelector('#view-exam-results .page-header');
+    if (globalHeader) globalHeader.style.display = 'block';
+
+    Loader.show('results-detailed-list', 'Synchronizing transcripts...');
 
     try {
       const res = await api.get('/portal/student/results');
@@ -478,24 +489,185 @@ const StudentDashboard = {
         return;
       }
 
-      container.innerHTML = results.map(r => `
-        <div class="exam-card">
-          <div class="stat-icon purple" style="margin-bottom: 0;">
-            <i class="fas fa-clipboard-check"></i>
+      container.innerHTML = results.map(r => {
+        const isPass = r.score >= 50;
+        const statusClass = isPass ? 'pass' : 'fail';
+        return `
+          <div class="result-card-v2 animate-slide-up">
+            <div class="result-status-bar ${statusClass}"></div>
+            <div class="result-card-header">
+              <div class="result-card-icon"><i class="fas fa-clipboard-check"></i></div>
+              <div class="result-score-pill ${statusClass}">${r.score}%</div>
+            </div>
+            <div class="result-card-body">
+              <h4>${r.sessionId ? r.sessionId.title : 'Final Assessment'}</h4>
+              <p>${r.sessionId?.subject || 'Academic Module'}</p>
+            </div>
+            <div class="result-card-footer">
+              <span class="result-date"><i class="far fa-calendar-alt"></i> ${new Date(r.createdAt).toLocaleDateString()}</span>
+              <button onclick="StudentDashboard.showDetailedResult('${r._id}')" class="btn-report" style="border:none; cursor:pointer; background:none;">Review <i class="fas fa-chevron-right"></i></button>
+            </div>
           </div>
-          <div class="exam-info">
-            <div class="exam-title">${r.sessionId ? r.sessionId.title : 'Examination Result'}</div>
-            <div class="exam-meta">${new Date(r.createdAt).toLocaleDateString()} • Secured</div>
-          </div>
-          <div class="exam-score">
-            <div class="exam-score-value" style="color: ${r.score >= 50 ? 'var(--success)' : 'var(--danger)'}">${r.score}%</div>
-            <div class="exam-score-label">Graded</div>
-          </div>
-          <a href="/result.html?resultId=${r._id}" class="btn btn-secondary btn-sm">Report</a>
-        </div>
-      `).join('');
-    } catch (err) { notifications.error('Failed to load results'); }
+        `;
+      }).join('');
+    } catch (err) {
+      notifications.error('Failed to load results');
+    }
   },
+
+  async showDetailedResult(resultId) {
+    const content = document.getElementById('results-detailed-list');
+    if (!content) return;
+
+    // Hide the global page-header
+    const globalHeader = document.querySelector('#view-exam-results .page-header');
+    if (globalHeader) globalHeader.style.display = 'none';
+
+    content.innerHTML = '<div style="text-align:center; padding:100px 20px;"><div class="spinner"></div><p style="font-weight: 600;">Generating comprehensive analysis...</p></div>';
+
+    try {
+      const res = await api.get(`/portal/student/results/${resultId}`);
+      if (!res.success) throw new Error(res.message);
+      const data = res.data;
+
+      const answers = data.answers || [];
+      const correctCount = answers.filter(a => a.isCorrect).length;
+      const wrongCount = answers.filter(a => a.selectedAnswer && !a.isCorrect).length;
+      const skippedCount = answers.filter(a => !a.selectedAnswer).length;
+      const totalQuestions = answers.length;
+      const attemptedCount = answers.filter(a => a.selectedAnswer).length;
+
+      const percentage = data.percentage || 0;
+
+      content.innerHTML = `
+        <div class="animate-slide-up" style="width: 100%;">
+          <!-- HEADER -->
+          <div style="margin-bottom: 2.5rem;">
+            <a href="javascript:void(0)" onclick="StudentDashboard.loadResults()" style="color: #3b82f6; font-weight: 700; font-size: 0.9rem; text-decoration: none; display: flex; align-items: center; gap: 8px; margin-bottom: 1.5rem;">
+               <i class="fas fa-arrow-left"></i> Back to My Results
+            </a>
+            <h1 style="font-size: 2.6rem; font-weight: 800; color: #1e293b; margin-bottom: 4px;">${data.sessionId?.title || 'Examination Result'}</h1>
+            <p style="color: #64748b; font-weight: 600; font-size: 1.1rem;">${data.sessionId?.subject || 'Academic Module'}</p>
+          </div>
+
+          <!-- TOP STATS GRID -->
+          <div class="result-hero-grid">
+            <div class="mini-stat-card">
+              <div class="stat-icon-box" style="background: rgba(59, 130, 246, 0.1); color: #3b82f6;"><i class="fas fa-file-alt"></i></div>
+              <div>
+                <p class="stat-label">Marks Obtained</p>
+                <h4 class="stat-value"><span style="color:#3b82f6;">${Math.round(data.score || 0)}</span> / <span style="color:#1e293b;">${totalQuestions}</span></h4>
+              </div>
+            </div>
+
+            <div class="mini-stat-card">
+              <div class="stat-icon-box" style="background: rgba(16, 185, 129, 0.1); color: #10b981;"><i class="fas fa-chart-pie"></i></div>
+              <div>
+                <p class="stat-label">Percentage</p>
+                <h4 class="stat-value" style="color: #10b981;">${percentage}%</h4>
+                <div style="margin-top:0.75rem;"><span style="background: rgba(16, 185, 129, 0.1); color: #10b981; padding: 4px 12px; border-radius: 8px; font-size: 0.75rem; font-weight: 700;">Passed</span></div>
+              </div>
+            </div>
+
+            <div class="mini-stat-card">
+              <div class="stat-icon-box" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b;"><i class="fas fa-clipboard-list"></i></div>
+              <div>
+                <p class="stat-label">Questions Attempted</p>
+                <h4 class="stat-value"><span style="color:#1e293b;">${attemptedCount}</span> / <span style="color:#1e293b;">${totalQuestions}</span></h4>
+              </div>
+            </div>
+
+            <!-- Performance Overview Card -->
+            <div class="perf-overview-card">
+              <p style="font-size: 1rem; font-weight: 800; color: #1e293b;">Performance Overview</p>
+              <div class="perf-grid">
+                <div style="width: 160px; height: 160px; position: relative;">
+                  <canvas id="matchPerfChart"></canvas>
+                  <div class="chart-center-text">
+                    <p style="font-size: 0.75rem; font-weight: 700; color: #64748b; line-height: 1.2;">Total<br><span style="font-size: 1.4rem; color: #1e293b;">${totalQuestions}</span><br>Questions</p>
+                  </div>
+                </div>
+                <div class="legend-list">
+                  <div class="legend-item">
+                    <span><span class="legend-dot" style="background: #10b981;"></span> Correct</span>
+                    <span>${correctCount} (${Math.round(correctCount/totalQuestions*100)}%)</span>
+                  </div>
+                  <div class="legend-item">
+                    <span><span class="legend-dot" style="background: #ef4444;"></span> Wrong</span>
+                    <span>${wrongCount} (${Math.round(wrongCount/totalQuestions*100)}%)</span>
+                  </div>
+                  <div class="legend-item">
+                    <span><span class="legend-dot" style="background: #f59e0b;"></span> Skipped</span>
+                    <span>${skippedCount} (${Math.round(skippedCount/totalQuestions*100)}%)</span>
+                  </div>
+                  <div class="legend-item">
+                    <span><span class="legend-dot" style="background: #cbd5e1;"></span> Not Visited</span>
+                    <span>0 (0%)</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- REVIEW SECTION -->
+          <div class="review-main-card">
+            <h3 style="font-size: 1.25rem; font-weight: 800; color: #1e293b; margin-bottom: 2.5rem;">Review of the Exam (All Correct Answers)</h3>
+            <div class="review-list">
+              ${answers.map((a, i) => {
+                const correctAnswer = a.correctAnswer ? (Array.isArray(a.correctAnswer) ? a.correctAnswer : [a.correctAnswer]) : [];
+                return `
+                  <div class="review-q-item">
+                    <div class="q-row">
+                      <div class="q-num-circle">${i + 1}</div>
+                      <div class="q-text-bold">${this.esc(a.questionText || '')}</div>
+                    </div>
+                    <div class="opt-grid-match">
+                      ${(a.options || []).map(opt => {
+                        const isCorrect = correctAnswer.includes(opt.label);
+                        return `
+                          <div class="opt-box-match ${isCorrect ? 'correct' : ''}">
+                             ${opt.label}. ${this.esc(opt.text)}
+                             ${isCorrect ? '<i class="fas fa-check" style="font-size: 0.75rem; margin-left: auto;"></i>' : ''}
+                          </div>`;
+                      }).join('')}
+                    </div>
+                    <div class="correct-ans-footer">
+                       Correct Answer: ${correctAnswer.join(', ')}. ${(a.options?.find(o => o.label === correctAnswer[0])?.text || '')}
+                    </div>
+                  </div>`;
+              }).join('')}
+            </div>
+          </div>
+        </div>`;
+
+      const ctx = document.getElementById('matchPerfChart').getContext('2d');
+      new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Correct', 'Wrong', 'Skipped', 'Not Visited'],
+          datasets: [{
+            data: [correctCount, wrongCount, skippedCount, 0],
+            backgroundColor: ['#10b981', '#ef4444', '#f59e0b', '#cbd5e1'],
+            borderWidth: 0,
+            hoverOffset: 10
+          }]
+        },
+        options: {
+          cutout: '75%',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false }, tooltip: { enabled: true } }
+        }
+      });
+
+    } catch (err) {
+      notifications.error('Failed to load result analysis');
+      content.innerHTML = `<div class="empty-state"><h3>Analysis Failed</h3><p>${err.message}</p></div>`;
+    }
+  },
+
+
+  esc(t) { if (!t) return ''; const d = document.createElement('div'); d.textContent = t; return d.innerHTML; },
 
   async loadInternalMarks() {
     const container = document.getElementById('student-marks-list');
