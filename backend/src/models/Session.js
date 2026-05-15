@@ -15,6 +15,7 @@ const sessionSchema = new mongoose.Schema({
     }],
     correctAnswer: String,
     explanation: String,
+    isMSQ: { type: Boolean, default: false },
     marks: { type: Number, default: 1 },
     image: String
   }],
