@@ -620,6 +620,7 @@ exports.regexExtractFromText = (text) => {
         correctAnswer: correct,
         explanation: explanation,
         marks: 1,
+        isMSQ: (correct || '').includes(',')
       });
     }
   }
@@ -645,6 +646,7 @@ const finalizeMCQ = (q) => {
     correctAnswer: q.correctAnswer || 'A',
     marks: typeof q.marks === 'number' ? q.marks : 1,
     explanation: q.explanation || '',
+    isMSQ: (q.correctAnswer || '').includes(',')
   };
 };
 

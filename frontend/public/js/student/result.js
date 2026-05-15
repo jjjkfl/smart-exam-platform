@@ -83,7 +83,45 @@ const ResultDetail = {
           </div>
         ` : ''}
 
-        <div style="margin-top: 48px;">
+        <div style="margin-top: 48px; text-align: left;">
+          <h3 style="font-size: 20px; font-weight: 600; margin-bottom: 24px;">Question Breakdown</h3>
+          <div class="result-breakdown" style="display: flex; flex-direction: column; gap: 24px;">
+            ${(result.answers || []).map((ans, idx) => `
+              <div class="glass-card" style="padding: 24px; border-left: 4px solid ${ans.isCorrect ? 'var(--success)' : 'var(--danger)'};">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+                  <span style="font-weight: 600;">Question ${idx + 1}</span>
+                  <span style="color: ${ans.isCorrect ? 'var(--success)' : 'var(--danger)'}; font-weight: 600;">
+                    ${ans.isCorrect ? '+1 Mark' : '0 Marks'}
+                  </span>
+                </div>
+                <div style="font-size: 16px; margin-bottom: 16px; color: var(--text);">
+                  ${ans.questionText || 'See Image'}
+                </div>
+                ${ans.image ? `<img src="${window.SERVER_URL}${ans.image}" style="max-width: 100%; max-height: 200px; border-radius: 8px; margin-bottom: 16px;" />` : ''}
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; font-size: 14px;">
+                  <div style="background: rgba(239, 68, 68, 0.05); padding: 12px; border-radius: 8px; border: 1px solid rgba(239, 68, 68, 0.1);">
+                    <div style="color: var(--danger); font-size: 12px; font-weight: 600; margin-bottom: 4px;">YOUR ANSWER</div>
+                    <div>${ans.selectedAnswer ? (Array.isArray(ans.selectedAnswer) ? ans.selectedAnswer.join(', ') : ans.selectedAnswer) : 'Not Answered'}</div>
+                  </div>
+                  <div style="background: rgba(16, 185, 129, 0.05); padding: 12px; border-radius: 8px; border: 1px solid rgba(16, 185, 129, 0.1);">
+                    <div style="color: var(--success); font-size: 12px; font-weight: 600; margin-bottom: 4px;">CORRECT ANSWER</div>
+                    <div>${ans.correctAnswer || 'N/A'}</div>
+                  </div>
+                </div>
+
+                ${ans.explanation ? `
+                  <div style="background: var(--bg); padding: 16px; border-radius: 8px; font-size: 14px;">
+                    <div style="font-weight: 600; margin-bottom: 8px; color: var(--primary);">Explanation</div>
+                    <div style="color: var(--text-dim); line-height: 1.5;">${ans.explanation}</div>
+                  </div>
+                ` : ''}
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <div style="margin-top: 48px; text-align: center;">
           <a href="/index.html" class="btn btn-outline">Back to Dashboard</a>
           ${result.isPassed ? `<button onclick="Certificate.generate('${this.resultId}')" class="btn btn-primary" style="margin-left: 12px;">Download Certificate</button>` : ''}
         </div>

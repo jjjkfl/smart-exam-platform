@@ -15,7 +15,8 @@ const questionSchema = new mongoose.Schema({
   }],
   correctAnswer: { type: String, required: true },
   explanation: { type: String },
-  marks: { type: Number, default: 1 }
+  marks: { type: Number, default: 1 },
+  isMSQ: { type: Boolean, default: false }
 });
 
 const mcqBankSchema = new mongoose.Schema({

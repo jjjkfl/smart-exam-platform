@@ -292,6 +292,7 @@ const ExamEngine = {
           <p class="p-dim" style="font-size: 13px;">Question ${this.currentIdx + 1} of ${this.questions.length}</p>
           <div class="exam-q-badges">
             ${q.marks ? `<span class="q-marks-badge">${q.marks} Mark${q.marks > 1 ? 's' : ''}</span>` : ''}
+            ${q.isMSQ ? `<span class="q-marks-badge" style="background:#ede9fe; color:#7c3aed; border-color:#ddd6fe;">Multiple Select</span>` : ''}
           </div>
         </div>
 
