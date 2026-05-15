@@ -178,7 +178,7 @@ const ExamEngine = {
 
     // 1. Fetch exam configuration early to set up readiness requirements
     try {
-      const result = await api.get(`/portal/student/exams/${this.sessionId}`);
+      const result = await api.get(`/portal/student/exams/${this.sessionId}?_t=${Date.now()}`);
       if (!result.success) throw new Error(result.message);
       this.examData = result.data;
     } catch (err) {
@@ -352,7 +352,9 @@ const ExamEngine = {
 
   selectOption(qId, label, isMSQ = false) {
     if (isMSQ) {
-      if (!Array.isArray(this.answers[qId])) this.answers[qId] = [];
+      if (!Array.isArray(this.answers[qId])) {
+        this.answers[qId] = this.answers[qId] ? [this.answers[qId]] : [];
+      }
       const idx = this.answers[qId].indexOf(label);
       if (idx > -1) {
         this.answers[qId].splice(idx, 1);

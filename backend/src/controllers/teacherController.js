@@ -24,6 +24,7 @@ const mapBankQuestionsToSession = (questions) =>
     })),
     correctAnswer: q.correctAnswer,
     explanation: q.explanation || '',
+    isMSQ: q.isMSQ || false,
     marks: q.marks != null ? q.marks : 1,
     image: q.image || ''
   }));
