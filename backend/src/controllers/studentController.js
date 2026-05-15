@@ -275,7 +275,8 @@ exports.submitExam = async (req, res) => {
 
     const result = await Result.create({
       ...resultData,
-      blockchainHash: resHash
+      blockchainHash: resHash,
+      resultHash: resHash // For rapid Merkle auditing
     });
 
     // Anchor to Blockchain (Local Node)

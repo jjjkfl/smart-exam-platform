@@ -1,12 +1,12 @@
 const mongoose = require('mongoose');
 
 const sessionSchema = new mongoose.Schema({
-  courseId: { type: mongoose.Schema.Types.ObjectId, ref: 'Course' },
-  division: { type: String },
+  courseId: { type: mongoose.Schema.Types.ObjectId, ref: 'Course', index: true },
+  division: { type: String, index: true },
   title: { type: String, required: true },
   /** Carried from MCQ bank (or set manually) for per-subject reporting */
-  subject: { type: String, default: '' },
-  status: { type: String, enum: ['pending', 'active', 'completed'], default: 'pending' },
+  subject: { type: String, default: '', index: true },
+  status: { type: String, enum: ['pending', 'active', 'completed'], default: 'pending', index: true },
   questions: [{
     questionText: String,
     options: [{

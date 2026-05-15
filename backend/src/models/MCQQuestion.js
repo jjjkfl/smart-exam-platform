@@ -13,9 +13,9 @@ const optionSchema = new mongoose.Schema({
 });
 
 const mcqQuestionSchema = new mongoose.Schema({
-  chapter_id: { type: mongoose.Schema.Types.ObjectId, ref: 'MCQChapter', required: true },
-  school_id: { type: mongoose.Schema.Types.ObjectId, ref: 'School', required: true },
-  subject_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Subject', required: true },
+  chapter_id: { type: mongoose.Schema.Types.ObjectId, ref: 'MCQChapter', required: true, index: true },
+  school_id: { type: mongoose.Schema.Types.ObjectId, ref: 'School', required: true, index: true },
+  subject_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Subject', required: true, index: true },
   question_text: { type: String, required: true },
   question_image: { type: String }, // URL
   difficulty: { type: String, enum: ['easy', 'medium', 'hard'], default: 'medium' },

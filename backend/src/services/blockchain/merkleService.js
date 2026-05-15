@@ -31,8 +31,10 @@ exports.createTree = (leaves) => {
         const nextLevel = [];
         for (let i = 0; i < currentLevel.length; i += 2) {
             const left = currentLevel[i];
-            const right = currentLevel[i + 1] || left; // Duplicate last node if odd
-            nextLevel.push(sha256(left + right));
+            const right = currentLevel[i + 1] || left; 
+            // Deterministic order: smaller hash first
+            const combined = left < right ? left + right : right + left;
+            nextLevel.push(sha256(combined));
         }
         currentLevel = nextLevel;
         levels.push(currentLevel);

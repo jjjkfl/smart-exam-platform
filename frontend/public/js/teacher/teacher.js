@@ -436,24 +436,28 @@ const TeacherDashboard = {
 
       const container = document.getElementById('global-analytics-stats');
       container.innerHTML = `
-        <div class="metrics-grid">
-          <div class="glass-card">
-            <p class="p-dim">Total Submissions</p>
-            <div class="metric-value">${data.totalSubmissions}</div>
-          </div>
-          <div class="glass-card">
-            <p class="p-dim">Average Score</p>
-            <div class="metric-value">${data.avgScore}%</div>
-          </div>
-          <div class="glass-card">
-            <p class="p-dim">Overall Pass Rate</p>
-            <div class="metric-value" style="color: var(--primary)">${data.passRate}%</div>
-          </div>
+        <div class="glass-card metric-card" style="color: var(--primary-indigo); flex: 1;">
+          <i class="fas fa-users" style="font-size: 20px; margin-bottom: 12px; opacity: 0.8;"></i>
+          <span class="metric-label">Total Submissions</span>
+          <div class="metric-value">${data.totalSubmissions}</div>
+          <p style="font-size: 11px; color: var(--text-muted); font-weight: 500;">Across all active sessions</p>
+        </div>
+        <div class="glass-card metric-card" style="color: var(--accent-cyan); flex: 1;">
+          <i class="fas fa-chart-line" style="font-size: 20px; margin-bottom: 12px; opacity: 0.8;"></i>
+          <span class="metric-label">Average Score</span>
+          <div class="metric-value">${data.avgScore}%</div>
+          <p style="font-size: 11px; color: var(--text-muted); font-weight: 500;">Global academic mean</p>
+        </div>
+        <div class="glass-card metric-card" style="color: var(--success); flex: 1;">
+          <i class="fas fa-award" style="font-size: 20px; margin-bottom: 12px; opacity: 0.8;"></i>
+          <span class="metric-label">Overall Pass Rate</span>
+          <div class="metric-value" style="color: var(--success)">${data.passRate}%</div>
+          <p style="font-size: 11px; color: var(--text-muted); font-weight: 500;">Students meeting threshold</p>
         </div>
       `;
 
       if (typeof Charts !== 'undefined') {
-        Charts.renderGrades('global-grade-chart', data.gradeBreakdown);
+        Charts.renderGrades('global-grade-chart', data.gradeBreakdown, true);
       }
 
       const listContainer = document.getElementById('global-exams-list-container');
@@ -465,7 +469,10 @@ const TeacherDashboard = {
         };
 
         listContainer.innerHTML = `
-          <h2 class="h2" style="margin-bottom: 32px; border-top: 1px solid rgba(0,0,0,0.1); padding-top: 32px;">Individual Exam Breakdowns</h2>
+          <div style="margin-top: 64px; margin-bottom: 40px; border-top: 1px solid #e2e8f0; padding-top: 48px;">
+            <h2 class="h2" style="font-size: 1.75rem; color: #1e293b;">Detailed Session Reports</h2>
+            <p class="p-dim" style="font-size: 14px;">In-depth performance analysis for each examination session.</p>
+          </div>
           ${data.sessions.map((session) => {
             const normalized = Analytics.normalizePayload({ results: session.results, sessionTitle: session.title });
             const stats = normalized.stats;
@@ -473,29 +480,52 @@ const TeacherDashboard = {
             const passRate = stats.total > 0 ? ((stats.passed / stats.total) * 100).toFixed(1) : '0.0';
 
             return `
-              <div class="glass-card" style="margin-bottom: 48px; padding: 32px;">
-                <div style="margin-bottom: 24px;">
-                  <h3 class="h3">${normalized.sessionTitle}</h3>
-                  <p class="p-dim">${stats.total} student${stats.total !== 1 ? 's' : ''} submitted</p>
+              <div class="glass-card" style="margin-bottom: 48px; padding: 40px;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px;">
+                  <div>
+                    <h3 class="h3" style="font-size: 1.5rem; margin-bottom: 8px; color: #1e293b;">${normalized.sessionTitle}</h3>
+                    <div style="display: flex; gap: 16px; align-items: center;">
+                      <span class="status-pill status-success" style="padding: 4px 12px; font-size: 11px;">Completed</span>
+                      <p class="p-dim" style="font-size: 13px; font-weight: 500;">
+                        <i class="far fa-user-circle"></i> ${stats.total} Total Submissions
+                      </p>
+                    </div>
+                  </div>
+                  <button class="btn btn-outline" style="font-size: 12px; padding: 8px 16px;" onclick="TeacherDashboard.exportToExcel('${session._id}')">
+                    <i class="fas fa-file-export"></i> Export Report
+                  </button>
                 </div>
                 
-                <div class="metrics-grid" style="margin-bottom: 24px;">
-                  <div class="glass-card metric-card" style="padding: 16px;">
-                    <p class="p-dim" style="font-size:12px">Pass Rate</p>
-                    <div class="metric-value" style="font-size:20px">${passRate}%</div>
-                    <p class="p-dim" style="font-size:11px">${stats.passed || 0} of ${stats.total || 0} Passed</p>
+                <div style="display: grid; grid-template-columns: 240px 1fr; gap: 32px; margin-bottom: 40px; align-items: start;">
+                  <!-- Left: Session Metrics (Vertical) -->
+                  <div style="display: flex; flex-direction: column; gap: 12px;">
+                    <div class="glass-card metric-card" style="padding: 16px; border: 1px solid rgba(16,185,129,0.1); background: rgba(16,185,129,0.02); flex: 1;">
+                      <p class="p-dim" style="font-size:10px; font-weight:700; text-transform:uppercase; margin-bottom: 4px;">Pass Rate</p>
+                      <div class="metric-value" style="font-size:22px; color: #10b981; margin:0;">${passRate}%</div>
+                    </div>
+                    <div class="glass-card metric-card" style="padding: 16px; border: 1px solid rgba(59,130,246,0.1); background: rgba(59,130,246,0.02); flex: 1;">
+                      <p class="p-dim" style="font-size:10px; font-weight:700; text-transform:uppercase; margin-bottom: 4px;">Avg Score</p>
+                      <div class="metric-value" style="font-size:22px; color: #3b82f6; margin:0;">${stats.avgPercent || 0}%</div>
+                    </div>
+                    <div class="glass-card metric-card" style="padding: 16px; border: 1px solid rgba(16,185,129,0.1); background: rgba(16,185,129,0.02); flex: 1;">
+                      <p class="p-dim" style="font-size:10px; font-weight:700; text-transform:uppercase; margin-bottom: 4px;">High Score</p>
+                      <div class="metric-value" style="font-size:22px; color: #10b981; margin:0;">${stats.highScore || 0}%</div>
+                    </div>
+                    <div class="glass-card metric-card" style="padding: 16px; border: 1px solid rgba(239,68,68,0.1); background: rgba(239,68,68,0.02); flex: 1;">
+                      <p class="p-dim" style="font-size:10px; font-weight:700; text-transform:uppercase; margin-bottom: 4px;">Low Score</p>
+                      <div class="metric-value" style="font-size:22px; color: #ef4444; margin:0;">${stats.lowScore || 0}%</div>
+                    </div>
                   </div>
-                  <div class="glass-card metric-card" style="padding: 16px;">
-                    <p class="p-dim" style="font-size:12px">Average Score</p>
-                    <div class="metric-value" style="font-size:20px">${stats.avgPercent || 0}%</div>
-                  </div>
-                  <div class="glass-card metric-card" style="padding: 16px;">
-                    <p class="p-dim" style="font-size:12px">Highest Score</p>
-                    <div class="metric-value" style="font-size:20px; color: var(--success)">${stats.highScore || 0}%</div>
-                  </div>
-                  <div class="glass-card metric-card" style="padding: 16px;">
-                    <p class="p-dim" style="font-size:12px">Lowest Score</p>
-                    <div class="metric-value" style="font-size:20px; color: var(--danger)">${stats.lowScore || 0}%</div>
+
+                  <!-- Right: Session Grade Distribution -->
+                  <div style="background: rgba(0,0,0,0.01); padding: 24px; border-radius: 16px; border: 1px solid rgba(0,0,0,0.03); height: 100%; display: flex; flex-direction: column;">
+                    <div class="flex-between" style="margin-bottom: 20px;">
+                      <h4 style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Grade Distribution</h4>
+                      <span style="font-size: 10px; color: var(--text-muted); opacity: 0.6;">Session Analysis</span>
+                    </div>
+                    <div class="chart-container" style="flex: 1; min-height: 200px; position: relative;">
+                      <canvas id="chart-${session._id}"></canvas>
+                    </div>
                   </div>
                 </div>
 
@@ -553,6 +583,16 @@ const TeacherDashboard = {
             `;
           }).join('')}
         `;
+
+        // Render all individual exam charts
+        setTimeout(() => {
+          data.sessions.forEach((session) => {
+            const normalized = Analytics.normalizePayload({ results: session.results, sessionTitle: session.title });
+            if (typeof Charts !== 'undefined') {
+              Charts.renderGrades(`chart-${session._id}`, normalized.stats.gradeBreakdown, true);
+            }
+          });
+        }, 100);
       }
     } catch (err) {
       notifications.error('Failed to load global analytics: ' + err.message);
@@ -1250,9 +1290,25 @@ const TeacherDashboard = {
 
       Modal.show('manual-attendance', `
         <form onsubmit="TeacherDashboard.handleManualAttendance(event, '${sessionId}')">
-          <p class="p-dim" style="margin-bottom: 20px;">Marking attendance for all students in the selected session.</p>
+          <p class="p-dim" style="margin-bottom: 14px;">Marking attendance for all students in the selected session.</p>
+
+          <!-- Quick-Select All Buttons -->
+          <div style="display: flex; gap: 10px; margin-bottom: 16px;">
+            <button type="button" onclick="TeacherDashboard.markAllAttendance('present')"
+              style="flex:1; padding: 10px 16px; border-radius: 10px; border: 2px solid #10b981;
+                     background: #ecfdf5; color: #065f46; font-weight: 700; font-size: 13px;
+                     cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px;">
+              ✅ Mark All Present
+            </button>
+            <button type="button" onclick="TeacherDashboard.markAllAttendance('absent')"
+              style="flex:1; padding: 10px 16px; border-radius: 10px; border: 2px solid #ef4444;
+                     background: #fef2f2; color: #991b1b; font-weight: 700; font-size: 13px;
+                     cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px;">
+              ❌ Mark All Absent
+            </button>
+          </div>
           
-          <div style="max-height: 400px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 12px; margin-bottom: 24px;">
+          <div style="max-height: 360px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 12px; margin-bottom: 24px;">
             <table style="width: 100%; border-collapse: collapse;">
               <thead style="position: sticky; top: 0; background: #f8fafc; z-index: 10; border-bottom: 2px solid var(--border-color);">
                 <tr>
@@ -1296,6 +1352,34 @@ const TeacherDashboard = {
     } catch (err) {
       notifications.error('Failed to load students');
     }
+  },
+
+  markAllAttendance(status) {
+    // Select all radio inputs with value matching status inside the modal form
+    const form = document.querySelector('#modal-manual-attendance form, .modal-body form, [id*="manual-attendance"] form');
+    if (!form) {
+      // Fallback: find all radio buttons in the current document modal
+      document.querySelectorAll(`input[type="radio"][value="${status}"]`).forEach(radio => {
+        radio.checked = true;
+        // Flash the row to confirm selection
+        const row = radio.closest('tr');
+        if (row) {
+          row.style.transition = 'background 0.3s';
+          row.style.background = status === 'present' ? '#ecfdf5' : '#fef2f2';
+          setTimeout(() => { row.style.background = ''; }, 800);
+        }
+      });
+      return;
+    }
+    form.querySelectorAll(`input[type="radio"][value="${status}"]`).forEach(radio => {
+      radio.checked = true;
+      const row = radio.closest('tr');
+      if (row) {
+        row.style.transition = 'background 0.3s';
+        row.style.background = status === 'present' ? '#ecfdf5' : '#fef2f2';
+        setTimeout(() => { row.style.background = ''; }, 800);
+      }
+    });
   },
 
   async handleManualAttendance(event, sessionId) {

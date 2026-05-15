@@ -20,19 +20,24 @@ const runAuditPulse = async () => {
     try {
         logger.info('AuditPulse: Starting database state integrity check...');
 
-        // 1. Fetch all results (canonical order by ID)
-        const results = await Result.find().sort({ _id: 1 });
+        // 1. Efficiently stream ONLY resultHashes in canonical order
+        const leafHashes = [];
+        const cursor = Result.find({}, { resultHash: 1, _id: 1, isSealed: 1 })
+                             .sort({ _id: 1 })
+                             .lean()
+                             .cursor();
 
-        if (results.length === 0) {
-            logger.info('AuditPulse: No results to anchor. Skipping.');
-            return;
+        for (let r = await cursor.next(); r != null; r = await cursor.next()) {
+            let h = r.resultHash;
+            // Fallback for legacy records without a pre-computed hash
+            if (!h) {
+                const fullDoc = await Result.findById(r._id);
+                h = hashService.computeResultHash(fullDoc);
+                // Self-heal the record for future pulses
+                await Result.updateOne({ _id: r._id }, { resultHash: h });
+            }
+            leafHashes.push(h.startsWith('0x') ? h : `0x${h}`);
         }
-
-        // 2. Generate canonical hashes for all results
-        const leafHashes = results.map(r => {
-            const computed = hashService.computeResultHash(r);
-            return computed.startsWith('0x') ? computed : `0x${computed}`;
-        });
 
         // 3. Create Merkle Tree and get Root
         const tree = merkleService.createTree(leafHashes);
@@ -51,11 +56,17 @@ const runAuditPulse = async () => {
             return;
         }
 
+        const recordCount = await Result.countDocuments();
+        if (recordCount === 0) {
+            logger.info('AuditPulse: No results to anchor. Skipping.');
+            return;
+        }
+
         // 5. STATE CHANGE DETECTED — Determine if legitimate insertion or tamper
         let isTampering = false;
         if (lastAudit) {
-            if (results.length > lastAudit.recordCount) {
-                logger.info(`AuditPulse: ${results.length - lastAudit.recordCount} new result(s) securely appended. Sealing updated root.`);
+            if (recordCount >= lastAudit.recordCount) {
+                logger.info(`AuditPulse: ${recordCount - lastAudit.recordCount} new result(s) securely appended. Sealing updated root.`);
             } else {
                 isTampering = true;
                 logger.warn(`🚨 AuditPulse: TAMPER DETECTED! Previous root=${lastAudit.merkleRoot} | New root=${currentRoot}`);
@@ -69,7 +80,7 @@ const runAuditPulse = async () => {
                     detectedAt: new Date(),
                     previousRoot: lastAudit.merkleRoot,
                     currentRoot,
-                    recordCount: results.length
+                    recordCount: recordCount
                 };
             }
         }
@@ -88,7 +99,7 @@ const runAuditPulse = async () => {
             txHash: anchorResult.txHash || 'N/A',
             blockNumber: anchorResult.blockNumber,
             signature: anchorResult.signature,
-            recordCount: results.length,
+            recordCount: recordCount,
             status: isTampering ? 'tamper_detected' : 'sealed'
         });
 

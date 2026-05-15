@@ -324,11 +324,57 @@ const PASS_SCORE = 60;
 exports.getGeneralAnalytics = async (req, res) => {
   try {
     const courseIds = (req.user.courseIds || []).map(id => new mongoose.Types.ObjectId(id));
+    if (courseIds.length === 0) {
+      return res.json({
+        success: true,
+        data: {
+          totalSubmissions: 0,
+          avgScore: 0,
+          passRate: 0,
+          gradeBreakdown: { A: 0, B: 0, C: 0, D: 0, F: 0 },
+          sessions: []
+        }
+      });
+    }
 
-    const sessions = await Session.find({}).sort({ startTime: -1 }).lean();
-    const allResults = await Result.find({}).populate('studentId', 'name email').lean();
+    // 1. Efficient Summary & Grade Breakdown in ONE Aggregation
+    const [analytics] = await Result.aggregate([
+      { $match: { courseId: { $in: courseIds } } },
+      {
+        $group: {
+          _id: null,
+          totalSubmissions: { $sum: 1 },
+          avgScore: { $avg: '$score' },
+          passed: { $sum: { $cond: [{ $gte: ['$score', PASS_SCORE] }, 1, 0] } },
+          A: { $sum: { $cond: [{ $gte: ['$score', 90] }, 1, 0] } },
+          B: { $sum: { $cond: [{ $and: [{ $gte: ['$score', 80] }, { $lt: ['$score', 90] }] }, 1, 0] } },
+          C: { $sum: { $cond: [{ $and: [{ $gte: ['$score', 70] }, { $lt: ['$score', 80] }] }, 1, 0] } },
+          D: { $sum: { $cond: [{ $and: [{ $gte: ['$score', 60] }, { $lt: ['$score', 70] }] }, 1, 0] } },
+          F: { $sum: { $cond: [{ $lt: ['$score', 60] }, 1, 0] } }
+        }
+      }
+    ]);
+
+    // 2. Optimized Session Retrieval (Only fetch sessions for teacher's courses if available)
+    const sessions = await Session.find({ 
+      $or: [{ courseId: { $in: courseIds } }, { courseId: { $exists: false } }] 
+    })
+    .sort({ startTime: -1 })
+    .limit(20) // Limit to recent sessions for dashboard performance
+    .lean();
+
+    // 3. Optimized Result Retrieval (ONLY fetch results for the sessions we are looking at)
+    const sessionIds = sessions.map(s => s._id);
+    const sessionResults = await Result.find({ 
+      sessionId: { $in: sessionIds },
+      courseId: { $in: courseIds }
+    })
+    .select('sessionId score studentId createdAt') // LEAN Projection
+    .populate('studentId', 'name email')
+    .lean();
+
     const resultsBySession = {};
-    allResults.forEach(r => {
+    sessionResults.forEach(r => {
       const sid = String(r.sessionId);
       if (!resultsBySession[sid]) resultsBySession[sid] = [];
       resultsBySession[sid].push(r);
@@ -340,77 +386,12 @@ exports.getGeneralAnalytics = async (req, res) => {
       results: resultsBySession[String(s._id)] || []
     }));
 
-    if (courseIds.length === 0) {
-      return res.json({
-        success: true,
-        data: {
-          totalSubmissions: 0,
-          avgScore: 0,
-          passRate: 0,
-          gradeBreakdown: { A: 0, B: 0, C: 0, D: 0, F: 0 },
-          sessions: sessionsWithResults
-        }
-      });
-    }
-
-    const [summary] = await Result.aggregate([
-      { $match: { courseId: { $in: courseIds } } },
-      {
-        $group: {
-          _id: null,
-          totalSubmissions: { $sum: 1 },
-          avgScore: { $avg: '$score' },
-          passed: { $sum: { $cond: [{ $gte: ['$score', PASS_SCORE] }, 1, 0] } }
-        }
-      }
-    ]);
-
-    const [grades] = await Result.aggregate([
-      { $match: { courseId: { $in: courseIds } } },
-      {
-        $group: {
-          _id: null,
-          A: { $sum: { $cond: [{ $gte: ['$score', 90] }, 1, 0] } },
-          B: {
-            $sum: {
-              $cond: [{ $and: [{ $gte: ['$score', 80] }, { $lt: ['$score', 90] }] }, 1, 0]
-            }
-          },
-          C: {
-            $sum: {
-              $cond: [{ $and: [{ $gte: ['$score', 70] }, { $lt: ['$score', 80] }] }, 1, 0]
-            }
-          },
-          D: {
-            $sum: {
-              $cond: [{ $and: [{ $gte: ['$score', 60] }, { $lt: ['$score', 70] }] }, 1, 0]
-            }
-          },
-          F: { $sum: { $cond: [{ $lt: ['$score', 60] }, 1, 0] } }
-        }
-      }
-    ]);
-
-    const total = summary ? summary.totalSubmissions : 0;
-    const avgScore = summary && total ? Math.round(summary.avgScore * 10) / 10 : 0;
-    const passRate = summary && total ? Math.round((summary.passed / total) * 1000) / 10 : 0;
-    const gradeBreakdown = grades
-      ? { A: grades.A, B: grades.B, C: grades.C, D: grades.D, F: grades.F }
+    const total = analytics ? analytics.totalSubmissions : 0;
+    const avgScore = analytics && total ? Math.round(analytics.avgScore * 10) / 10 : 0;
+    const passRate = analytics && total ? Math.round((analytics.passed / total) * 1000) / 10 : 0;
+    const gradeBreakdown = analytics
+      ? { A: analytics.A, B: analytics.B, C: analytics.C, D: analytics.D, F: analytics.F }
       : { A: 0, B: 0, C: 0, D: 0, F: 0 };
-
-    const [topStudents, violationStats] = await Promise.all([
-      Result.find({ courseId: { $in: courseIds } })
-        .sort({ score: -1 })
-        .limit(5)
-        .populate('studentId', 'name')
-        .lean(),
-      Result.aggregate([
-        { $match: { courseId: { $in: courseIds } } },
-        { $unwind: '$violationHistory' },
-        { $group: { _id: '$violationHistory.violationType', count: { $sum: 1 } } },
-        { $sort: { count: -1 } }
-      ])
-    ]);
 
     res.json({
       success: true,
@@ -419,13 +400,12 @@ exports.getGeneralAnalytics = async (req, res) => {
         avgScore,
         passRate,
         gradeBreakdown,
-        topPerformers: topStudents.map(s => ({ name: s.studentId?.name, score: s.score })),
-        commonViolations: violationStats,
         sessions: sessionsWithResults
       }
     });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    console.error('[Analytics Error]', err);
+    res.status(500).json({ success: false, message: 'Failed to compute 50k analytics: ' + err.message });
   }
 };
 
