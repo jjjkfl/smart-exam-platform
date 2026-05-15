@@ -24,7 +24,7 @@ const TeacherDashboard = {
       const firstName = user.name.split(' ')[0];
       const initials = user.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
       
-      if (nameEl) nameEl.textContent = firstName;
+      if (nameEl) nameEl.textContent = user.name;
       if (sidebarNameEl) sidebarNameEl.textContent = firstName;
       if (avatarEl) avatarEl.textContent = initials;
     }
@@ -845,77 +845,102 @@ const TeacherDashboard = {
     if (this.courses.length === 0) return notifications.error('No courses available to upload to.');
 
     Modal.show('upload-material', `
-      <form id="upload-material-form" onsubmit="TeacherDashboard.handleUploadMaterial(event)">
-        <div class="form-group">
-          <label>Course</label>
-          <select name="courseId" class="form-control" required>
-            ${this.courses.map(c => `<option value="${c._id}">${c.courseName}</option>`).join('')}
-          </select>
+      <div style="position: relative; padding: 10px;">
+        <!-- Custom Header inside content -->
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 32px;">
+          <div>
+            <h2 style="font-size: 24px; font-weight: 800; color: var(--primary-indigo); letter-spacing: -0.5px; margin: 0;">Upload Course Material</h2>
+            <p class="p-dim" style="font-size: 13px; margin-top: 4px;">Share educational resources, documents, or links with your students.</p>
+          </div>
+          <button onclick="Modal.close()" style="background: #f1f5f9; border: none; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #64748b; transition: all 0.2s;">
+            <i class="fas fa-times"></i>
+          </button>
         </div>
-        <div class="form-group">
-          <label>Material Title</label>
-          <input type="text" name="title" class="form-control" placeholder="e.g., Mathematics Lecture Notes" required>
-        </div>
-        <div class="form-group">
-          <label>Target Class</label>
-          <select name="targetClass" class="form-control" required>
-            <option value="All">All Registered Students</option>
-            <option value="Class 1">Class 1</option>
-            <option value="Class 2">Class 2</option>
-            <option value="Class 3">Class 3</option>
-            <option value="Class 4">Class 4</option>
-            <option value="Class 5">Class 5</option>
-            <option value="Class 6">Class 6</option>
-            <option value="Class 7">Class 7</option>
-            <option value="Class 8">Class 8</option>
-            <option value="Class 9">Class 9</option>
-            <option value="Class 10">Class 10</option>
-            <option value="Class 11">Class 11</option>
-            <option value="Class 12">Class 12</option>
-            <option value="Class 13">Class 13</option>
-            <option value="Class 14">Class 14</option>
-            <option value="Class 15">Class 15</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Subject</label>
-          <select name="subject" class="form-control" required>
-            <option value="Mathematics">Mathematics</option>
-            <option value="Science">Science</option>
-            <option value="English">English</option>
-            <option value="Social Studies">Social Studies</option>
-            <option value="Physics">Physics</option>
-            <option value="Chemistry">Chemistry</option>
-            <option value="Biology">Biology</option>
-            <option value="History">History</option>
-            <option value="Geography">Geography</option>
-            <option value="Computer Science">Computer Science</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Type</label>
-          <select name="type" class="form-control" onchange="TeacherDashboard.toggleMaterialInput(this.value)">
-            <option value="link">External Link / Drive</option>
-            <option value="pdf">Document (PDF)</option>
-            <option value="note">Study Note (Docx/Text)</option>
-            <option value="video">Video Link</option>
-          </select>
-        </div>
-        <div class="form-group" id="material-url-group">
-          <label>Resource URL</label>
-          <input type="url" name="url" class="form-control" placeholder="https://..." required>
-        </div>
-        <div class="form-group" id="material-file-group" style="display:none;">
-          <label>Upload File (PDF / Word)</label>
-          <input type="file" name="file" class="form-control" accept=".pdf,.doc,.docx">
-        </div>
-        <div class="form-group">
-          <label>Description (Optional)</label>
-          <textarea name="description" class="form-control" rows="2"></textarea>
-        </div>
-        <button type="submit" class="btn btn-primary" style="width:100%;">Upload & Distribute</button>
-      </form>
-    `, { title: 'Upload Course Material' });
+
+        <form id="upload-material-form" onsubmit="TeacherDashboard.handleUploadMaterial(event)" style="display: flex; flex-direction: column; gap: 24px;">
+          <!-- Primary Info Grid -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div class="form-group">
+              <label style="display: block; font-size: 11px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.05em;">Source Course</label>
+              <select name="courseId" class="form-control" style="width: 100%; height: 44px;" required>
+                ${this.courses.map(c => `<option value="${c._id}">${c.courseName}</option>`).join('')}
+              </select>
+            </div>
+            <div class="form-group">
+              <label style="display: block; font-size: 11px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.05em;">Material Title</label>
+              <input type="text" name="title" class="form-control" placeholder="e.g. Mathematics Lecture Notes" style="width: 100%; height: 44px;" required>
+            </div>
+          </div>
+
+          <!-- Type and Source Row -->
+          <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 20px;">
+            <div class="form-group">
+              <label style="display: block; font-size: 11px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">Resource Type</label>
+              <select name="type" class="form-control" style="width: 100%; height: 44px;" onchange="TeacherDashboard.toggleMaterialInput(this.value)">
+                <option value="link">External Link / Drive</option>
+                <option value="pdf">Document (PDF)</option>
+                <option value="note">Study Note (Docx/Text)</option>
+                <option value="video">Video Link</option>
+              </select>
+            </div>
+            <div class="form-group" id="material-url-group">
+              <label style="display: block; font-size: 11px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">Source URL</label>
+              <input type="url" name="url" class="form-control" placeholder="https://..." style="width: 100%; height: 44px;" required>
+            </div>
+            <div class="form-group" id="material-file-group" style="display:none;">
+              <label style="display: block; font-size: 11px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">Select File</label>
+              <input type="file" name="file" class="form-control" accept=".pdf,.doc,.docx" style="width: 100%; height: 44px; padding: 8px;">
+            </div>
+          </div>
+
+          <!-- Academic Context Box -->
+          <div style="background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div class="form-group">
+              <label style="display: block; font-size: 11px; font-weight: 700; color: #475569; margin-bottom: 6px;">TARGET CLASS</label>
+              <select name="targetClass" class="form-control" style="width: 100%; background: #fff;" required>
+                ${Array.from({length: 12}, (_, i) => `<option value="Class ${i+1}">Class ${i+1}</option>`).join('')}
+              </select>
+            </div>
+            <div class="form-group">
+              <label style="display: block; font-size: 11px; font-weight: 700; color: #475569; margin-bottom: 6px;">SUBJECT TAG</label>
+              <select name="subject" class="form-control" style="width: 100%; background: #fff;" required>
+                <option value="Mathematics">Mathematics</option>
+                <option value="Science">Science</option>
+                <option value="English">English</option>
+                <option value="Social Studies">Social Studies</option>
+                <option value="Physics">Physics</option>
+                <option value="Chemistry">Chemistry</option>
+                <option value="Biology">Biology</option>
+                <option value="History">History</option>
+                <option value="Geography">Geography</option>
+                <option value="Computer Science">Computer Science</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label style="display: block; font-size: 11px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">Description (Optional)</label>
+            <textarea name="description" class="form-control" rows="2" placeholder="Briefly explain what this material covers..." style="width: 100%; resize: none;"></textarea>
+          </div>
+
+          <!-- Actions -->
+          <div style="display: flex; gap: 12px; margin-top: 8px;">
+            <button type="button" class="btn btn-secondary" style="flex: 1; height: 46px;" onclick="Modal.close()">Cancel</button>
+            <button type="submit" class="btn btn-primary" style="flex: 2; height: 46px; background: var(--primary-indigo);">
+              <i class="fas fa-cloud-upload-alt"></i> Upload Material
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <style>
+        /* Temporarily hide the fixed modal header for this specific modal */
+        #modal-overlay-upload-material header, 
+        #modal-overlay-upload-material .flex-between:first-child {
+          display: none !important;
+        }
+      </style>
+    `, { title: '', width: '650px' });
     
     this.toggleMaterialInput('link');
   },
@@ -975,15 +1000,7 @@ const TeacherDashboard = {
 
   async loadStudentsView() {
     const select = document.getElementById('attendance-session-select');
-    const headerDiv = document.querySelector('#view-students header div[style]');
     if (!select) return;
-
-    if (headerDiv && !document.getElementById('btn-manual-att')) {
-      headerDiv.insertAdjacentHTML('afterbegin', `
-        <button id="btn-manual-att" class="btn btn-outline" onclick="TeacherDashboard.showManualAttendance()">+ Manual Attendance</button>
-        <button id="btn-add-student" class="btn btn-primary" onclick="TeacherDashboard.showAddStudentModal()">+ Add New Student</button>
-      `);
-    }
 
     if (this.sessions.length === 0) await this.loadDashboardData();
     select.innerHTML = '<option value="">Select Session...</option>' +
@@ -1034,60 +1051,84 @@ const TeacherDashboard = {
   async showAddStudentModal() {
     if (this.courses.length === 0) await this.loadDashboardData();
 
+    // Passing title: false or similar doesn't work with current modal.js, 
+    // so we'll just use the content to handle the header.
     Modal.show('add-student', `
-      <form onsubmit="TeacherDashboard.handleAddStudent(event)">
-        <div class="form-group">
-          <label>Full Name</label>
-          <input type="text" name="name" class="form-control" placeholder="e.g. John Doe" required>
+      <div style="position: relative; padding: 10px;">
+        <!-- Custom Header inside content -->
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 32px;">
+          <div>
+            <h2 style="font-size: 24px; font-weight: 800; color: var(--primary-indigo); letter-spacing: -0.5px; margin: 0;">Add New Student</h2>
+            <p class="p-dim" style="font-size: 13px; margin-top: 4px;">Enroll a student into the digital examination platform.</p>
+          </div>
+          <button onclick="Modal.close()" style="background: #f1f5f9; border: none; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #64748b; transition: all 0.2s;">
+            <i class="fas fa-times"></i>
+          </button>
         </div>
-        <div class="form-group">
-          <label>Email Address</label>
-          <input type="email" name="email" class="form-control" placeholder="student@example.com" required>
-        </div>
-        <div class="form-group">
-          <label>Password</label>
-          <input type="password" name="password" class="form-control" placeholder="Minimal 6 characters" required minlength="6">
-        </div>
-        <div class="form-group">
-          <label>Assign to Course</label>
-          <select name="courseId" class="form-control" required>
-            ${this.courses.map(c => `<option value="${c._id}">${c.courseName}</option>`).join('')}
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Class</label>
-          <select name="classTag" class="form-control" required>
-            <option value="All">All Registered Students</option>
-            <option value="Class 1">Class 1</option>
-            <option value="Class 2">Class 2</option>
-            <option value="Class 3">Class 3</option>
-            <option value="Class 4">Class 4</option>
-            <option value="Class 5">Class 5</option>
-            <option value="Class 6">Class 6</option>
-            <option value="Class 7">Class 7</option>
-            <option value="Class 8">Class 8</option>
-            <option value="Class 9">Class 9</option>
-            <option value="Class 10">Class 10</option>
-            <option value="Class 11">Class 11</option>
-            <option value="Class 12">Class 12</option>
-            <option value="Class 13">Class 13</option>
-            <option value="Class 14">Class 14</option>
-            <option value="Class 15">Class 15</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Educational Board</label>
-          <select name="board" class="form-control" required>
-            <option value="All">All Boards (Global)</option>
-            <option value="CBSE">CBSE</option>
-            <option value="ICSE">ICSE</option>
-            <option value="State">State Board</option>
-            <option value="TestStream">TestStream (Mock)</option>
-          </select>
-        </div>
-        <button type="submit" class="btn btn-primary" style="width:100%;">Create Student Account</button>
-      </form>
-    `, { title: 'Register New Student' });
+
+        <form onsubmit="TeacherDashboard.handleAddStudent(event)" style="display: flex; flex-direction: column; gap: 24px;">
+          <!-- Primary Info Grid -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div class="form-group">
+              <label style="display: block; font-size: 11px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.05em;">Full Name</label>
+              <input type="text" name="name" class="form-control" placeholder="e.g. John Doe" style="width: 100%; height: 44px;" required>
+            </div>
+            <div class="form-group">
+              <label style="display: block; font-size: 11px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.05em;">Email Address</label>
+              <input type="email" name="email" class="form-control" placeholder="student@example.com" style="width: 100%; height: 44px;" required>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div class="form-group">
+              <label style="display: block; font-size: 11px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.05em;">Access Password</label>
+              <input type="password" name="password" class="form-control" placeholder="Min. 6 chars" style="width: 100%; height: 44px;" required minlength="6">
+            </div>
+            <div class="form-group">
+              <label style="display: block; font-size: 11px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.05em;">Course Assignment</label>
+              <select name="courseId" class="form-control" style="width: 100%; height: 44px;" required>
+                ${this.courses.map(c => `<option value="${c._id}">${c.courseName}</option>`).join('')}
+              </select>
+            </div>
+          </div>
+
+          <!-- Academic Context Box -->
+          <div style="background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div class="form-group">
+              <label style="display: block; font-size: 11px; font-weight: 700; color: #475569; margin-bottom: 6px;">CLASS</label>
+              <select name="classTag" class="form-control" style="width: 100%; background: #fff;" required>
+                ${Array.from({length: 12}, (_, i) => `<option value="Class ${i+1}">Class ${i+1}</option>`).join('')}
+              </select>
+            </div>
+            <div class="form-group">
+              <label style="display: block; font-size: 11px; font-weight: 700; color: #475569; margin-bottom: 6px;">BOARD / STREAM</label>
+              <select name="board" class="form-control" style="width: 100%; background: #fff;" required>
+                <option value="All">All Boards</option>
+                <option value="CBSE">CBSE</option>
+                <option value="ICSE">ICSE</option>
+                <option value="State">State Board</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div style="display: flex; gap: 12px; margin-top: 8px;">
+            <button type="button" class="btn btn-secondary" style="flex: 1; height: 46px;" onclick="Modal.close()">Cancel</button>
+            <button type="submit" class="btn btn-primary" style="flex: 1.5; height: 46px; background: var(--primary-indigo);">
+              <i class="fas fa-plus"></i> Add Student
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <style>
+        /* Temporarily hide the fixed modal header for this specific modal */
+        #modal-overlay-add-student header, 
+        #modal-overlay-add-student .flex-between:first-child {
+          display: none !important;
+        }
+      </style>
+    `, { title: '', width: '650px' });
   },
 
   async handleAddStudent(event) {
@@ -1132,7 +1173,6 @@ const TeacherDashboard = {
           <div class="form-group">
             <label>Class</label>
             <select name="classTag" class="form-control" required>
-              <option value="All" ${s.classTag === 'All' ? 'selected' : ''}>All Registered Students</option>
               <option value="Class 1" ${s.classTag === 'Class 1' ? 'selected' : ''}>Class 1</option>
               <option value="Class 2" ${s.classTag === 'Class 2' ? 'selected' : ''}>Class 2</option>
               <option value="Class 3" ${s.classTag === 'Class 3' ? 'selected' : ''}>Class 3</option>
@@ -1197,26 +1237,62 @@ const TeacherDashboard = {
     if (!sessionId) return notifications.error('Please select a session first');
 
     try {
-      const { data: students } = await api.get('/portal/teacher/students');
+      Loader.show('modal-body', 'Fetching student roster...');
+      const [{ data: students }, { data: currentAtt }] = await Promise.all([
+        api.get('/portal/teacher/students'),
+        api.get(`/portal/edu/attendance/${sessionId}`)
+      ]);
+      
+      const attMap = {};
+      (currentAtt || []).forEach(a => {
+        attMap[a.studentId?._id || a.studentId] = a.status;
+      });
 
       Modal.show('manual-attendance', `
         <form onsubmit="TeacherDashboard.handleManualAttendance(event, '${sessionId}')">
-          <div class="form-group">
-            <label>Select Student</label>
-            <select name="studentId" class="form-control" required>
-              ${students.map(s => `<option value="${s._id}">${s.name} (${s.email})</option>`).join('')}
-            </select>
+          <p class="p-dim" style="margin-bottom: 20px;">Marking attendance for all students in the selected session.</p>
+          
+          <div style="max-height: 400px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 12px; margin-bottom: 24px;">
+            <table style="width: 100%; border-collapse: collapse;">
+              <thead style="position: sticky; top: 0; background: #f8fafc; z-index: 10; border-bottom: 2px solid var(--border-color);">
+                <tr>
+                  <th style="padding: 14px 20px; text-align: left; font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Student Details</th>
+                  <th style="padding: 14px 20px; text-align: center; font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Attendance Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${students.map(s => {
+                  const currentStatus = attMap[s._id] || '';
+                  return `
+                  <tr style="border-bottom: 1px solid #f1f5f9;">
+                    <td style="padding: 14px 20px;">
+                      <div style="font-weight: 600; color: var(--text-dark);">${s.name}</div>
+                      <div style="font-size: 12px; color: var(--text-muted);">${s.email}</div>
+                    </td>
+                    <td style="padding: 14px 20px;">
+                      <div style="display: flex; gap: 24px; justify-content: center;">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--success); font-weight: 700; font-size: 14px;">
+                          <input type="radio" name="status_${s._id}" value="present" ${currentStatus === 'present' ? 'checked' : ''} style="width: 18px; height: 18px; accent-color: var(--success);"> P
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--danger); font-weight: 700; font-size: 14px;">
+                          <input type="radio" name="status_${s._id}" value="absent" ${currentStatus === 'absent' ? 'checked' : ''} style="width: 18px; height: 18px; accent-color: var(--danger);"> A
+                        </label>
+                      </div>
+                    </td>
+                  </tr>
+                `}).join('')}
+              </tbody>
+            </table>
           </div>
-          <div class="form-group">
-            <label>Status</label>
-            <select name="status" class="form-control">
-              <option value="present">Present</option>
-              <option value="absent">Absent</option>
-            </select>
+          
+          <div style="display: flex; gap: 12px;">
+            <button type="button" class="btn btn-secondary" style="flex: 1;" onclick="Modal.close()">Cancel</button>
+            <button type="submit" class="btn btn-primary" id="btn-submit-att" style="flex: 2;">
+              <i class="fas fa-check-double"></i> Save Attendance
+            </button>
           </div>
-          <button type="submit" class="btn btn-primary" style="width:100%;">Mark Attendance</button>
         </form>
-      `, { title: 'Manual Attendance Entry' });
+      `, { title: 'Attendance Entry', width: '650px' });
     } catch (err) {
       notifications.error('Failed to load students');
     }
@@ -1224,15 +1300,38 @@ const TeacherDashboard = {
 
   async handleManualAttendance(event, sessionId) {
     event.preventDefault();
-    const data = Object.fromEntries(new FormData(event.target).entries());
+    const formData = new FormData(event.target);
+    const records = [];
+    
+    for (const [key, value] of formData.entries()) {
+      if (key.startsWith('status_')) {
+        records.push({ studentId: key.replace('status_', ''), status: value });
+      }
+    }
+
+    if (records.length === 0) return notifications.error('Please mark attendance for at least one student');
+
+    const btn = document.getElementById('btn-submit-att');
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving Records...';
+    }
+
     try {
-      await api.post('/portal/edu/attendance', { ...data, sessionId });
-      notifications.success('Attendance marked manually');
+      await Promise.all(records.map(rec => 
+        api.post('/portal/edu/attendance', { ...rec, sessionId })
+      ));
+      
+      notifications.success(`Attendance saved for ${records.length} students`);
       Modal.close();
       this.loadAttendance(sessionId);
-      this.loadStudentRoster(); // Sync the master roster count
+      this.loadStudentRoster();
     } catch (err) {
-      notifications.error('Failed to mark attendance');
+      notifications.error('Failed to save attendance: ' + err.message);
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-check-double"></i> Save Attendance';
+      }
     }
   },
 
@@ -1297,10 +1396,12 @@ const TeacherDashboard = {
   loadForum() {
     const container = document.getElementById('teacher-forum-container');
     container.innerHTML = `
-      <div class="glass-card" style="margin-bottom:24px;">
-        <h3 class="h3">Forum Management</h3>
-        <p class="p-dim">Teachers can monitor discussions and guide student queries.</p>
-      </div>
+      <header class="flex-between" style="margin-bottom: 32px;">
+        <div>
+          <h2 class="h2">Forum Management</h2>
+          <p class="p-dim">Teachers can monitor discussions and guide student queries.</p>
+        </div>
+      </header>
       <div id="forum-content-mount"></div>
     `;
     const mount = document.getElementById('forum-content-mount');

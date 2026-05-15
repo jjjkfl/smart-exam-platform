@@ -5,73 +5,625 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Teacher Dashboard | MCQ Pro</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="/css/common.css">
   <link rel="stylesheet" href="/css/student.css">
   <link rel="stylesheet" href="/css/teacher.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-    :root{
-      --primary-indigo:#4f46e5;--secondary-blue:#2563eb;--accent-cyan:#06b6d4;
-      --bg-light:#f4f7fb;--text-dark:#1e293b;--text-muted:#64748b;
-      --border-color:#e2e8f0;--glass-bg:rgba(255,255,255,0.7);--glass-border:rgba(255,255,255,0.4);
-      --success:#10b981;--danger:#ef4444;--warning:#f59e0b;
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0
     }
-    body{font-family:'Poppins',sans-serif;background:var(--bg-light);color:var(--text-dark);-webkit-font-smoothing:antialiased}
+
+    :root {
+      --primary-indigo: #4f46e5;
+      --secondary-blue: #2563eb;
+      --accent-cyan: #06b6d4;
+      --bg-light: #f8fafc;
+      --text-dark: #0f172a;
+      --text-muted: #64748b;
+      --border-color: #e2e8f0;
+      --glass-bg: rgba(255, 255, 255, 0.7);
+      --glass-border: rgba(255, 255, 255, 0.4);
+      --success: #10b981;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --bg-card: #ffffff;
+      --border: #e2e8f0;
+      --primary: #4f46e5;
+      --text-main: #0f172a;
+    }
+
+    body {
+      font-family: 'Inter', 'Poppins', sans-serif;
+      background: var(--bg-light);
+      color: var(--text-dark);
+      -webkit-font-smoothing: antialiased;
+      line-height: 1.6;
+    }
 
     /* Layout */
-    .student-layout{display:grid;grid-template-columns:260px 1fr;min-height:100vh}
+    .student-layout {
+      display: grid;
+      grid-template-columns: 260px 1fr !important;
+      min-height: 100vh;
+      width: 100%;
+    }
 
     /* Sidebar */
-    .sidebar{background:linear-gradient(180deg,#1e293b 0%,#0f172a 100%);color:#fff;padding:1.5rem 1rem;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto}
-    .sidebar-logo{display:flex;align-items:center;gap:.6rem;font-size:1.4rem;font-weight:800;color:#fff;padding:.5rem;margin-bottom:2rem;text-decoration:none}
-    .sidebar-logo i{color:#818cf8;font-size:1.6rem}
-    .nav-item{display:flex;align-items:center;gap:.75rem;padding:.8rem 1rem;border-radius:10px;color:rgba(255,255,255,.65);font-size:.9rem;font-weight:500;cursor:pointer;transition:all .2s;margin-bottom:.25rem}
-    .nav-item:hover{background:rgba(255,255,255,.08);color:#fff}
-    .nav-item.active{background:linear-gradient(135deg,var(--primary-indigo),var(--secondary-blue));color:#fff;box-shadow:0 4px 15px rgba(79,70,229,.4)}
-    .nav-item i{width:18px;text-align:center}
-    .sidebar-footer{margin-top:auto;border-top:1px solid rgba(255,255,255,.1);padding-top:1rem}
-    .user-mini{display:flex;align-items:center;gap:.75rem;padding:.75rem;background:rgba(255,255,255,.06);border-radius:10px;margin-bottom:.75rem}
-    .user-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--primary-indigo),var(--secondary-blue));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem;color:#fff;flex-shrink:0}
-    .user-mini .uname{font-size:.85rem;font-weight:600;color:#fff}
-    .user-mini .urole{font-size:.75rem;color:rgba(255,255,255,.5)}
-    .board-badge{display:flex;align-items:center;gap:.5rem;padding:.5rem 1rem;background:rgba(16,185,129,.15);border-radius:8px;color:#4ade80;font-size:.8rem;font-weight:600;cursor:pointer;margin-bottom:.5rem}
+    .sidebar {
+      background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+      color: #fff;
+      padding: 1.5rem 1rem;
+      display: flex;
+      flex-direction: column;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+      border-right: 1px solid rgba(255, 255, 255, 0.05);
+      z-index: 40;
+    }
+
+    .sidebar-logo {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: #fff;
+      padding: .5rem;
+      margin-bottom: 2rem;
+      text-decoration: none;
+      letter-spacing: -0.5px
+    }
+
+    .sidebar-logo i {
+      color: #818cf8;
+      font-size: 1.6rem;
+      filter: drop-shadow(0 2px 8px rgba(129, 140, 248, 0.4))
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: .85rem;
+      padding: .85rem 1.1rem;
+      border-radius: 12px;
+      color: rgba(255, 255, 255, .7);
+      font-size: .92rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all .25s cubic-bezier(0.4, 0, 0.2, 1);
+      margin-bottom: .35rem
+    }
+
+    .nav-item:hover {
+      background: rgba(255, 255, 255, .08);
+      color: #fff;
+      transform: translateX(3px)
+    }
+
+    .nav-item.active {
+      background: linear-gradient(135deg, var(--primary-indigo), var(--secondary-blue));
+      color: #fff;
+      box-shadow: 0 4px 20px rgba(79, 70, 229, .4);
+      font-weight: 600
+    }
+
+    .nav-item i {
+      width: 20px;
+      text-align: center;
+      font-size: 1.1rem
+    }
+
+    .sidebar-footer {
+      margin-top: auto;
+      border-top: 1px solid rgba(255, 255, 255, .08);
+      padding-top: 1.2rem
+    }
+
+    .user-mini {
+      display: flex;
+      align-items: center;
+      gap: .85rem;
+      padding: .85rem;
+      background: rgba(255, 255, 255, .05);
+      border-radius: 12px;
+      margin-bottom: .85rem;
+      border: 1px solid rgba(255, 255, 255, 0.05)
+    }
+
+    .user-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary-indigo), var(--secondary-blue));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: .95rem;
+      color: #fff;
+      flex-shrink: 0;
+      box-shadow: 0 2px 10px rgba(79, 70, 229, 0.3)
+    }
+
+    .user-mini .uname {
+      font-size: .88rem;
+      font-weight: 600;
+      color: #fff;
+      line-height: 1.2
+    }
+
+    .user-mini .urole {
+      font-size: .75rem;
+      color: rgba(255, 255, 255, .5);
+      margin-top: 2px
+    }
+
+    .board-badge {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      padding: .5rem 1rem;
+      background: rgba(16, 185, 129, .15);
+      border-radius: 8px;
+      color: #4ade80;
+      font-size: .8rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-bottom: .5rem
+    }
 
     /* Main */
-    .main-content{overflow-y:auto;min-height:100vh}
-    .view{display:none}
-    .view.active{display:block}
+    .main-content {
+      overflow-y: auto;
+      min-height: 100vh;
+      background-color: var(--bg-light);
+      width: 100%;
+      min-width: 0;
+      padding: 0 !important;
+    }
+
+    .view {
+      display: none
+    }
+
+    .view.active {
+      display: block;
+      animation: fadeInView 0.4s cubic-bezier(0.16, 1, 0.3, 1)
+    }
+
+    @keyframes fadeInView {
+      from {
+        opacity: 0;
+        transform: translateY(8px)
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0)
+      }
+    }
+
+    /* Apply perfect padding for professional view consistency */
+    .view:not(#view-dashboard) {
+      padding: 2.5rem 3rem;
+      max-width: 1600px;
+      margin: 0 auto;
+    }
 
     /* Topbar */
-    .topbar{background:#fff;border-bottom:1px solid var(--border-color);padding:1rem 2.5rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
-    .topbar-title{font-size:1.1rem;font-weight:700}
-    .topbar-right{display:flex;align-items:center;gap:1rem}
-    .integrity-pill{display:flex;align-items:center;gap:.5rem;padding:.4rem 1rem;background:rgba(16,185,129,.1);color:var(--success);border-radius:20px;font-size:.8rem;font-weight:600}
-    .integrity-pill::before{content:'';width:8px;height:8px;background:var(--success);border-radius:50%;animation:pulse-dot 2s infinite}
-    @keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.4}}
+    .topbar {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-color);
+      padding: 1rem 3rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02)
+    }
+
+    .topbar-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text-dark);
+      letter-spacing: -0.2px;
+    }
+
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 1.2rem
+    }
+
+    .integrity-pill {
+      display: flex;
+      align-items: center;
+      gap: .6rem;
+      padding: .45rem 1.1rem;
+      background: rgba(16, 185, 129, .08);
+      color: var(--success);
+      border-radius: 30px;
+      font-size: .82rem;
+      font-weight: 600;
+      border: 1px solid rgba(16, 185, 129, 0.2)
+    }
+
+    .integrity-pill::before {
+      content: '';
+      width: 8px;
+      height: 8px;
+      background: var(--success);
+      border-radius: 50%;
+      animation: pulse-dot 2s infinite;
+      box-shadow: 0 0 8px var(--success)
+    }
+
+    @keyframes pulse-dot {
+
+      0%,
+      100% {
+        opacity: 1;
+        transform: scale(1)
+      }
+
+      50% {
+        opacity: .4;
+        transform: scale(0.85)
+      }
+    }
+
+    /* Secondary View Headings & Typography */
+    .h2 {
+      font-size: 1.85rem;
+      font-weight: 800;
+      color: var(--primary-indigo) !important;
+      letter-spacing: -0.5px;
+      line-height: 1.2;
+      margin-bottom: 0.5rem;
+      border-left: 4px solid var(--primary-indigo);
+      padding-left: 0.75rem;
+    }
+
+    .h3 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--text-dark);
+      letter-spacing: -0.3px;
+      line-height: 1.3;
+      margin-bottom: 0.4rem;
+    }
+
+    .p-dim {
+      font-size: .95rem;
+      color: var(--text-muted);
+      font-weight: 500;
+      line-height: 1.5;
+    }
+
+    /* Standardized Metric Value & Cards for visual excellence */
+    .metric-value {
+      font-size: 2rem !important;
+      font-weight: 800 !important;
+      color: var(--primary-indigo);
+      line-height: 1.2;
+      margin-top: 0.25rem;
+      letter-spacing: -0.5px;
+    }
+
+    .glass-card {
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 1.75rem;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+      transition: all .25s ease;
+    }
+
+    .glass-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(79, 70, 229, 0.08);
+      border-color: rgba(79, 70, 229, 0.2);
+    }
 
     /* Buttons */
-    .btn{display:inline-flex;align-items:center;justify-content:center;gap:.4rem;padding:.6rem 1.4rem;border-radius:8px;font-family:inherit;font-weight:600;font-size:.9rem;cursor:pointer;transition:all .25s;text-decoration:none;border:none}
-    .btn-primary{background:linear-gradient(135deg,var(--secondary-blue),var(--primary-indigo));color:#fff;box-shadow:0 4px 12px rgba(79,70,229,.25)}
-    .btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(79,70,229,.35)}
-    .btn-secondary{background:rgba(37,99,235,.1);color:var(--secondary-blue)}
-    .btn-secondary:hover{background:rgba(37,99,235,.2)}
-    .btn-outline{background:transparent;border:2px solid var(--border-color);color:var(--text-dark)}
-    .btn-outline:hover{border-color:var(--primary-indigo);color:var(--primary-indigo)}
-    
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: .5rem;
+      height: 42px !important;
+      padding: 0 1.5rem !important;
+      border-radius: 10px !important;
+      font-family: inherit;
+      font-weight: 600;
+      font-size: .9rem;
+      cursor: pointer;
+      transition: all .25s cubic-bezier(0.4, 0, 0.2, 1);
+      text-decoration: none;
+      border: none;
+      outline: none;
+      box-sizing: border-box !important;
+      margin: 0 !important;
+      vertical-align: middle;
+    }
+
+    .btn-sm {
+      height: 34px !important;
+      padding: 0 0.85rem !important;
+      font-size: .8rem !important;
+      border-radius: 8px !important;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--secondary-blue), var(--primary-indigo));
+      color: #fff;
+      box-shadow: 0 4px 15px rgba(79, 70, 229, .25)
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 22px rgba(79, 70, 229, .35)
+    }
+
+    .btn-secondary {
+      background: rgba(37, 99, 235, .08);
+      color: var(--secondary-blue);
+      border: 1px solid rgba(37, 99, 235, 0.1)
+    }
+
+    .btn-secondary:hover {
+      background: rgba(37, 99, 235, .15);
+      transform: translateY(-1px)
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 2px solid var(--border-color);
+      color: var(--text-dark)
+    }
+
+    .btn-outline:hover {
+      border-color: var(--primary-indigo);
+      color: var(--primary-indigo);
+      background: rgba(79, 70, 229, 0.02);
+      transform: translateY(-1px)
+    }
+
+    /* Flex alignment helper classes for views */
+    .flex-between {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .flex-center {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    /* Enhanced Table Container & Wrapper support */
+    .table-wrapper,
+    .table-container {
+      background: #fff;
+      border-radius: 16px;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+      overflow-x: auto;
+      margin-top: 1rem;
+      width: 100%;
+      max-width: 100%;
+    }
+
+    .table-container table,
+    .table-wrapper table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      min-width: 600px;
+    }
+
+    .table-container th,
+    .table-wrapper th {
+      padding: 1.1rem 1.5rem;
+      background: #f8fafc;
+      font-size: .78rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      border-bottom: 1px solid var(--border-color);
+      white-space: nowrap;
+    }
+
+    .table-container td,
+    .table-wrapper td {
+      padding: 1.1rem 1.5rem;
+      font-size: .92rem;
+      color: var(--text-dark);
+      border-bottom: 1px solid #f1f5f9;
+      vertical-align: middle;
+    }
+
+    .table-container tbody tr:last-child td,
+    .table-wrapper tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .table-container tbody tr,
+    .table-wrapper tbody tr {
+      transition: background-color 0.2s ease;
+    }
+
+    .table-container tbody tr:hover,
+    .table-wrapper tbody tr:hover {
+      background-color: #fcfdfd;
+    }
+
+    /* Inputs and Controls */
+    .form-control,
+    .input-control {
+      height: 42px !important;
+      padding: 0 1rem !important;
+      font-family: inherit;
+      font-size: .9rem !important;
+      font-weight: 500 !important;
+      color: var(--text-dark) !important;
+      background: #ffffff !important;
+      border: 1px solid var(--border-color) !important;
+      border-radius: 10px !important;
+      outline: none;
+      transition: all .2s ease;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02) !important;
+      box-sizing: border-box !important;
+      margin: 0 !important;
+      vertical-align: middle;
+    }
+
+    .form-control:focus,
+    .input-control:focus {
+      border-color: var(--primary-indigo) !important;
+      box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.12) !important;
+    }
+
+    /* Card actions */
+    .card-action {
+      font-size: .85rem;
+      font-weight: 600;
+      color: var(--primary-indigo);
+      cursor: pointer;
+      transition: all .2s ease;
+      padding: 4px 8px;
+      border-radius: 6px;
+    }
+
+    .card-action:hover {
+      background: rgba(79, 70, 229, 0.08);
+      text-decoration: none;
+    }
+
     /* Hero Override */
-    .dash-hero{padding:2.5rem;background:#fff;border-bottom:1px solid var(--border-color);display:flex;justify-content:space-between;align-items:center;}
-    .dash-hero h1{font-size:2rem;font-weight:800;color:var(--text-dark);margin-bottom:.5rem;}
-    .dash-hero h1 span{color:var(--primary-indigo)}
-    .dash-hero p{color:var(--text-muted);font-size:.95rem}
-    .dash-actions{display:flex;gap:1rem;}
-    
-    @media(max-width:768px){
-      .student-layout{grid-template-columns:1fr}
-      .sidebar{display:none}
-      .dash-hero{flex-direction:column;align-items:flex-start;gap:1.5rem}
+    .dash-hero {
+      padding: 3rem 3.5rem;
+      background: #fff;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+    }
+
+    .dash-hero h1 {
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: var(--text-dark) !important;
+      margin-bottom: .4rem;
+      letter-spacing: -0.8px;
+      line-height: 1.2
+    }
+
+    .dash-hero h1 span {
+      background: linear-gradient(135deg, var(--primary-indigo), var(--accent-cyan));
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .dash-hero p {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+      font-weight: 400
+    }
+
+    .dash-actions {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    /* Adjust specific embedded view styling */
+    #view-dashboard>div[style*="padding: 2.5rem"] {
+      padding: 3rem 3.5rem !important;
+      max-width: 1600px;
+      margin: 0 auto;
+    }
+
+    /* Dashboard section headers */
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.25rem;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .section-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text-dark);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      letter-spacing: -0.3px;
+    }
+
+    /* Prevent horizontal overflow on dashboard tables grid */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 1fr !important;
+      gap: 2.5rem;
+      margin-top: 2.5rem;
+      width: 100%;
+    }
+
+    @media(max-width:768px) {
+      .student-layout {
+        grid-template-columns: 1fr !important;
+      }
+
+      .sidebar {
+        display: none !important;
+      }
+
+      .dash-hero {
+        padding: 2rem;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1.5rem
+      }
+
+      .view:not(#view-dashboard) {
+        padding: 1.5rem;
+      }
+
+      #view-dashboard>div[style*="padding: 2.5rem"] {
+        padding: 1.5rem !important;
+      }
+
+      .topbar {
+        padding: 1rem 1.5rem;
+      }
     }
   </style>
 </head>
@@ -121,7 +673,7 @@
 
       <!-- TOPBAR -->
       <div class="topbar">
-        <span class="topbar-title" id="topbar-title">Educator Dashboard</span>
+        <span class="topbar-title" id="topbar-title">Dashboard</span>
         <div class="topbar-right">
           <div class="integrity-pill"><i class="fas fa-shield-alt"></i> Secure Session</div>
         </div>
@@ -138,10 +690,12 @@
             <button onclick="TeacherDashboard.showBroadcastModal()" class="btn btn-secondary">
               <i class="fas fa-bullhorn"></i> Broadcast
             </button>
-            <button onclick="TeacherDashboard.showMCQUpload()" class="btn btn-outline" style="color:var(--primary-indigo);border-color:var(--primary-indigo)">
+            <button onclick="TeacherDashboard.showMCQUpload()" class="btn btn-outline"
+              style="color:var(--primary-indigo);border-color:var(--primary-indigo)">
               <i class="fas fa-robot"></i> Create Exam
             </button>
-            <button onclick="TeacherDashboard.showUploadMaterial()" class="btn btn-primary">
+            <button onclick="TeacherDashboard.showUploadMaterial()" class="btn btn-outline"
+              style="color:var(--primary-indigo);border-color:var(--primary-indigo)">
               <i class="fas fa-plus"></i> Upload Document
             </button>
             <input type="file" id="ai-mcq-upload" style="display: none" accept=".pdf,.doc,.docx"
@@ -177,7 +731,9 @@
             <section class="section-card">
               <div class="section-header" style="display:flex; justify-content:space-between; align-items:center;">
                 <h3 class="section-title"><i class="fas fa-history"></i> Recent Sessions</h3>
-                <select id="filter-session-board" class="form-control" style="width: auto; padding: 4px 12px; font-size: 12px;" onchange="TeacherDashboard.setBoardFilter(this.value)">
+                <select id="filter-session-board" class="form-control"
+                  style="width: auto; padding: 4px 12px; font-size: 12px;"
+                  onchange="TeacherDashboard.setBoardFilter(this.value)">
                   <option value="All">All Boards (Global)</option>
                   <option value="CBSE">CBSE</option>
                   <option value="ICSE">ICSE</option>
@@ -282,9 +838,11 @@
 
       <!-- VIEW: All Analytics (Global) -->
       <main id="view-analytics-all" class="view" style="display: none;">
-        <header style="margin-bottom: 48px;">
-          <h2 class="h2">Academic Performance Overview</h2>
-          <p class="p-dim">Aggregated data across all active and completed exam sessions.</p>
+        <header class="flex-between" style="margin-bottom: 32px;">
+          <div>
+            <h2 class="h2">Academic Performance Overview</h2>
+            <p class="p-dim">Aggregated data across all active and completed exam sessions.</p>
+          </div>
         </header>
 
         <div id="global-analytics-stats"></div>
@@ -308,7 +866,8 @@
             <p class="p-dim">Manage and audit your division-wise academic resources.</p>
           </div>
           <div style="display:flex; gap:12px;">
-            <select id="filter-material-grade" class="input-control" style="padding: 8px 16px;"
+            <select id="filter-material-grade" class="btn btn-outline"
+              style="padding: 8px 16px;color:var(--primary-indigo);border-color:var(--primary-indigo)"
               onchange="TeacherDashboard.loadMaterials()">
               <option value="">All Grades</option>
               <option value="Grade 6">Grade 6</option>
@@ -317,7 +876,8 @@
               <option value="Grade 9">Grade 9</option>
               <option value="Grade 10">Grade 10</option>
             </select>
-            <select id="filter-material-division" class="input-control" style="padding: 8px 16px;"
+            <select id="filter-material-division" class="btn btn-outline"
+              style="padding: 8px 16px;color:var(--primary-indigo);border-color:var(--primary-indigo)"
               onchange="TeacherDashboard.loadMaterials()">
               <option value="">All Divisions</option>
               <option value="A">Div A</option>
@@ -326,7 +886,8 @@
               <option value="D">Div D</option>
               <option value="All">Global (All)</option>
             </select>
-            <button class="btn btn-primary" onclick="TeacherDashboard.showUploadMaterial()">+ Upload Material</button>
+            <button class="btn btn-outline" onclick="TeacherDashboard.showUploadMaterial()"
+              style="color:var(--primary-indigo);border-color:var(--primary-indigo)">+ Upload Material</button>
           </div>
         </header>
         <div class="table-container">
@@ -353,14 +914,24 @@
             <p class="p-dim">Monitor attendance and overall performance per session.</p>
           </div>
           <div style="display:flex; gap:12px;">
-            <select id="attendance-session-select" class="input-control" style="padding: 8px 16px;"
+            <button onclick="TeacherDashboard.showManualAttendance()" class="btn btn-outline"
+              style="padding: 8px 16px;color:var(--primary-indigo);border-color:var(--primary-indigo)">
+              <i class="fas fa-plus"></i> Manual Attendance
+            </button>
+            <button onclick="TeacherDashboard.showAddStudentModal()" class="btn btn-outline"
+              style="padding: 8px 16px;color:var(--primary-indigo);border-color:var(--primary-indigo)">
+              <i class="fas fa-user-plus"></i> Add New Student
+            </button>
+            <select id="attendance-session-select" class="btn btn-outline"
+              style="padding: 8px 16px;color:var(--primary-indigo);border-color:var(--primary-indigo)"
               onchange="TeacherDashboard.loadAttendance(this.value)">
               <option value="">Select Session...</option>
             </select>
           </div>
         </header>
         <div id="session-attendance-container" class="table-container">
-          <h3 class="h3" style="margin-bottom: 16px; font-size: 18px;">Session Attendance</h3>
+          <h3 class="h3" style="margin-bottom: 16px; font-size: 18px;padding:1.5rem; padding-bottom: 0.5rem;">Session
+            Attendance</h3>
           <table>
             <thead>
               <tr>
@@ -376,7 +947,7 @@
         </div>
 
         <div id="student-roster-container" class="table-container" style="margin-top: 40px;">
-          <div class="flex-between" style="margin-bottom: 20px;">
+          <div class="flex-between" style="margin-bottom: 20px; padding:1.5rem; padding-bottom: 0.5rem;">
             <h3 class="h3" style="font-size: 18px;">Master Student Roster</h3>
             <div style="display:flex; gap:12px;">
               <select id="filter-student-class" class="input-control" style="padding: 6px 12px; font-size: 13px;"

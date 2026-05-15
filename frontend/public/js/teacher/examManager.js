@@ -9,57 +9,89 @@ const ExamManager = {
     const courseOptions = courses.map(c => `<option value="${c._id}">${c.courseName}</option>`).join('');
 
     Modal.show('create-session', `
-      <form id="create-session-form" onsubmit="ExamManager.handleCreate(event, '${bankId}')">
-        <div class="form-group">
-          <label>Exam Title</label>
-          <input type="text" name="title" class="form-control" placeholder="Midterm Exam 2024" required>
+      <div style="position: relative; padding: 10px;">
+        <!-- Custom Header inside content -->
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 32px;">
+          <div>
+            <h2 style="font-size: 24px; font-weight: 800; color: var(--primary-indigo); letter-spacing: -0.5px; margin: 0;">Create Exam Session</h2>
+            <p class="p-dim" style="font-size: 13px; margin-top: 4px;">Initialize a secure digital examination environment.</p>
+          </div>
+          <button onclick="Modal.close()" style="background: #f1f5f9; border: none; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #64748b; transition: all 0.2s;">
+            <i class="fas fa-times"></i>
+          </button>
         </div>
-        <div class="form-group">
-          <label>Target Course (Optional)</label>
-          <select name="courseId" class="form-control">
-            <option value="">Global (All Students)</option>
-            ${courseOptions}
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Educational Board</label>
-          <select name="board" class="form-control" required>
-            <option value="All">All Boards (Global)</option>
-            <option value="CBSE">CBSE</option>
-            <option value="ICSE">ICSE</option>
-            <option value="State Board">State Board</option>
-            <option value="TestStream">TestStream (Mock)</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Scheduled Start</label>
-          <input type="datetime-local" name="scheduledStart" class="form-control" required>
-        </div>
-        <div class="form-group">
-          <label>Duration (Mins)</label>
-          <input type="number" name="durationMinutes" class="form-control" value="60" required>
-        </div>
-        <div class="form-group" style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px;">
-          <label style="display:flex; align-items:center; gap:8px;">
-            <input type="checkbox" name="requireCamera" checked> Require Camera
-          </label>
-          <label style="display:flex; align-items:center; gap:8px;">
-            <input type="checkbox" name="enableAIProctoring" checked> AI Proctoring
-          </label>
-          <label style="display:flex; align-items:center; gap:8px;">
-            <input type="checkbox" name="lockBrowser" checked> Lock Browser
-          </label>
-          <label style="display:flex; align-items:center; gap:8px;">
-            <input type="checkbox" name="shuffleQuestions"> Shuffle Questions
-          </label>
-        </div>
-        <div class="form-group">
-          <label>Max Violations (before auto-submit)</label>
-          <input type="number" name="maxViolations" class="form-control" value="5" min="1" max="20">
-        </div>
-        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 12px;">Create Session</button>
-      </form>
-    `, { title: 'Create Exam Session' });
+
+        <form id="create-session-form" onsubmit="ExamManager.handleCreate(event, '${bankId}')" style="display: flex; flex-direction: column; gap: 24px;">
+          <!-- Primary Info Grid -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div class="form-group">
+              <label style="display: block; font-size: 11px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.05em;">Exam Title</label>
+              <input type="text" name="title" class="form-control" placeholder="Midterm Exam 2024" style="width: 100%; height: 44px;" required>
+            </div>
+            <div class="form-group">
+              <label style="display: block; font-size: 11px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.05em;">Scheduled Start</label>
+              <input type="datetime-local" name="scheduledStart" class="form-control" style="width: 100%; height: 44px;" required>
+            </div>
+          </div>
+
+          <!-- Academic Context Box -->
+          <div style="background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div class="form-group">
+              <label style="display: block; font-size: 11px; font-weight: 700; color: #475569; margin-bottom: 6px;">COURSE ASSIGNMENT</label>
+              <select name="courseId" class="form-control" style="width: 100%; background: #fff; height: 40px;">
+                <option value="">Global (All Students)</option>
+                ${courseOptions}
+              </select>
+            </div>
+            <div class="form-group">
+              <label style="display: block; font-size: 11px; font-weight: 700; color: #475569; margin-bottom: 6px;">EDUCATIONAL BOARD</label>
+              <select name="board" class="form-control" style="width: 100%; background: #fff; height: 40px;" required>
+                <option value="All">All Boards</option>
+                <option value="CBSE">CBSE</option>
+                <option value="ICSE">ICSE</option>
+                <option value="State Board">State Board</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Technical Settings -->
+          <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 20px; align-items: end;">
+            <div class="form-group">
+              <label style="display: block; font-size: 11px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">Duration (Mins)</label>
+              <input type="number" name="durationMinutes" class="form-control" value="60" style="height: 44px;" required>
+            </div>
+            <div style="background: #fff; border: 1px solid #edf2f7; padding: 12px 16px; border-radius: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+              <label style="display:flex; align-items:center; gap:8px; font-size: 12px; font-weight: 600; color: #475569; cursor: pointer;">
+                <input type="checkbox" name="requireCamera" checked style="accent-color: var(--primary-indigo);"> Camera
+              </label>
+              <label style="display:flex; align-items:center; gap:8px; font-size: 12px; font-weight: 600; color: #475569; cursor: pointer;">
+                <input type="checkbox" name="enableAIProctoring" checked style="accent-color: var(--primary-indigo);"> AI Proctor
+              </label>
+              <label style="display:flex; align-items:center; gap:8px; font-size: 12px; font-weight: 600; color: #475569; cursor: pointer;">
+                <input type="checkbox" name="lockBrowser" checked style="accent-color: var(--primary-indigo);"> Lock UI
+              </label>
+              <label style="display:flex; align-items:center; gap:8px; font-size: 12px; font-weight: 600; color: #475569; cursor: pointer;">
+                <input type="checkbox" name="shuffleQuestions" style="accent-color: var(--primary-indigo);"> Shuffle
+              </label>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div style="display: flex; gap: 12px; margin-top: 8px;">
+            <button type="button" class="btn btn-secondary" style="flex: 1; height: 46px;" onclick="Modal.close()">Cancel</button>
+            <button type="submit" class="btn btn-primary" style="flex: 2; height: 46px; background: var(--primary-indigo);">
+              <i class="fas fa-rocket"></i> Create Exam Session
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <style>
+        /* Hide fixed header for this modal */
+        #modal-overlay-create-session header, 
+        #modal-overlay-create-session .flex-between:first-child { display: none !important; }
+      </style>
+    `, { title: '', width: '650px' });
   },
 
   showEditSession(sessionId) {
@@ -81,54 +113,83 @@ const ExamManager = {
       : '';
 
     Modal.show('edit-session', `
-      <form id="edit-session-form" onsubmit="ExamManager.handleEdit(event, '${session._id}')">
-        <div class="form-group">
-          <label>Exam Title</label>
-          <input type="text" name="title" class="form-control" value="${(session.title || '').replace(/"/g, '&quot;')}" required>
+      <div style="position: relative; padding: 10px;">
+        <!-- Custom Header inside content -->
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 32px;">
+          <div>
+            <h2 style="font-size: 24px; font-weight: 800; color: var(--primary-indigo); letter-spacing: -0.5px; margin: 0;">Edit Exam Session</h2>
+            <p class="p-dim" style="font-size: 13px; margin-top: 4px;">Update session parameters and proctoring settings.</p>
+          </div>
+          <button onclick="Modal.close()" style="background: #f1f5f9; border: none; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #64748b; transition: all 0.2s;">
+            <i class="fas fa-times"></i>
+          </button>
         </div>
-        <div class="form-group">
-          <label>Target Course (Optional)</label>
-          <select name="courseId" class="form-control" disabled>
-            <option value="" ${!session.courseId ? 'selected' : ''}>Global (All Students)</option>
-            ${courseOptions}
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Educational Board</label>
-          <select name="board" class="form-control" required>
-            <option value="All" ${!session.board || session.board === 'All' || session.board === '' ? 'selected' : ''}>All Boards (Global)</option>
-            <option value="CBSE" ${session.board === 'CBSE' ? 'selected' : ''}>CBSE</option>
-            <option value="ICSE" ${session.board === 'ICSE' ? 'selected' : ''}>ICSE</option>
-            <option value="State Board" ${session.board === 'State Board' ? 'selected' : ''}>State Board</option>
-            <option value="TestStream" ${session.board === 'TestStream' ? 'selected' : ''}>TestStream (Mock)</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Scheduled Start</label>
-          <input type="datetime-local" name="scheduledStart" class="form-control" value="${localDate}" required>
-        </div>
-        <div class="form-group">
-          <label>Duration (Mins)</label>
-          <input type="number" name="durationMinutes" class="form-control" value="${session.duration || 60}" required>
-        </div>
-        <div class="form-group" style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px;">
-          <label style="display:flex; align-items:center; gap:8px;">
-            <input type="checkbox" name="requireCamera" ${session.requireCamera !== false ? 'checked' : ''}> Require Camera
-          </label>
-          <label style="display:flex; align-items:center; gap:8px;">
-            <input type="checkbox" name="enableAIProctoring" ${session.enableAIProctoring !== false ? 'checked' : ''}> AI Proctoring
-          </label>
-          <label style="display:flex; align-items:center; gap:8px;">
-            <input type="checkbox" name="lockBrowser" ${session.lockBrowser !== false ? 'checked' : ''}> Lock Browser
-          </label>
-        </div>
-        <div class="form-group">
-          <label>Max Violations</label>
-          <input type="number" name="maxViolations" class="form-control" value="${session.maxViolations || 5}" min="1" max="20">
-        </div>
-        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 12px;">Update Session</button>
-      </form>
-    `, { title: 'Edit Exam Session' });
+
+        <form id="edit-session-form" onsubmit="ExamManager.handleEdit(event, '${session._id}')" style="display: flex; flex-direction: column; gap: 24px;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div class="form-group">
+              <label style="display: block; font-size: 11px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">Exam Title</label>
+              <input type="text" name="title" class="form-control" value="${(session.title || '').replace(/"/g, '&quot;')}" style="height: 44px;" required>
+            </div>
+            <div class="form-group">
+              <label style="display: block; font-size: 11px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">Scheduled Start</label>
+              <input type="datetime-local" name="scheduledStart" class="form-control" value="${localDate}" style="height: 44px;" required>
+            </div>
+          </div>
+
+          <div style="background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div class="form-group">
+              <label style="display: block; font-size: 11px; font-weight: 700; color: #475569; margin-bottom: 6px;">COURSE (LOCKED)</label>
+              <select name="courseId" class="form-control" style="width: 100%; background: #f1f5f9; height: 40px;" disabled>
+                <option value="" ${!session.courseId ? 'selected' : ''}>Global Session</option>
+                ${courseOptions}
+              </select>
+            </div>
+            <div class="form-group">
+              <label style="display: block; font-size: 11px; font-weight: 700; color: #475569; margin-bottom: 6px;">EDUCATIONAL BOARD</label>
+              <select name="board" class="form-control" style="width: 100%; background: #fff; height: 40px;" required>
+                <option value="All" ${!session.board || session.board === 'All' || session.board === '' ? 'selected' : ''}>All Boards</option>
+                <option value="CBSE" ${session.board === 'CBSE' ? 'selected' : ''}>CBSE</option>
+                <option value="ICSE" ${session.board === 'ICSE' ? 'selected' : ''}>ICSE</option>
+                <option value="State Board" ${session.board === 'State Board' ? 'selected' : ''}>State Board</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 20px; align-items: end;">
+            <div class="form-group">
+              <label style="display: block; font-size: 11px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">Duration (Mins)</label>
+              <input type="number" name="durationMinutes" class="form-control" value="${session.duration || 60}" style="height: 44px;" required>
+            </div>
+            <div style="background: #fff; border: 1px solid #edf2f7; padding: 12px 16px; border-radius: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+              <label style="display:flex; align-items:center; gap:8px; font-size: 12px; font-weight: 600; color: #475569; cursor: pointer;">
+                <input type="checkbox" name="requireCamera" ${session.requireCamera !== false ? 'checked' : ''} style="accent-color: var(--primary-indigo);"> Camera
+              </label>
+              <label style="display:flex; align-items:center; gap:8px; font-size: 12px; font-weight: 600; color: #475569; cursor: pointer;">
+                <input type="checkbox" name="enableAIProctoring" ${session.enableAIProctoring !== false ? 'checked' : ''} style="accent-color: var(--primary-indigo);"> AI Proctor
+              </label>
+              <label style="display:flex; align-items:center; gap:8px; font-size: 12px; font-weight: 600; color: #475569; cursor: pointer;">
+                <input type="checkbox" name="lockBrowser" ${session.lockBrowser !== false ? 'checked' : ''} style="accent-color: var(--primary-indigo);"> Lock UI
+              </label>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div style="display: flex; gap: 12px; margin-top: 8px;">
+            <button type="button" class="btn btn-secondary" style="flex: 1; height: 46px;" onclick="Modal.close()">Cancel</button>
+            <button type="submit" class="btn btn-primary" style="flex: 2; height: 46px; background: var(--primary-indigo);">
+              <i class="fas fa-save"></i> Save Session Changes
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <style>
+        /* Hide fixed header for this modal */
+        #modal-overlay-edit-session header, 
+        #modal-overlay-edit-session .flex-between:first-child { display: none !important; }
+      </style>
+    `, { title: '', width: '650px' });
   },
 
   async handleCreate(event, bankId) {
