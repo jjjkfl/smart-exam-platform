@@ -670,11 +670,21 @@ const StudentDashboard = {
                       }).join('')}
                     </div>
                     
-                    ${!isSelectedCorrect && a.selectedAnswer ? `
+                    ${!isSelectedCorrect ? `
                     <div style="margin-top: 2rem; margin-left: 3.75rem; padding: 1.25rem 1.5rem; background: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #3b82f6; border-radius: 12px; display: flex; align-items: flex-start; gap: 1rem;">
                       <div style="color: #3b82f6; font-size: 1.25rem; margin-top: 2px;"><i class="fas fa-info-circle"></i></div>
                       <div>
                         <p style="font-size: 0.95rem; color: #334155; margin: 0;"><strong style="font-weight: 800; color: #0f172a;">Correct Answer:</strong> Option ${correctAnswer.join(', ')} - ${(a.options?.find(o => o.label === correctAnswer[0])?.text || '')}</p>
+                      </div>
+                    </div>
+                    ` : ''}
+
+                    ${a.explanation ? `
+                    <div style="margin-top: 1rem; margin-left: 3.75rem; padding: 1.5rem; background: #fdf4ff; border: 1px solid #fce7f3; border-left: 4px solid #d946ef; border-radius: 12px; display: flex; align-items: flex-start; gap: 1rem;">
+                      <div style="color: #d946ef; font-size: 1.25rem; margin-top: 2px;"><i class="fas fa-lightbulb"></i></div>
+                      <div>
+                        <h4 style="font-size: 0.85rem; font-weight: 800; color: #86198f; margin: 0 0 0.5rem 0; text-transform: uppercase; letter-spacing: 1.5px;">Explanation</h4>
+                        <p style="font-size: 0.95rem; color: #4a044e; margin: 0; line-height: 1.6;">${this.esc(a.explanation)}</p>
                       </div>
                     </div>
                     ` : ''}
