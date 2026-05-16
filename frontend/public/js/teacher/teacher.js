@@ -10,9 +10,23 @@ const TeacherDashboard = {
   currentBoardFolder: null,
   async init() {
     if (!auth.checkAuth()) return;
+
+    // Handle one-time setup
+    if (!this._bound) {
+      this._bound = true;
+      this.bindSidebarNav();
+      window.addEventListener('popstate', () => this.init());
+
+      // "Start Fresh" & "Disable Back/Forward" Logic
+      // We use replaceState only to ensure history.length stays at 1.
+      const url = new URL(window.location);
+      if (!url.searchParams.has('view')) {
+        url.searchParams.set('view', 'dashboard');
+      }
+      window.history.replaceState({ view: url.searchParams.get('view') }, '', url);
+    }
+
     if (this._pollingInterval) clearInterval(this._pollingInterval);
-    this.bindSidebarNav();
-    this.highlightSidebar('dashboard');
 
     // Set teacher name in welcome header and sidebar
     const user = auth.getUser();
@@ -1519,7 +1533,11 @@ const TeacherDashboard = {
     const url = new URL(window.location);
     url.searchParams.set('view', viewId);
     url.searchParams.delete('sessionId');
-    window.history.pushState({}, '', url);
+    
+    // Check if we are already on this view to prevent history pollution
+    if (window.location.search === url.search) return;
+
+    window.history.pushState({ view: viewId }, '', url);
     this.init();
   },
 
@@ -1569,7 +1587,7 @@ const TeacherDashboard = {
 
   bindSidebarNav() {
     document.querySelectorAll('.sidebar .nav-item[data-action]').forEach(item => {
-      item.addEventListener('click', () => {
+      item.addEventListener('click', (e) => {
         const action = item.dataset.action;
         const viewMap = {
           'overview': 'dashboard',
@@ -1583,7 +1601,11 @@ const TeacherDashboard = {
         const url = new URL(window.location);
         url.searchParams.set('view', viewId);
         url.searchParams.delete('sessionId');
-        window.history.pushState({}, '', url);
+        
+        // If already on this view, do nothing
+        if (window.location.search === url.search) return;
+
+        window.history.pushState({ view: viewId }, '', url);
         this.init();
       });
     });

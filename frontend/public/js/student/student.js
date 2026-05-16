@@ -7,6 +7,26 @@ const StudentDashboard = {
   async init() {
     if (!auth.checkAuth()) return;
 
+    // Handle one-time setup
+    if (!this._bound) {
+      this._bound = true;
+      this.bindSidebarNav();
+      window.addEventListener('popstate', (e) => {
+        const params = new URLSearchParams(window.location.search);
+        const view = params.get('view') || 'dashboard';
+
+        this.handleUrlView();
+      });
+
+      // "Start Fresh" & "Disable Back/Forward" Logic
+      // We use replaceState only to ensure history.length stays at 1.
+      const url = new URL(window.location);
+      if (!url.searchParams.has('view')) {
+        url.searchParams.set('view', 'dashboard');
+      }
+      window.history.replaceState({ view: url.searchParams.get('view') }, '', url);
+    }
+
     // Populate user info in UI
     const user = auth.getUser();
     if (user) {
@@ -173,7 +193,25 @@ const StudentDashboard = {
     if (viewId === 'exam-results') this.loadResults();
   },
 
-  switchView(viewId) { this.showView(viewId); },
+  bindSidebarNav() {
+    document.querySelectorAll('.sidebar .nav-item[data-action]').forEach(item => {
+      item.addEventListener('click', () => {
+        const action = item.dataset.action;
+        this.switchView(action);
+      });
+    });
+  },
+
+  switchView(viewId) {
+    const url = new URL(window.location);
+    url.searchParams.set('view', viewId);
+    
+    // Prevent history pollution
+    if (window.location.search === url.search) return;
+
+    window.history.pushState({ view: viewId }, '', url);
+    this.showView(viewId);
+  },
 
   async loadSchedule() {
     const container = document.getElementById('weekly-calendar');

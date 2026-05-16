@@ -13,7 +13,7 @@ const Monitor = {
     this.sessionId = params.get('sessionId');
 
     if (!this.sessionId) {
-      window.location.href = '/teacher.html';
+      window.location.replace('/teacher.html');
       return;
     }
 

@@ -1175,7 +1175,7 @@
   <div class="student-layout">
     <!-- SIDEBAR -->
     <nav class="sidebar">
-      <a href="/index.html" class="sidebar-logo">
+      <a href="javascript:location.replace('/index.html')" class="sidebar-logo">
         <i class="fas fa-graduation-cap"></i> MCQPro
       </a>
 
@@ -1389,23 +1389,15 @@
 
   <div id="announcement-toast" style="position:fixed;top:20px;right:20px;z-index:9999"></div>
 
-  <script src="/js/shared/api.js?v=20"></script>
-  <script src="/js/shared/auth.js?v=20"></script>
-  <script src="/js/shared/utils.js?v=20"></script>
-  <script src="/js/shared/notifications.js?v=20"></script>
-  <script src="/js/components/loader.js?v=20"></script>
-  <script src="/js/student/proctor.js?v=20"></script>
-  <script src="/js/student/student.js?v=20"></script>
+  <script src="/js/shared/api.js?v=25"></script>
+  <script src="/js/shared/auth.js?v=25"></script>
+  <script src="/js/shared/utils.js?v=25"></script>
+  <script src="/js/shared/notifications.js?v=25"></script>
+  <script src="/js/components/loader.js?v=25"></script>
+  <script src="/js/student/proctor.js?v=25"></script>
+  <script src="/js/student/student.js?v=25"></script>
 
   <script>
-    // Nav binding
-    document.querySelectorAll('.sidebar .nav-item[data-action]').forEach(item => {
-      item.addEventListener('click', () => {
-        const action = item.dataset.action;
-        StudentDashboard.switchView(action);
-      });
-    });
-
     function switchView(id) { StudentDashboard.switchView(id); }
 
     // Strict Auth Guard - Run immediately before DOM is fully loaded

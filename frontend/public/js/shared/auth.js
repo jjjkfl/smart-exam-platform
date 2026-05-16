@@ -70,7 +70,7 @@ const auth = {
    */
   checkAuth() {
     if (!this.isAuthenticated()) {
-      window.location.href = '/login.html';
+      window.location.replace('/login.html');
       return false;
     }
 

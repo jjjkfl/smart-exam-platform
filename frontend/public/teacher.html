@@ -715,7 +715,7 @@
   <div class="student-layout">
     <!-- Sidebar -->
     <nav class="sidebar">
-      <a href="/teacher.html" class="sidebar-logo">
+      <a href="javascript:void(0)" onclick="TeacherDashboard.navigateToView('dashboard')" class="sidebar-logo">
         <i class="fas fa-chalkboard-teacher"></i> MCQPro
       </a>
 
@@ -872,7 +872,7 @@
       <!-- VIEW: Monitoring -->
       <main id="view-monitor" class="view" style="display: none;">
         <div style="margin-bottom: 24px;">
-          <button onclick="window.location.href='/teacher.html'" class="btn btn-outline"
+          <button onclick="TeacherDashboard.navigateToView('dashboard')" class="btn btn-outline"
             style="padding: 6px 12px; font-size: 12px; margin-bottom: 16px;">← Back to Dashboard</button>
         </div>
         <header class="flex-between" style="margin-bottom: 32px;">
@@ -906,7 +906,7 @@
       <!-- VIEW: Analytics (Session Specific) -->
       <main id="view-analytics" class="view" style="display: none;">
         <div style="margin-bottom: 24px;">
-          <button onclick="window.location.href='/teacher.html'" class="btn btn-outline"
+          <button onclick="TeacherDashboard.navigateToView('dashboard')" class="btn btn-outline"
             style="padding: 6px 12px; font-size: 12px; margin-bottom: 16px;">← Back to Dashboard</button>
         </div>
         <div id="analytics-overview"></div>
@@ -1097,24 +1097,24 @@
   <!-- Shared Libs -->
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="/js/shared/api.js?v=20"></script>
-  <script src="/js/shared/auth.js?v=20"></script>
-  <script src="/js/shared/utils.js?v=20"></script>
-  <script src="/js/shared/notifications.js?v=20"></script>
+  <script src="/js/shared/api.js?v=26"></script>
+  <script src="/js/shared/auth.js?v=26"></script>
+  <script src="/js/shared/utils.js?v=26"></script>
+  <script src="/js/shared/notifications.js?v=26"></script>
 
   <!-- Components -->
-  <script src="/js/components/navbar.js?v=20"></script>
-  <script src="/js/components/modal.js?v=20"></script>
-  <script src="/js/components/loader.js?v=20"></script>
-  <script src="/js/components/chart.js?v=20"></script>
+  <script src="/js/components/navbar.js?v=26"></script>
+  <script src="/js/components/modal.js?v=26"></script>
+  <script src="/js/components/loader.js?v=26"></script>
+  <script src="/js/components/chart.js?v=26"></script>
 
   <!-- Teacher Modules -->
-  <script src="/js/teacher/socket.js?v=20"></script>
-  <script src="/js/teacher/upload.js?v=20"></script>
-  <script src="/js/teacher/examManager.js?v=20"></script>
-  <script src="/js/teacher/monitor.js?v=20"></script>
-  <script src="/js/teacher/analytics.js?v=20"></script>
-  <script src="/js/teacher/teacher.js?v=20"></script>
+  <script src="/js/teacher/socket.js?v=26"></script>
+  <script src="/js/teacher/upload.js?v=26"></script>
+  <script src="/js/teacher/examManager.js?v=26"></script>
+  <script src="/js/teacher/monitor.js?v=26"></script>
+  <script src="/js/teacher/analytics.js?v=26"></script>
+  <script src="/js/teacher/teacher.js?v=26"></script>
 
   <script>
     // Strict Auth Guard - Run immediately before DOM is fully loaded
