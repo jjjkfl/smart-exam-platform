@@ -966,13 +966,34 @@
       }
     }
 
+    /* Full Page Mode for Detailed Views */
+    .student-layout.full-page-mode {
+      grid-template-columns: 1fr;
+    }
+    .student-layout.full-page-mode .sidebar,
+    .student-layout.full-page-mode .topbar {
+      display: none;
+    }
+
     /* 100% Fidelity Image-Match Results Styles */
     .result-hero-grid {
       display: grid;
-      grid-template-columns: 0.8fr 0.8fr 0.8fr 2.5fr;
-      gap: 1.25rem;
+      grid-template-columns: 280px 1fr;
+      gap: 1.5rem;
       margin-bottom: 2.5rem;
       width: 100%;
+    }
+
+    @media (max-width: 900px) {
+      .result-hero-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .result-stats-column {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
     }
 
     .mini-stat-card {
@@ -1115,9 +1136,9 @@
 
     .opt-grid-match {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(2, 1fr);
       gap: 1rem;
-      margin-left: 3rem;
+      margin-left: 3.5rem;
     }
 
     .opt-box-match {

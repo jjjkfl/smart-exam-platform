@@ -473,6 +473,10 @@ const StudentDashboard = {
   async loadResults() {
     const container = document.getElementById('results-detailed-list');
     if (!container) return;
+    
+    // Ensure we exit full page mode if returning from detailed view
+    document.querySelector('.student-layout')?.classList.remove('full-page-mode');
+    container.classList.add('results-list');
 
     // Restore the global page-header if it was hidden by detailed view
     const globalHeader = document.querySelector('#view-exam-results .page-header');
@@ -519,11 +523,13 @@ const StudentDashboard = {
     const content = document.getElementById('results-detailed-list');
     if (!content) return;
 
-    // Hide the global page-header
+    // Enable Full Page Mode and Hide Header
+    document.querySelector('.student-layout')?.classList.add('full-page-mode');
+    content.classList.remove('results-list');
     const globalHeader = document.querySelector('#view-exam-results .page-header');
     if (globalHeader) globalHeader.style.display = 'none';
 
-    content.innerHTML = '<div style="text-align:center; padding:100px 20px;"><div class="spinner"></div><p style="font-weight: 600;">Generating comprehensive analysis...</p></div>';
+    content.innerHTML = '<div style="text-align:center; padding:100px 20px;"><div class="spinner"></div><p style="font-weight: 600; margin-top: 1rem; color: #64748b;">Generating premium comprehensive analysis...</p></div>';
 
     try {
       const res = await api.get(`/portal/student/results/${resultId}`);
@@ -536,129 +542,147 @@ const StudentDashboard = {
       const skippedCount = answers.filter(a => !a.selectedAnswer).length;
       const totalQuestions = answers.length;
       const attemptedCount = answers.filter(a => a.selectedAnswer).length;
-
       const percentage = data.percentage || 0;
+      const accuracy = attemptedCount > 0 ? Math.round((correctCount / attemptedCount) * 100) : 0;
+      const isPassed = percentage >= 50;
 
       content.innerHTML = `
-        <div class="animate-slide-up" style="width: 100%;">
-          <!-- HEADER -->
-          <div style="margin-bottom: 2.5rem;">
-            <a href="javascript:void(0)" onclick="StudentDashboard.loadResults()" style="color: #3b82f6; font-weight: 700; font-size: 0.9rem; text-decoration: none; display: flex; align-items: center; gap: 8px; margin-bottom: 1.5rem;">
-               <i class="fas fa-arrow-left"></i> Back to My Results
-            </a>
-            <h1 style="font-size: 2.6rem; font-weight: 800; color: #1e293b; margin-bottom: 4px;">${data.sessionId?.title || 'Examination Result'}</h1>
-            <p style="color: #64748b; font-weight: 600; font-size: 1.1rem;">${data.sessionId?.subject || 'Academic Module'}</p>
+        <div class="result-fullpage-container animate-slide-up" style="max-width: 1100px; margin: 0 auto; padding: 2rem 0 4rem;">
+          
+          <!-- Premium Navigation Header -->
+          <div style="display: flex; align-items: center; gap: 1.5rem; margin-bottom: 2.5rem;">
+            <button onclick="StudentDashboard.loadResults()" style="border-radius: 50%; width: 44px; height: 44px; padding: 0; display: flex; align-items: center; justify-content: center; border: 1px solid #e2e8f0; background: white; cursor: pointer; color: #475569; transition: all 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.02);"><i class="fas fa-arrow-left"></i></button>
+            <div>
+              <h1 style="font-size: 2.2rem; font-weight: 900; color: #0f172a; line-height: 1.2; letter-spacing: -0.5px;">${data.sessionId?.title || 'Examination Result'}</h1>
+              <p style="color: #64748b; font-weight: 600; font-size: 0.95rem; margin-top: 4px;">${data.sessionId?.subject || 'Academic Module'} &nbsp;&bull;&nbsp; Submitted ${new Date(data.createdAt || Date.now()).toLocaleDateString()}</p>
+            </div>
           </div>
 
-          <!-- TOP STATS GRID -->
-          <div class="result-hero-grid">
-            <div class="mini-stat-card">
-              <div class="stat-icon-box" style="background: rgba(59, 130, 246, 0.1); color: #3b82f6;"><i class="fas fa-file-alt"></i></div>
-              <div>
-                <p class="stat-label">Marks Obtained</p>
-                <h4 class="stat-value"><span style="color:#3b82f6;">${Math.round(data.score || 0)}</span> / <span style="color:#1e293b;">${totalQuestions}</span></h4>
+          <!-- High-Impact Hero Stats Section -->
+          <div style="background: linear-gradient(135deg, #1e1b4b 0%, #3730a3 100%); border-radius: 24px; padding: 3rem 4rem; color: white; display: flex; justify-content: space-between; align-items: center; margin-bottom: 3rem; box-shadow: 0 20px 40px rgba(55, 48, 163, 0.25); position: relative; overflow: hidden; flex-wrap: wrap; gap: 2rem;">
+            <!-- Decorative background elements -->
+            <div style="position: absolute; top: -50%; right: -10%; width: 500px; height: 500px; background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 70%); border-radius: 50%; pointer-events: none;"></div>
+            
+            <div style="position: relative; z-index: 1;">
+              <p style="text-transform: uppercase; letter-spacing: 2px; font-size: 0.8rem; font-weight: 800; color: #a5b4fc; margin-bottom: 0.5rem;">Total Score Achieved</p>
+              <h2 style="font-size: 4.5rem; font-weight: 900; line-height: 1; letter-spacing: -2px;">${correctCount}<span style="font-size: 2rem; color: #818cf8; font-weight: 600; letter-spacing: 0;">/${totalQuestions}</span></h2>
+              <div style="display:inline-flex; align-items:center; gap:8px; padding:6px 16px; border-radius:100px; font-weight:800; font-size:0.85rem; margin-top:1rem; background:${isPassed ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)'}; color:${isPassed ? '#34d399' : '#fca5a5'}; border:1px solid ${isPassed ? 'rgba(52, 211, 153, 0.3)' : 'rgba(252, 165, 165, 0.3)'};">
+                ${isPassed ? '✅ EXAM PASSED' : '❌ EXAM FAILED'}
               </div>
             </div>
-
-            <div class="mini-stat-card">
-              <div class="stat-icon-box" style="background: rgba(16, 185, 129, 0.1); color: #10b981;"><i class="fas fa-chart-pie"></i></div>
-              <div>
-                <p class="stat-label">Percentage</p>
-                <h4 class="stat-value" style="color: #10b981;">${percentage}%</h4>
-                <div style="margin-top:0.75rem;"><span style="background: rgba(16, 185, 129, 0.1); color: #10b981; padding: 4px 12px; border-radius: 8px; font-size: 0.75rem; font-weight: 700;">Passed</span></div>
-              </div>
-            </div>
-
-            <div class="mini-stat-card">
-              <div class="stat-icon-box" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b;"><i class="fas fa-clipboard-list"></i></div>
-              <div>
-                <p class="stat-label">Questions Attempted</p>
-                <h4 class="stat-value"><span style="color:#1e293b;">${attemptedCount}</span> / <span style="color:#1e293b;">${totalQuestions}</span></h4>
-              </div>
-            </div>
-
-            <!-- Performance Overview Card -->
-            <div class="perf-overview-card">
-              <p style="font-size: 1rem; font-weight: 800; color: #1e293b;">Performance Overview</p>
-              <div class="perf-grid">
-                <div style="width: 160px; height: 160px; position: relative;">
-                  <canvas id="matchPerfChart"></canvas>
-                  <div class="chart-center-text">
-                    <p style="font-size: 0.75rem; font-weight: 700; color: #64748b; line-height: 1.2;">Total<br><span style="font-size: 1.4rem; color: #1e293b;">${totalQuestions}</span><br>Questions</p>
-                  </div>
+            
+            <div style="position: relative; z-index: 1; display: flex; align-items: center; gap: 3rem; flex-wrap: wrap;">
+              <!-- Dynamic CSS Donut Chart -->
+              <div style="width: 140px; height: 140px; border-radius: 50%; background: conic-gradient(#10b981 0% ${totalQuestions > 0 ? (correctCount/totalQuestions)*100 : 0}%, #ef4444 ${totalQuestions > 0 ? (correctCount/totalQuestions)*100 : 0}% ${totalQuestions > 0 ? ((correctCount+wrongCount)/totalQuestions)*100 : 0}%, #6366f1 ${totalQuestions > 0 ? ((correctCount+wrongCount)/totalQuestions)*100 : 0}% 100%); display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
+                <div style="width: 100px; height: 100px; border-radius: 50%; background: #2e267c; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: inset 0 4px 10px rgba(0,0,0,0.3);">
+                  <span style="font-size: 1.5rem; font-weight: 900; color: #fff; line-height: 1;">${accuracy}%</span>
+                  <span style="font-size: 0.6rem; text-transform: uppercase; letter-spacing: 1px; color: #a5b4fc; font-weight: 700; margin-top: 2px;">Accuracy</span>
                 </div>
-                <div class="legend-list">
-                  <div class="legend-item">
-                    <span><span class="legend-dot" style="background: #10b981;"></span> Correct</span>
-                    <span>${correctCount} (${Math.round(correctCount/totalQuestions*100)}%)</span>
+              </div>
+
+              <!-- Stat Boxes Grid -->
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 1.25rem; min-width: 120px; display: flex; flex-direction: column; gap: 0.5rem; backdrop-filter: blur(10px);">
+                  <div style="display: flex; align-items: center; gap: 8px; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: #a5b4fc; font-weight: 700;">
+                    <div style="width: 10px; height: 10px; border-radius: 50%; background: #10b981;"></div> Correct
                   </div>
-                  <div class="legend-item">
-                    <span><span class="legend-dot" style="background: #ef4444;"></span> Wrong</span>
-                    <span>${wrongCount} (${Math.round(wrongCount/totalQuestions*100)}%)</span>
+                  <div style="font-size: 2rem; font-weight: 800; line-height: 1; color: #34d399;">${correctCount}</div>
+                </div>
+
+                <div style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 1.25rem; min-width: 120px; display: flex; flex-direction: column; gap: 0.5rem; backdrop-filter: blur(10px);">
+                  <div style="display: flex; align-items: center; gap: 8px; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: #a5b4fc; font-weight: 700;">
+                    <div style="width: 10px; height: 10px; border-radius: 50%; background: #ef4444;"></div> Wrong
                   </div>
-                  <div class="legend-item">
-                    <span><span class="legend-dot" style="background: #f59e0b;"></span> Skipped</span>
-                    <span>${skippedCount} (${Math.round(skippedCount/totalQuestions*100)}%)</span>
+                  <div style="font-size: 2rem; font-weight: 800; line-height: 1; color: #fca5a5;">${wrongCount}</div>
+                </div>
+
+                <div style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 1.25rem; min-width: 120px; display: flex; flex-direction: column; gap: 0.5rem; backdrop-filter: blur(10px);">
+                  <div style="display: flex; align-items: center; gap: 8px; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: #a5b4fc; font-weight: 700;">
+                    <div style="width: 10px; height: 10px; border-radius: 50%; background: #3b82f6;"></div> Attempted
                   </div>
-                  <div class="legend-item">
-                    <span><span class="legend-dot" style="background: #cbd5e1;"></span> Not Visited</span>
-                    <span>0 (0%)</span>
+                  <div style="font-size: 2rem; font-weight: 800; line-height: 1; color: #93c5fd;">${attemptedCount}</div>
+                </div>
+
+                <div style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 1.25rem; min-width: 120px; display: flex; flex-direction: column; gap: 0.5rem; backdrop-filter: blur(10px);">
+                  <div style="display: flex; align-items: center; gap: 8px; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: #a5b4fc; font-weight: 700;">
+                    <div style="width: 10px; height: 10px; border-radius: 50%; background: #6366f1;"></div> Skipped
                   </div>
+                  <div style="font-size: 2rem; font-weight: 800; line-height: 1; color: #a5b4fc;">${skippedCount}</div>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- REVIEW SECTION -->
-          <div class="review-main-card">
-            <h3 style="font-size: 1.25rem; font-weight: 800; color: #1e293b; margin-bottom: 2.5rem;">Review of the Exam (All Correct Answers)</h3>
-            <div class="review-list">
+          <!-- Professional Review Section -->
+          <div style="background: white; border-radius: 24px; padding: 3.5rem; box-shadow: 0 10px 40px rgba(0,0,0,0.03); border: 1px solid #f1f5f9;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #f8fafc; padding-bottom: 1.5rem; margin-bottom: 3rem;">
+               <h3 style="font-size: 1.5rem; font-weight: 800; color: #0f172a; margin: 0;">Detailed Question Analysis</h3>
+               <div style="display: flex; gap: 1.5rem;">
+                  <span style="font-size: 0.85rem; font-weight: 600; color: #475569;"><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#10b981; margin-right:6px;"></span>Correct (${correctCount})</span>
+                  <span style="font-size: 0.85rem; font-weight: 600; color: #475569;"><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#ef4444; margin-right:6px;"></span>Incorrect (${wrongCount})</span>
+               </div>
+            </div>
+            
+            <div style="display: flex; flex-direction: column; gap: 2.5rem;">
               ${answers.map((a, i) => {
                 const correctAnswer = a.correctAnswer ? (Array.isArray(a.correctAnswer) ? a.correctAnswer : [a.correctAnswer]) : [];
+                const isSelectedCorrect = a.isCorrect;
+                const statusColor = isSelectedCorrect ? '#10b981' : (a.selectedAnswer ? '#ef4444' : '#f59e0b');
+                const statusIcon = isSelectedCorrect ? 'fa-check' : (a.selectedAnswer ? 'fa-times' : 'fa-minus');
+                const statusText = isSelectedCorrect ? 'Correct' : (a.selectedAnswer ? 'Incorrect' : 'Skipped');
+                const bgPulse = isSelectedCorrect ? 'rgba(16, 185, 129, 0.03)' : (a.selectedAnswer ? 'rgba(239, 68, 68, 0.03)' : '#fff');
+
                 return `
-                  <div class="review-q-item">
-                    <div class="q-row">
-                      <div class="q-num-circle">${i + 1}</div>
-                      <div class="q-text-bold">${this.esc(a.questionText || '')}</div>
+                  <div style="border: 1px solid #e2e8f0; background: ${bgPulse}; border-radius: 16px; padding: 2rem; position: relative; overflow: hidden; transition: all 0.2s;">
+                    <div style="position: absolute; top: 0; left: 0; width: 6px; height: 100%; background: ${statusColor}; border-radius: 16px 0 0 16px;"></div>
+                    
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem;">
+                      <div style="display: flex; gap: 1.25rem; align-items: flex-start;">
+                        <div style="background: white; color: #0f172a; font-weight: 800; width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.1rem; border: 1px solid #e2e8f0; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">${i + 1}</div>
+                        <div style="font-size: 1.15rem; font-weight: 700; color: #1e293b; line-height: 1.6; padding-top: 6px;">${this.esc(a.questionText || '')}</div>
+                      </div>
+                      <div style="background: white; border: 1px solid ${statusColor}30; color: ${statusColor}; padding: 6px 14px; border-radius: 20px; font-weight: 800; font-size: 0.8rem; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 10px ${statusColor}15;">
+                        <i class="fas ${statusIcon}"></i> ${statusText}
+                      </div>
                     </div>
-                    <div class="opt-grid-match">
+
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.25rem; margin-left: 3.75rem;">
                       ${(a.options || []).map(opt => {
-                        const isCorrect = correctAnswer.includes(opt.label);
+                        const isCorrectOpt = correctAnswer.includes(opt.label);
+                        const isSelectedOpt = a.selectedAnswer === opt.label;
+                        
+                        let optStyle = 'border: 1px solid #cbd5e1; background: #fff; color: #475569;';
+                        if (isCorrectOpt) {
+                           optStyle = 'border: 2px solid #10b981; background: #f0fdf4; color: #065f46; font-weight: 700; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.1);';
+                        } else if (isSelectedOpt && !isCorrectOpt) {
+                           optStyle = 'border: 2px solid #ef4444; background: #fef2f2; color: #991b1b; font-weight: 700; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.1);';
+                        }
+
                         return `
-                          <div class="opt-box-match ${isCorrect ? 'correct' : ''}">
-                             ${opt.label}. ${this.esc(opt.text)}
-                             ${isCorrect ? '<i class="fas fa-check" style="font-size: 0.75rem; margin-left: auto;"></i>' : ''}
+                          <div style="padding: 1.25rem 1.5rem; border-radius: 14px; font-size: 0.95rem; display: flex; align-items: center; justify-content: space-between; transition: all 0.2s; ${optStyle}">
+                             <div style="display: flex; gap: 12px; align-items: center; flex: 1; padding-right: 1rem;">
+                               <span style="font-weight: 800; font-size: 0.85rem; background: rgba(0,0,0,0.06); width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 8px; flex-shrink: 0;">${opt.label}</span> 
+                               <span style="line-height: 1.4;">${this.esc(opt.text)}</span>
+                             </div>
+                             ${isCorrectOpt ? '<i class="fas fa-check-circle" style="color: #10b981; font-size: 1.25rem; flex-shrink: 0;"></i>' : ''}
+                             ${isSelectedOpt && !isCorrectOpt ? '<i class="fas fa-times-circle" style="color: #ef4444; font-size: 1.25rem; flex-shrink: 0;"></i>' : ''}
                           </div>`;
                       }).join('')}
                     </div>
-                    <div class="correct-ans-footer">
-                       Correct Answer: ${correctAnswer.join(', ')}. ${(a.options?.find(o => o.label === correctAnswer[0])?.text || '')}
+                    
+                    ${!isSelectedCorrect && a.selectedAnswer ? `
+                    <div style="margin-top: 2rem; margin-left: 3.75rem; padding: 1.25rem 1.5rem; background: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #3b82f6; border-radius: 12px; display: flex; align-items: flex-start; gap: 1rem;">
+                      <div style="color: #3b82f6; font-size: 1.25rem; margin-top: 2px;"><i class="fas fa-info-circle"></i></div>
+                      <div>
+                        <p style="font-size: 0.95rem; color: #334155; margin: 0;"><strong style="font-weight: 800; color: #0f172a;">Correct Answer:</strong> Option ${correctAnswer.join(', ')} - ${(a.options?.find(o => o.label === correctAnswer[0])?.text || '')}</p>
+                      </div>
                     </div>
+                    ` : ''}
                   </div>`;
               }).join('')}
             </div>
           </div>
         </div>`;
-
-      const ctx = document.getElementById('matchPerfChart').getContext('2d');
-      new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-          labels: ['Correct', 'Wrong', 'Skipped', 'Not Visited'],
-          datasets: [{
-            data: [correctCount, wrongCount, skippedCount, 0],
-            backgroundColor: ['#10b981', '#ef4444', '#f59e0b', '#cbd5e1'],
-            borderWidth: 0,
-            hoverOffset: 10
-          }]
-        },
-        options: {
-          cutout: '75%',
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { display: false }, tooltip: { enabled: true } }
-        }
-      });
 
     } catch (err) {
       notifications.error('Failed to load result analysis');
