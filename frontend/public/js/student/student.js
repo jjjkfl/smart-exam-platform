@@ -403,7 +403,8 @@ const StudentDashboard = {
     Loader.show('live-exams-grid', 'Initializing proctored session list...');
 
     try {
-      const res = await api.get('/portal/student/exams');
+      const board = localStorage.getItem('mcqpro_selected_board') || '';
+      const res = await api.get(`/portal/student/exams?board=${board}`);
       const exams = res.data || [];
 
       if (exams.length === 0) {
