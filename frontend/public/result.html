@@ -471,7 +471,7 @@
                         <div style="background: white; color: #0f172a; font-weight: 800; width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.1rem; border: 1px solid #e2e8f0; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">${i + 1}</div>
                         <div style="font-size: 1.15rem; font-weight: 700; color: #1e293b; line-height: 1.6; padding-top: 6px;">
                           ${a.questionText ? esc(a.questionText) : '<span style="color: #94a3b8; font-style: italic;">Question text unavailable</span>'}
-                          ${a.image ? `<br><img src="${a.image}" style="max-width: 100%; max-height: 220px; border-radius: 10px; border: 1px solid #e2e8f0; margin-top: 16px;" onerror="this.style.display='none'">` : ''}
+                          ${a.image ? `<br><img src="${window.SERVER_URL}${a.image}" style="max-width: 100%; max-height: 220px; border-radius: 10px; border: 1px solid #e2e8f0; margin-top: 16px;" onerror="this.style.display='none'">` : ''}
                         </div>
                       </div>
                       <div style="background: white; border: 1px solid ${statusColor}30; color: ${statusColor}; padding: 6px 14px; border-radius: 20px; font-weight: 800; font-size: 0.8rem; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 10px ${statusColor}15;">
@@ -495,7 +495,10 @@
                           <div style="padding: 1.25rem 1.5rem; border-radius: 14px; font-size: 0.95rem; display: flex; align-items: center; justify-content: space-between; transition: all 0.2s; ${optStyle}">
                              <div style="display: flex; gap: 12px; align-items: center; flex: 1; padding-right: 1rem;">
                                <span style="font-weight: 800; font-size: 0.85rem; background: rgba(0,0,0,0.06); width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 8px; flex-shrink: 0;">${opt.label}</span> 
-                               <span style="line-height: 1.4;">${esc(opt.text)}</span>
+                               <div style="display: flex; flex-direction: column; gap: 8px;">
+                                 <span style="line-height: 1.4;">${esc(opt.text)}</span>
+                                 ${opt.image ? `<img src="${window.SERVER_URL}${opt.image}" style="max-width: 160px; max-height: 100px; border-radius: 6px; border: 1px solid #e2e8f0;" onerror="this.style.display='none'">` : ''}
+                               </div>
                              </div>
                              ${isCorrectOpt ? '<i class="fas fa-check-circle" style="color: #10b981; font-size: 1.25rem; flex-shrink: 0;"></i>' : ''}
                              ${isSelectedOpt && !isCorrectOpt ? '<i class="fas fa-times-circle" style="color: #ef4444; font-size: 1.25rem; flex-shrink: 0;"></i>' : ''}
