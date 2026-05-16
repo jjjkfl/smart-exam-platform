@@ -462,25 +462,25 @@
                 const statusText = isSelectedCorrect ? 'Correct' : (isUnanswered ? 'Skipped' : 'Incorrect');
                 const bgPulse = isSelectedCorrect ? 'rgba(16, 185, 129, 0.03)' : (isUnanswered ? '#fff' : 'rgba(239, 68, 68, 0.03)');
 
-                return \`
-                  <div style="border: 1px solid #e2e8f0; background: \${bgPulse}; border-radius: 16px; padding: 2rem; position: relative; overflow: hidden; transition: all 0.2s;">
-                    <div style="position: absolute; top: 0; left: 0; width: 6px; height: 100%; background: \${statusColor}; border-radius: 16px 0 0 16px;"></div>
+                return `
+                  <div style="border: 1px solid #e2e8f0; background: ${bgPulse}; border-radius: 16px; padding: 2rem; position: relative; overflow: hidden; transition: all 0.2s;">
+                    <div style="position: absolute; top: 0; left: 0; width: 6px; height: 100%; background: ${statusColor}; border-radius: 16px 0 0 16px;"></div>
                     
                     <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem;">
                       <div style="display: flex; gap: 1.25rem; align-items: flex-start;">
-                        <div style="background: white; color: #0f172a; font-weight: 800; width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.1rem; border: 1px solid #e2e8f0; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">\${i + 1}</div>
+                        <div style="background: white; color: #0f172a; font-weight: 800; width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.1rem; border: 1px solid #e2e8f0; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">${i + 1}</div>
                         <div style="font-size: 1.15rem; font-weight: 700; color: #1e293b; line-height: 1.6; padding-top: 6px;">
-                          \${a.questionText ? esc(a.questionText) : '<span style="color: #94a3b8; font-style: italic;">Question text unavailable</span>'}
-                          \${a.image ? \`<br><img src="\${a.image}" style="max-width: 100%; max-height: 220px; border-radius: 10px; border: 1px solid #e2e8f0; margin-top: 16px;" onerror="this.style.display='none'">\` : ''}
+                          ${a.questionText ? esc(a.questionText) : '<span style="color: #94a3b8; font-style: italic;">Question text unavailable</span>'}
+                          ${a.image ? `<br><img src="${a.image}" style="max-width: 100%; max-height: 220px; border-radius: 10px; border: 1px solid #e2e8f0; margin-top: 16px;" onerror="this.style.display='none'">` : ''}
                         </div>
                       </div>
-                      <div style="background: white; border: 1px solid \${statusColor}30; color: \${statusColor}; padding: 6px 14px; border-radius: 20px; font-weight: 800; font-size: 0.8rem; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 10px \${statusColor}15;">
-                        <i class="fas \${statusIcon}"></i> \${statusText}
+                      <div style="background: white; border: 1px solid ${statusColor}30; color: ${statusColor}; padding: 6px 14px; border-radius: 20px; font-weight: 800; font-size: 0.8rem; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 10px ${statusColor}15;">
+                        <i class="fas ${statusIcon}"></i> ${statusText}
                       </div>
                     </div>
 
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem; margin-left: 3.75rem;">
-                      \${(a.options || []).map(opt => {
+                      ${(a.options || []).map(opt => {
                         const isCorrectOpt = correctAnswerArr.includes(opt.label);
                         const isSelectedOpt = Array.isArray(a.selectedAnswer) ? a.selectedAnswer.includes(opt.label) : a.selectedAnswer === opt.label;
                         
@@ -491,38 +491,37 @@
                            optStyle = 'border: 2px solid #ef4444; background: #fef2f2; color: #991b1b; font-weight: 700; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.1);';
                         }
 
-                        return \`
-                          <div style="padding: 1.25rem 1.5rem; border-radius: 14px; font-size: 0.95rem; display: flex; align-items: center; justify-content: space-between; transition: all 0.2s; \${optStyle}">
+                        return `
+                          <div style="padding: 1.25rem 1.5rem; border-radius: 14px; font-size: 0.95rem; display: flex; align-items: center; justify-content: space-between; transition: all 0.2s; ${optStyle}">
                              <div style="display: flex; gap: 12px; align-items: center; flex: 1; padding-right: 1rem;">
-                               <span style="font-weight: 800; font-size: 0.85rem; background: rgba(0,0,0,0.06); width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 8px; flex-shrink: 0;">\${opt.label}</span> 
-                               <span style="line-height: 1.4;">\${esc(opt.text)}</span>
+                               <span style="font-weight: 800; font-size: 0.85rem; background: rgba(0,0,0,0.06); width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 8px; flex-shrink: 0;">${opt.label}</span> 
+                               <span style="line-height: 1.4;">${esc(opt.text)}</span>
                              </div>
-                             \${isCorrectOpt ? '<i class="fas fa-check-circle" style="color: #10b981; font-size: 1.25rem; flex-shrink: 0;"></i>' : ''}
-                             \${isSelectedOpt && !isCorrectOpt ? '<i class="fas fa-times-circle" style="color: #ef4444; font-size: 1.25rem; flex-shrink: 0;"></i>' : ''}
-                          </div>\`;
+                             ${isCorrectOpt ? '<i class="fas fa-check-circle" style="color: #10b981; font-size: 1.25rem; flex-shrink: 0;"></i>' : ''}
+                             ${isSelectedOpt && !isCorrectOpt ? '<i class="fas fa-times-circle" style="color: #ef4444; font-size: 1.25rem; flex-shrink: 0;"></i>' : ''}
+                          </div>`;
                       }).join('')}
                     </div>
 
-                    \${!isSelectedCorrect ? \`
+                    ${!isSelectedCorrect ? `
                     <div style="margin-top: 2rem; margin-left: 3.75rem; padding: 1.25rem 1.5rem; background: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #3b82f6; border-radius: 12px; display: flex; align-items: flex-start; gap: 1rem;">
                       <div style="color: #3b82f6; font-size: 1.25rem; margin-top: 2px;"><i class="fas fa-info-circle"></i></div>
                       <div>
-                        <p style="font-size: 0.95rem; color: #334155; margin: 0;"><strong style="font-weight: 800; color: #0f172a;">Correct Answer:</strong> Option \${correctAnswerArr.join(', ')} - \${(a.options?.find(o => o.label === correctAnswerArr[0])?.text || '')}</p>
+                        <p style="font-size: 0.95rem; color: #334155; margin: 0;"><strong style="font-weight: 800; color: #0f172a;">Correct Answer:</strong> Option ${correctAnswerArr.join(', ')} - ${(a.options?.find(o => o.label === correctAnswerArr[0])?.text || '')}</p>
                       </div>
                     </div>
-                    \` : ''}
+                    ` : ''}
 
-                    \${a.explanation ? \`
+                    ${a.explanation ? `
                     <div style="margin-top: 1rem; margin-left: 3.75rem; padding: 1.5rem; background: #fdf4ff; border: 1px solid #fce7f3; border-left: 4px solid #d946ef; border-radius: 12px; display: flex; align-items: flex-start; gap: 1rem;">
                       <div style="color: #d946ef; font-size: 1.25rem; margin-top: 2px;"><i class="fas fa-lightbulb"></i></div>
                       <div>
                         <h4 style="font-size: 0.85rem; font-weight: 800; color: #86198f; margin: 0 0 0.5rem 0; text-transform: uppercase; letter-spacing: 1.5px;">Explanation</h4>
-                        <p style="font-size: 0.95rem; color: #4a044e; margin: 0; line-height: 1.6;">\${esc(a.explanation)}</p>
+                        <p style="font-size: 0.95rem; color: #4a044e; margin: 0; line-height: 1.6;">${esc(a.explanation)}</p>
                       </div>
                     </div>
-                    \` : ''}
-                   </div>
-                    \`;
+                    ` : ''}
+                  </div>`;
               }).join('')}
             </div>
             

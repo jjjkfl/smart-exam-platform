@@ -749,6 +749,12 @@
       }
     }
 
+    window.addEventListener('pageshow', function (event) {
+      if (auth.isAuthenticated()) {
+        auth.redirectByRole(auth.getUser().role);
+      }
+    });
+
     document.addEventListener('DOMContentLoaded', () => {
       if (auth.isAuthenticated()) {
         auth.redirectByRole(auth.getUser().role);

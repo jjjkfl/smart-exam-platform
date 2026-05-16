@@ -99,4 +99,14 @@ const auth = {
   }
 };
 
+// Prevent back/forward cache (Bfcache) from bypassing authentication
+window.addEventListener('pageshow', function (event) {
+  // If the page is loaded from cache (e.g., via back button)
+  if (event.persisted) {
+    if (!auth.isAuthenticated()) {
+      window.location.replace('/login.html');
+    }
+  }
+});
+
 window.auth = auth;
