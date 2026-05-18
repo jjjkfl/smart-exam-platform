@@ -566,7 +566,7 @@ exports.regexExtractFromText = (text) => {
   const questions = [];
 
   const blocks = text.split(
-    /(?=\s\d+[\.\)\:\-]\s+|\n\s*\d+[\.\)\:\-]\s+|\n\s*Q(?:uestion)?\.?\s*\d+[\.\)\:\-]?\s*|^Q(?:uestion)?\.?\s*\d+[\.\)\:\-]?\s*|^\d+[\.\)\:\-]\s*|(?:\n|^)(?=\s*[A-Z][^a-z]{5,}.*?[\n\s]+[A-Da-d][\.\)\:\-]\s+)|(?<=\?)\s+(?=[A-Z])|(?<=\.)\s+(?=Which|What|How|When|The\s+following|This\s+logo|This\s+is|Identify|Choose|Select|A\s+\d+|In\s+the|Clinical))/i
+    /(?=\s\d+[\.\)\:\-]\s+|\n\s*\d+[\.\)\:\-]\s+|\n\s*Q(?:uestion)?\.?\s*\d+[\.\)\:\-]?\s*|^Q(?:uestion)?\.?\s*\d+[\.\)\:\-]?\s*|^\d+[\.\)\:\-]\s*|(?:\n|^)(?=\s*[A-Z][^a-z]{5,}.*?[\n\s]+[A-Da-d][\.\)\:\-]\s+)|(?:\.|\?|\!)\s+(?=Which|What|How|When|Why|Who|Where|The\s+following|This\s+logo|This\s+is|Identify|Choose|Select|Clinical|Determine|Find|Calculate|Evaluate|Read|Solve|Match|Based|A\s+\d+|In\s+the)|(?:\r?\n)+\s*(?=Which|What|How|When|Why|Who|Where|The\s+following|This\s+logo|This\s+is|Identify|Choose|Select|Clinical|Determine|Find|Calculate|Evaluate|Read|Solve|Match|Based|A\s+\d+|In\s+the))/i
   );
 
   for (let block of blocks) {
@@ -593,6 +593,50 @@ exports.regexExtractFromText = (text) => {
       let optText = m[2].trim().replace(/\s+/g, ' ').replace(/<[^>]+>/g, '').replace(/^[\d\:\s]{5,}/, '').trim();
       if (!options.find(o => o.label === lbl))
         options.push({ label: lbl, text: optText || `Option ${lbl}` });
+    }
+
+    // Fallback: If less than 4 options found, check vertical or horizontal newline list
+    if (options.length < 4) {
+      const lines = block.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+      const ansIdx = lines.findIndex(l => /(?:Answer|Ans|Correct|Key|Choice|Response)\s*[\:\-\s]/i.test(l));
+      
+      if (ansIdx !== -1) {
+        let fallbackSuccess = false;
+        const fallbackOpts = [];
+        let newQuestionText = '';
+
+        if (ansIdx >= 4) {
+          // Vertical layout: options are the 4 lines immediately before Answer line
+          const candidateOpts = lines.slice(ansIdx - 4, ansIdx);
+          const isValid = candidateOpts.every(opt => opt.length > 0 && opt.length < 200 && !/(?:Answer|Ans|Correct|Key|Choice|Response)\s*[\:\-\s]/i.test(opt));
+          if (isValid) {
+            ['A', 'B', 'C', 'D'].forEach((lbl, idx) => {
+              fallbackOpts.push({ label: lbl, text: candidateOpts[idx] });
+            });
+            // Re-define question text as everything before the options
+            newQuestionText = lines.slice(0, ansIdx - 4).join(' ').trim();
+            fallbackSuccess = true;
+          }
+        } else if (ansIdx >= 1) {
+          // Horizontal layout: check if the line immediately before Answer line can be split into 4 parts
+          const optLine = lines[ansIdx - 1];
+          const parts = optLine.split(/\s{2,}|\t/).map(p => p.trim()).filter(p => p.length > 0);
+          if (parts.length === 4) {
+            ['A', 'B', 'C', 'D'].forEach((lbl, idx) => {
+              fallbackOpts.push({ label: lbl, text: parts[idx] });
+            });
+            // Re-define question text as everything before the options line
+            newQuestionText = lines.slice(0, ansIdx - 1).join(' ').trim();
+            fallbackSuccess = true;
+          }
+        }
+
+        if (fallbackSuccess) {
+          options.length = 0; // Clear the partially matched option (e.g. Option D in Answer line)
+          options.push(...fallbackOpts);
+          questionText = newQuestionText;
+        }
+      }
     }
 
     let correct = 'A';
@@ -622,21 +666,20 @@ exports.regexExtractFromText = (text) => {
     }
 
     // Final clean-up: if explanation starts with leftover answer indicators (e.g. ", D"), strip them
-    explanation = explanation.replace(/^[\s\,\&\-]+[A-D]\b/i, '').trim();
+    explanation = explanation.replace(/^[\s\,\&\)\.\-\/]+[A-D]?[\b\s\)\.\-\/]*/i, '').trim();
 
     const imgM = block.match(/\[IMAGE:([^\]]+)\]/) || block.match(/<img[^>]+src=["']([^"']+)["']/i);
 
     if (options.length >= 1 && questionText.length > 5) {
-      const finalOpts = ['A', 'B', 'C', 'D'].map(l => options.find(o => o.label === l) || { label: l, text: `Option ${l}` });
-      questions.push({
-        questionText: questionText.replace(/<img[^>]+>/gi, '').replace(/\s+/g, ' ').trim() || 'Untitled',
+      const finalized = finalizeMCQ({
+        questionText: questionText.replace(/<img[^>]+>/gi, '').replace(/\s+/g, ' ').trim(),
         image: imgM ? imgM[1] : '',
-        options: finalOpts,
+        options: options,
         correctAnswer: correct,
         explanation: explanation,
-        marks: 1,
-        isMSQ: (correct || '').includes(',')
+        marks: 1
       });
+      questions.push(finalized);
     }
   }
 
@@ -805,10 +848,14 @@ exports.extractMCQsFromDocument = async (filePath, subject = 'General', count = 
 
       // Stage 2: Regex on raw DOCX text
       const rawText = await extractWordTextFn(filePath);
-      const regexQs = exports.regexExtractFromText(rawText);
+      let regexQs = exports.regexExtractFromText(rawText);
       logger.info(`[DOCX] Regex fallback → ${regexQs.length} questions`);
-      if (regexQs.length >= 1)
-        return { questions: regexQs.slice(0, count), meta: { model: 'regex-engine' } };
+      if (regexQs.length >= 1) {
+        if (imageList && imageList.length > 0) {
+          regexQs = associatePdfImages(regexQs, imageList.map(img => ({ publicPath: img.publicPath })));
+        }
+        return { questions: regexQs.slice(0, count), meta: { model: 'regex-engine', images: imageList.length } };
+      }
 
       // Stage 3: Claude Vision on all DOCX images
       if (imageList.length > 0 && process.env.ANTHROPIC_API_KEY) {
