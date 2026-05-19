@@ -661,10 +661,9 @@ const StudentDashboard = {
                   <span style="font-size: 0.85rem; font-weight: 600; color: #475569;"><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#ef4444; margin-right:6px;"></span>Incorrect (${wrongCount})</span>
                </div>
             </div>
-            
-            <div style="display: flex; flex-direction: column; gap: 2.5rem;">
               ${answers.map((a, i) => {
-                const correctAnswer = a.correctAnswer ? (Array.isArray(a.correctAnswer) ? a.correctAnswer : [a.correctAnswer]) : [];
+                const correctAnswer = a.correctAnswer ? (Array.isArray(a.correctAnswer) ? a.correctAnswer : String(a.correctAnswer).split(',').map(x => x.trim())) : [];
+                const selectedAnswerArr = a.selectedAnswer ? (Array.isArray(a.selectedAnswer) ? a.selectedAnswer : String(a.selectedAnswer).split(',').map(x => x.trim())) : [];
                 const isSelectedCorrect = a.isCorrect;
                 const statusColor = isSelectedCorrect ? '#10b981' : (a.selectedAnswer ? '#ef4444' : '#f59e0b');
                 const statusIcon = isSelectedCorrect ? 'fa-check' : (a.selectedAnswer ? 'fa-times' : 'fa-minus');
@@ -691,7 +690,7 @@ const StudentDashboard = {
                     <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.25rem; margin-left: 3.75rem;">
                       ${(a.options || []).map(opt => {
                         const isCorrectOpt = correctAnswer.includes(opt.label);
-                        const isSelectedOpt = a.selectedAnswer === opt.label;
+                        const isSelectedOpt = selectedAnswerArr.includes(opt.label);
                         
                         let optStyle = 'border: 1px solid #cbd5e1; background: #fff; color: #475569;';
                         if (isCorrectOpt) {

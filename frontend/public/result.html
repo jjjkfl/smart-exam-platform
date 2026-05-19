@@ -454,7 +454,7 @@
             
             <div style="display: flex; flex-direction: column; gap: 2.5rem;">
               ${answers.map((a, i) => {
-                const correctAnswerArr = a.correctAnswer ? (Array.isArray(a.correctAnswer) ? a.correctAnswer : [a.correctAnswer]) : [];
+                const correctAnswerArr = a.correctAnswer ? (Array.isArray(a.correctAnswer) ? a.correctAnswer : String(a.correctAnswer).split(',').map(x => x.trim())) : [];
                 const isSelectedCorrect = a.isCorrect;
                 const isUnanswered = !a.selectedAnswer || (Array.isArray(a.selectedAnswer) && a.selectedAnswer.length === 0);
                 const statusColor = isSelectedCorrect ? '#10b981' : (isUnanswered ? '#f59e0b' : '#ef4444');

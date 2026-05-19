@@ -373,7 +373,7 @@ exports.getResultDetail = async (req, res) => {
     const result = await Result.findOne({
       _id: req.params.resultId,
       studentId: req.user._id
-    }).populate('sessionId', 'title questions');
+    }).populate('sessionId', 'title subject board questions');
 
     if (!result) return res.status(404).json({ success: false, message: 'Result not found' });
 
@@ -397,10 +397,54 @@ exports.getResultDetail = async (req, res) => {
       ? answers.filter(a => a.isCorrect).length
       : Math.round((score / 100) * answers.length);
 
+    // Advanced descriptive data analysis metrics against peers
+    let classAvgScore = score;
+    let classStdDev = 0;
+    let classMinScore = score;
+    let classMaxScore = score;
+    let percentileRank = 100;
+    let zScore = 0;
+    let classAvgTime = result.timeTaken || 0;
+    let totalExamsTaken = 1;
+
+    try {
+      const peerResults = await Result.find({ sessionId: result.sessionId }).select('score timeTaken studentId').lean();
+      if (peerResults && peerResults.length > 0) {
+        totalExamsTaken = peerResults.length;
+        const scores = peerResults.map(r => r.score || 0);
+        classMinScore = Math.min(...scores);
+        classMaxScore = Math.max(...scores);
+        
+        const scoreSum = scores.reduce((a, b) => a + b, 0);
+        classAvgScore = Math.round((scoreSum / totalExamsTaken) * 10) / 10;
+
+        const sqDiffSum = scores.reduce((a, b) => a + Math.pow(b - classAvgScore, 2), 0);
+        const variance = sqDiffSum / totalExamsTaken;
+        classStdDev = Math.round(Math.sqrt(variance) * 100) / 100;
+
+        zScore = classStdDev > 0 ? Math.round(((score - classAvgScore) / classStdDev) * 100) / 100 : 0;
+
+        const belowCount = scores.filter(s => s < score).length;
+        const equalCount = scores.filter(s => s === score).length;
+        percentileRank = Math.round(((belowCount + 0.5 * equalCount) / totalExamsTaken) * 100);
+
+        const times = peerResults.map(r => r.timeTaken || 0).filter(t => t > 0);
+        if (times.length > 0) {
+          classAvgTime = Math.round(times.reduce((a, b) => a + b, 0) / times.length);
+        }
+      }
+    } catch (anErr) {
+      console.warn('[Analytics] Class aggregate calculations failed:', anErr.message);
+    }
+
     res.json({
       success: true,
       data: {
-        session: { title: result.sessionId ? result.sessionId.title : 'Exam' },
+        sessionId: result.sessionId,
+        session: { 
+          title: result.sessionId ? result.sessionId.title : 'Exam',
+          subject: result.sessionId ? result.sessionId.subject : ''
+        },
         percentage: score,
         correctCount,
         totalQuestions: answers.length,
@@ -409,7 +453,17 @@ exports.getResultDetail = async (req, res) => {
         timeTaken: result.timeTaken || 0,
         answers,
         resultHash: result.blockchainHash || null,
-        blockchainTx: result.blockchainTx || null
+        blockchainTx: result.blockchainTx || null,
+        analytics: {
+          classAvgScore,
+          classStdDev,
+          classMinScore,
+          classMaxScore,
+          percentileRank,
+          zScore,
+          classAvgTime,
+          totalExamsTaken
+        }
       }
     });
   } catch (err) {

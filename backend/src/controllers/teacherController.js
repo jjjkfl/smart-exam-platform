@@ -471,8 +471,12 @@ const repairMSQLeakage = (questions) => {
     let correctAnswer = q.correctAnswer || 'A';
     let explanation = q.explanation || '';
 
+    // Enforce deduplicated, sorted correct answers from the start
+    const initialLetters = correctAnswer.toUpperCase().match(/[A-D]/g) || [];
+    correctAnswer = [...new Set(initialLetters)].sort().join(',');
+
     // Pattern: explanation starts with leaked answer letters like ", B, D" or "& C"
-    const leakedMatch = explanation.match(/^[\s\,\&\/\-]+([A-D](?:[\s\,\&\/\-]+[A-D])*)\b\s*/i);
+    const leakedMatch = explanation.match(/^[\s\,\&\/\-]+([A-D]\b(?:[\s\,\&\/\-]+[A-D]\b)*)\s*/i);
     if (leakedMatch) {
       const leakedLetters = leakedMatch[1].toUpperCase().match(/[A-D]/g) || [];
       const existingLetters = correctAnswer.toUpperCase().match(/[A-D]/g) || [];
@@ -482,7 +486,7 @@ const repairMSQLeakage = (questions) => {
     }
 
     // Also handle format like "Answer: A, B, D" appearing inside explanation
-    const inlineAnsMatch = explanation.match(/^(?:Answer|Ans|Correct)\s*[:\-]\s*([A-D](?:[\s,&]+[A-D])*)\b\s*/i);
+    const inlineAnsMatch = explanation.match(/^(?:Answer|Ans|Correct)\s*[:\-]\s*([A-D]\b(?:[\s,&]+[A-D]\b)*)\s*/i);
     if (inlineAnsMatch) {
       const inlineLetters = inlineAnsMatch[1].toUpperCase().match(/[A-D]/g) || [];
       const existingLetters = correctAnswer.toUpperCase().match(/[A-D]/g) || [];

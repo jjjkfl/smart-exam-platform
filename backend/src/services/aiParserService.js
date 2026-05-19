@@ -124,8 +124,8 @@ const extractPdfImages = (pdfPath) => {
   fs.mkdirSync(dumpDir, { recursive: true });
 
   try {
-    // -all extracts all image types; -png forces png output
-    execFileSync('pdfimages', ['-all', '-png', pdfPath, path.join(dumpDir, 'img')],
+    // -all extracts all image types; -png forces png output; -p appends page numbers to names
+    execFileSync('pdfimages', ['-all', '-png', '-p', pdfPath, path.join(dumpDir, 'img')],
       { timeout: 60000, stdio: 'pipe' });
   } catch (err) {
     if (err.code === 'ENOENT') {
@@ -147,10 +147,15 @@ const extractPdfImages = (pdfPath) => {
       const destPath = path.join(UPLOAD_DIR, destName);
       fs.copyFileSync(srcPath, destPath);
 
-      // Parse page number from pdfimages naming: img-001.png → page approx
+      // Parse page number from pdfimages naming (with -p flag: img-005-001.png → page 5)
       const pageMatch = file.match(/img-(\d+)/);
+      let pageNum = i;
+      if (pageMatch) {
+        pageNum = parseInt(pageMatch[1], 10);
+      }
+
       extracted.push({
-        page: pageMatch ? parseInt(pageMatch[1], 10) : i,
+        page: pageNum,
         publicPath: `/uploads/extracted/${destName}`,
         localPath: destPath,
       });
@@ -666,7 +671,7 @@ exports.regexExtractFromText = (text) => {
     }
 
     // Final clean-up: if explanation starts with leftover answer indicators (e.g. ", D"), strip them
-    explanation = explanation.replace(/^[\s\,\&\)\.\-\/]+[A-D]?[\b\s\)\.\-\/]*/i, '').trim();
+    explanation = explanation.replace(/^[\s\,\&\)\.\-\/]+(?:[A-D]\b)?[\b\s\)\.\-\/]*/i, '').trim();
 
     const imgM = block.match(/\[IMAGE:([^\]]+)\]/) || block.match(/<img[^>]+src=["']([^"']+)["']/i);
 
@@ -694,10 +699,14 @@ const finalizeMCQ = (q) => {
   let correctAnswer = q.correctAnswer || 'A';
   let explanation = q.explanation || '';
 
+  // Enforce deduplicated, sorted correct answers from the start
+  const initialLetters = correctAnswer.toUpperCase().match(/[A-D]/g) || [];
+  correctAnswer = [...new Set(initialLetters)].sort().join(',');
+
   // SELF-HEALING: If explanation starts with leftover answer indicators (e.g. ", D"), move them to answer
-  const leakedMatch = explanation.match(/^[\s\,\&\-]+([A-D](?:[\s\,\&\-]+[A-D])*)\b/i);
+  const leakedMatch = explanation.match(/^[\s\,\&\-]+([A-D]\b(?:[\s\,\&\-]+[A-D]\b)*)/i);
   if (leakedMatch) {
-    const leakedLetters = leakedMatch[1].toUpperCase().match(/[A-D]/g);
+    const leakedLetters = leakedMatch[1].toUpperCase().match(/[A-D]/g) || [];
     const existingLetters = correctAnswer.toUpperCase().match(/[A-D]/g) || [];
     const combined = [...new Set([...existingLetters, ...leakedLetters])].sort();
     correctAnswer = combined.join(',');
@@ -785,6 +794,62 @@ const associatePdfImages = (questions, pdfImages) => {
     const img = available.shift();
     logger.info(`[Associator] Assigned ${img.publicPath} to "${q.questionText.substring(0, 40)}..."`);
     return { ...q, image: img.publicPath };
+  });
+};
+
+const associatePdfImagesByPage = (questions, pdfImages, rawText) => {
+  if (!pdfImages || pdfImages.length === 0) return questions;
+
+  const pagesText = rawText ? rawText.split(/\f|\u000c/) : [];
+  
+  const getPageForQuestionText = (qText, pagesText) => {
+    if (!qText || pagesText.length === 0) return -1;
+    const cleanQ = qText.replace(/\s+/g, ' ').trim().substring(0, 100).toLowerCase();
+    if (!cleanQ) return -1;
+
+    for (let pageNum = 0; pageNum < pagesText.length; pageNum++) {
+      const cleanPage = pagesText[pageNum].replace(/\s+/g, ' ').toLowerCase();
+      if (cleanPage.includes(cleanQ)) {
+        return pageNum + 1; // 1-indexed page number
+      }
+    }
+    return -1;
+  };
+
+  let lastFoundPage = 1;
+  const questionsWithPages = questions.map(q => {
+    const p = getPageForQuestionText(q.questionText, pagesText);
+    if (p !== -1) {
+      lastFoundPage = p;
+      return { ...q, _pageNum: p };
+    }
+    return { ...q, _pageNum: lastFoundPage };
+  });
+
+  const imagesByPage = {};
+  pdfImages.forEach(img => {
+    const p = img.page;
+    if (!imagesByPage[p]) imagesByPage[p] = [];
+    imagesByPage[p].push(img);
+  });
+
+  const pageClaims = {};
+
+  return questionsWithPages.map(q => {
+    if (q.image) return q;
+    const p = q._pageNum;
+    const pageImgs = imagesByPage[p] || [];
+    if (pageImgs.length === 0) return q;
+
+    if (!pageClaims[p]) pageClaims[p] = 0;
+    const claimIdx = pageClaims[p];
+    if (claimIdx < pageImgs.length) {
+      const img = pageImgs[claimIdx];
+      pageClaims[p]++;
+      logger.info(`[Associator-Page] Assigned Page ${p} image ${img.publicPath} to "${q.questionText.substring(0, 40)}..."`);
+      return { ...q, image: img.publicPath };
+    }
+    return q;
   });
 };
 
@@ -883,9 +948,30 @@ exports.extractMCQsFromDocument = async (filePath, subject = 'General', count = 
 
     /* ── PDF ──────────────────────────────────────────────────────── */
     else if (ext === '.pdf') {
+      // Custom pagerender to inject form feeds (\u000c) for deterministic page splits
+      const pdfOptions = {
+        pagerender: function(pageData) {
+          return pageData.getTextContent({
+            normalizeWhitespace: false,
+            disableCombineTextItems: false
+          }).then(function(textContent) {
+            let lastY, text = '';
+            for (let item of textContent.items) {
+              if (lastY == item.transform[5] || !lastY) {
+                text += item.str;
+              } else {
+                text += '\n' + item.str;
+              }
+              lastY = item.transform[5];
+            }
+            return text + '\u000c';
+          });
+        }
+      };
+
       // Extract text AND images in parallel
       const [pdfData, pdfImages] = await Promise.all([
-        pdfParse(fs.readFileSync(filePath)),
+        pdfParse(fs.readFileSync(filePath), pdfOptions),
         Promise.resolve(extractPdfImages(filePath)),  // sync inside, wrapped for parallel
       ]);
 
@@ -898,8 +984,8 @@ exports.extractMCQsFromDocument = async (filePath, subject = 'General', count = 
         logger.info(`[PDF] Regex → ${regexQs.length} questions`);
 
         if (regexQs.length >= 1) {
-          // Associate extracted PDF images with questions missing images
-          regexQs = associatePdfImages(regexQs, pdfImages);
+          // Associate extracted PDF images with questions missing images deterministically by page
+          regexQs = associatePdfImagesByPage(regexQs, pdfImages, text);
           return { questions: regexQs.slice(0, count), meta: { model: 'regex-engine-pdf', images: pdfImages.length } };
         }
       }
@@ -931,7 +1017,7 @@ exports.extractMCQsFromDocument = async (filePath, subject = 'General', count = 
       if (text.length > 50 && process.env.ANTHROPIC_API_KEY) {
         logger.info(`[PDF] Attempting Claude Text extraction...`);
         let aiQs = (await claudeTextExtract(text, subject, count)).filter(isValidMCQ).map(sanitizeMCQ);
-        aiQs = associatePdfImages(aiQs, pdfImages);
+        aiQs = associatePdfImagesByPage(aiQs, pdfImages, text);
         if (aiQs.length > 0) return { questions: aiQs.slice(0, count), meta: { model: 'claude-text-pdf' } };
       }
 
