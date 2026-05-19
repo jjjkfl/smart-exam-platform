@@ -461,6 +461,7 @@ const StudentDashboard = {
               <div class="meta-pill"><i class="fas fa-globe"></i> ${e.board && e.board !== 'All' ? e.board : 'Global'}</div>
               <div class="meta-pill"><i class="fas fa-users"></i> ${e.division || 'All Classes'}</div>
               <div class="meta-pill"><i class="fas fa-book-open"></i> ${e.subject || 'General'}</div>
+              <div class="meta-pill"><i class="far fa-clock"></i> ${utils.formatDateTimeRange(e.scheduledStart || e.startTime, e.duration || e.durationMinutes)}</div>
             </div>
             <button onclick="StudentDashboard.joinExam('${e._id}')" class="btn btn-primary">Take Test</button>
           </div>
@@ -499,6 +500,7 @@ const StudentDashboard = {
               <div class="meta-pill"><i class="fas fa-globe"></i> ${e.board && e.board !== 'All' ? e.board : 'Global'}</div>
               <div class="meta-pill"><i class="fas fa-users"></i> ${e.division || 'All Classes'}</div>
               <div class="meta-pill"><i class="fas fa-book-open"></i> ${e.subject || 'General'}</div>
+              <div class="meta-pill"><i class="far fa-clock"></i> ${utils.formatDateTimeRange(e.scheduledStart || e.startTime, e.duration || e.durationMinutes)}</div>
             </div>
             <button onclick="StudentDashboard.joinExam('${e._id}')" class="btn btn-primary">Take Test</button>
           </div>

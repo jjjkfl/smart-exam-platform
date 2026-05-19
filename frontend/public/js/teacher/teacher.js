@@ -268,7 +268,7 @@ const TeacherDashboard = {
           <strong>${s.title || s.examId}</strong>
           ${s.board && s.board !== 'All' ? `<span class="badge" style="margin-left:8px; font-size:10px; background:rgba(79, 70, 229, 0.1); color:var(--primary);">${s.board}</span>` : ''}
         </td>
-        <td>${utils.formatDate(s.scheduledStart || s.startTime)}</td>
+        <td>${utils.formatDateTimeRange(s.scheduledStart || s.startTime, s.duration)}</td>
         <td><span class="status-pill ${s.status === 'active' ? 'status-online' : 'status-offline'}">${s.status.toUpperCase()}</span></td>
         <td>${s.submissions || 0} Students</td>
         <td style="display:flex; gap:6px;">

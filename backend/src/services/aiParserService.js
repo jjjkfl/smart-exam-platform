@@ -254,7 +254,7 @@ const claudeTextExtract = async (text, subject = 'General', targetCount = 20) =>
   try {
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
-      max_tokens: 4096,
+      max_tokens: 8192,
       messages: [{
         role: 'user',
         content: `You are an expert MCQ extractor for the MCQ Pro platform.
@@ -269,7 +269,7 @@ Rules:
 Subject hint: ${subject}
 
 TEXT:
-${text.substring(0, 12000)}
+${text.substring(0, 300000)}
 
 JSON format:
 [{"questionText":"...","image":"","options":[{"label":"A","text":"...","image":""},...],"correctAnswer":"B,C","explanation":"...","difficulty":"medium","topic":"...","marks":1}]`
@@ -357,10 +357,10 @@ const parseAdda247Format = (blocks) => {
     if (ansM && !currentQ.correctAnswer) {
       const matchText = ansM[1] || '';
       const letters = matchText.toUpperCase().match(/[A-D]/g);
-      currentQ.correctAnswer = letters && letters.length > 0 ? [...new Set(letters)].sort().join(',') : 'A'; 
+      currentQ.correctAnswer = letters && letters.length > 0 ? [...new Set(letters)].sort().join(',') : 'A';
       const extractedExp = ansM[2] || '';
       if (extractedExp) currentQ.explanation = extractedExp.trim();
-      parserState = 'in_explanation'; 
+      parserState = 'in_explanation';
       continue;
     }
 
@@ -421,7 +421,7 @@ const parseAdda247Format = (blocks) => {
     }
 
     if (parserState === 'in_explanation') {
-        currentQ.explanation = (currentQ.explanation || '') + ' ' + text.trim();
+      currentQ.explanation = (currentQ.explanation || '') + ' ' + text.trim();
     }
   }
 
@@ -535,12 +535,12 @@ const parseGenericFormat = (blocks) => {
 
     // Answer line + potential inline explanation (supports A, A,B, Answer: A, C, etc.)
     const ansM = text.match(/(?:Answer|Ans|Correct(?:\s+Key)?|Key|Choice|Response)\s*[\:\-\s]*[\(\[]?([A-D](?:[\s\,\&]+[A-D])*)\b[\)\]]?\s*[\:\-\.\s]*(.*)/i);
-    if (ansM) { 
+    if (ansM) {
       const letters = (ansM[1] || '').toUpperCase().match(/[A-D]/g);
-      currentQ.correctAnswer = letters && letters.length > 0 ? [...new Set(letters)].sort().join(',') : 'A'; 
+      currentQ.correctAnswer = letters && letters.length > 0 ? [...new Set(letters)].sort().join(',') : 'A';
       if (ansM[2]) currentQ.explanation = ansM[2].trim();
       parserState = 'in_explanation';
-      continue; 
+      continue;
     }
 
     // Explicit explanation line
@@ -571,7 +571,7 @@ exports.regexExtractFromText = (text) => {
   const questions = [];
 
   const blocks = text.split(
-    /(?=\s\d+[\.\)\:\-]\s+|\n\s*\d+[\.\)\:\-]\s+|\n\s*Q(?:uestion)?\.?\s*\d+[\.\)\:\-]?\s*|^Q(?:uestion)?\.?\s*\d+[\.\)\:\-]?\s*|^\d+[\.\)\:\-]\s*|(?:\n|^)(?=\s*[A-Z][^a-z]{5,}.*?[\n\s]+[A-Da-d][\.\)\:\-]\s+)|(?:\.|\?|\!)\s+(?=Which|What|How|When|Why|Who|Where|The\s+following|This\s+logo|This\s+is|Identify|Choose|Select|Clinical|Determine|Find|Calculate|Evaluate|Read|Solve|Match|Based|A\s+\d+|In\s+the)|(?:\r?\n)+\s*(?=Which|What|How|When|Why|Who|Where|The\s+following|This\s+logo|This\s+is|Identify|Choose|Select|Clinical|Determine|Find|Calculate|Evaluate|Read|Solve|Match|Based|A\s+\d+|In\s+the))/i
+    /(?=\r?\n\s*(?:Q(?:uestion)?\.?\s*\d+[\.\)\:\-]?|\d+[\.\)\:\-])\s+|^(?:Q(?:uestion)?\.?\s*\d+[\.\)\:\-]?|\d+[\.\)\:\-])\s+)/i
   );
 
   for (let block of blocks) {
@@ -581,7 +581,7 @@ exports.regexExtractFromText = (text) => {
     let qMatch = block.match(/^(?:Q(?:uestion)?\.?\s*\d+[\.\)\:\-]?\s*|\d+[\.\)\:\-]\s*)([\s\S]*?)(?=\s*[\(\[]?[A-Da-d][\.\)\:\-\]]\s+|[\n\s]?[A-Da-d][\.\)\:\-\]]\s+)/i);
     if (!qMatch)
       qMatch = block.match(/^([\s\S]*?)(?=\s*[\(\[]?[A-Da-d][\.\)\:\-\]]\s+|[\n\s]?[A-Da-d][\.\)\:\-\]]\s+)/i);
-    
+
     let questionText = qMatch ? qMatch[1].trim().replace(/<[^>]+>/g, '').replace(/^[\d\:\s]{5,}/, '').trim() : '';
 
     // If still empty but we have options, it's an unnumbered/tightly packed question
@@ -590,8 +590,11 @@ exports.regexExtractFromText = (text) => {
       if (parts[0]) questionText = parts[0].trim();
     }
 
+    // Clean leading page numbers/footers from questionText
+    questionText = questionText.replace(/^[\s\S]*?(?=What|Which|How|When|Why|Who|Where|Solve|Find|Determine|Calculate|Evaluate|Simplify|Convert|Choose|Select|Identify|Refer|Match|Based|The\s+following|This\s+is|This\s+logo|In\s+the|A\s+\d+)/i, '');
+
     const options = [];
-    const optRx = /[\(\[]?([A-Da-d])[\.\)\:\-\]]\s*([\s\S]*?)(?=\s*[\(\[]?[A-Da-d][\.\)\:\-\]]\s+|[\n\s]?(?:Answer|Ans|Correct|Q|Key|Choice|Response)|$)/gi;
+    const optRx = /[\(\[]?([A-Da-d])[\.\)\:\-\]]\s*([\s\S]*?)(?=\s*[\(\[]?[A-Da-d][\.\)\:\-\]]\s+|[\n\s]?(?:\bAnswer\b|\bAns\b|\bCorrect\b|\bQ\b|\bKey\b|\bChoice\b|\bResponse\b)|$)/gi;
     let m;
     while ((m = optRx.exec(block)) !== null) {
       const lbl = m[1].toUpperCase();
@@ -604,7 +607,7 @@ exports.regexExtractFromText = (text) => {
     if (options.length < 4) {
       const lines = block.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
       const ansIdx = lines.findIndex(l => /(?:Answer|Ans|Correct|Key|Choice|Response)\s*[\:\-\s]/i.test(l));
-      
+
       if (ansIdx !== -1) {
         let fallbackSuccess = false;
         const fallbackOpts = [];
@@ -637,45 +640,80 @@ exports.regexExtractFromText = (text) => {
         }
 
         if (fallbackSuccess) {
-          options.length = 0; // Clear the partially matched option (e.g. Option D in Answer line)
+          options.length = 0; // Clear the partially matched option
           options.push(...fallbackOpts);
           questionText = newQuestionText;
         }
       }
     }
 
-    let correct = 'A';
+    let correct = '';
+    let rawAnswerText = '';
     let explanation = '';
 
-    // Improved Answer + Explanation extraction
-    // This regex looks for an Answer keyword and then captures:
-    // 1. The answer letters (A-D, spaces, commas, ampersands)
-    // 2. The remaining text (potential explanation)
-    const ansM = block.match(/(?:Answer|Ans|Correct(?:\s+Key)?|Key|Choice|Response)\s*[\:\-\s]*([A-Da-d](?:[\s\,\&]+[A-Da-d])*)\b\s*([\s\S]*)/i);
-    
+    const ansM = block.match(/(?:Answer|Ans|Correct(?:\s+Key)?|Key|Choice|Response)\s*[\:\-\s]*([\s\S]*?)(?:\f|\n|$)/i);
     if (ansM) {
-      const letters = (ansM[1] || '').toUpperCase().match(/[A-D]/g);
-      if (letters && letters.length > 0) {
-        correct = [...new Set(letters)].sort().join(',');
+      rawAnswerText = ansM[1].trim();
+      
+      const expIdx = rawAnswerText.search(/(?:Explanation|Exp|Rationale|Solution|Detail|Ans Detail|Ans Explanation)/i);
+      if (expIdx !== -1) {
+        explanation = rawAnswerText.slice(expIdx).trim();
+        rawAnswerText = rawAnswerText.slice(0, expIdx).trim();
       }
-      // If there's text after the letters, use it as initial explanation
-      explanation = (ansM[2] || '').trim();
-    } else if (options.length > 0) {
+
+      // Check if it's letter format: "A", "A, B", "A and C"
+      const cleanLetters = rawAnswerText.replace(/\band\b/gi, '').toUpperCase().match(/\b[A-D]\b/g);
+      if (cleanLetters && cleanLetters.length > 0 && rawAnswerText.length < 15) {
+        correct = [...new Set(cleanLetters)].sort().join(',');
+      } else {
+        // Compare option texts
+        const matchedLabels = [];
+        options.forEach(opt => {
+          const optText = opt.text.trim();
+          if (optText.length > 0) {
+            const escapedOptText = optText.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+            const isNumeric = /^\d+$/.test(optText);
+            
+            if (rawAnswerText.toLowerCase() === optText.toLowerCase()) {
+              matchedLabels.push(opt.label);
+            } else if (!isNumeric) {
+              const rx = new RegExp('\\b' + escapedOptText + '\\b', 'i');
+              if (rx.test(rawAnswerText)) {
+                matchedLabels.push(opt.label);
+              } else if (optText.length > 2 && rawAnswerText.toLowerCase().includes(optText.toLowerCase())) {
+                matchedLabels.push(opt.label);
+              }
+            } else {
+              // Numeric option: prevent matching inside fractions or decimals
+              const rx = new RegExp('(?<![\\d\\.\\/])' + escapedOptText + '(?![\\d\\.\\/])', 'i');
+              if (rx.test(rawAnswerText)) {
+                matchedLabels.push(opt.label);
+              }
+            }
+          }
+        });
+        if (matchedLabels.length > 0) {
+          correct = matchedLabels.sort().join(',');
+        }
+      }
+    }
+
+    if (!correct && options.length > 0) {
       correct = options[0].label;
     }
-    
+
     // Traditional explanation keyword search (overwrites if a dedicated block exists)
     const dedicatedExpM = block.match(/(?:Explanation|Exp|Rationale|Solution|Detail|Ans Detail|Ans Explanation)\s*[\:\-\s]*([\s\S]*?)(?=\s*(?:\d+[\.\)\:\-]\s*|Q(?:uestion)?\.?\s*\d+|$))/i);
     if (dedicatedExpM) {
       explanation = dedicatedExpM[1].trim();
     }
 
-    // Final clean-up: if explanation starts with leftover answer indicators (e.g. ", D"), strip them
     explanation = explanation.replace(/^[\s\,\&\)\.\-\/]+(?:[A-D]\b)?[\b\s\)\.\-\/]*/i, '').trim();
+    explanation = explanation.split(/\f/)[0].trim();
 
     const imgM = block.match(/\[IMAGE:([^\]]+)\]/) || block.match(/<img[^>]+src=["']([^"']+)["']/i);
 
-    if (options.length >= 1 && questionText.length > 5) {
+    if (options.length >= 1 && questionText.length > 3) {
       const finalized = finalizeMCQ({
         questionText: questionText.replace(/<img[^>]+>/gi, '').replace(/\s+/g, ' ').trim(),
         image: imgM ? imgM[1] : '',
@@ -801,7 +839,7 @@ const associatePdfImagesByPage = (questions, pdfImages, rawText) => {
   if (!pdfImages || pdfImages.length === 0) return questions;
 
   const pagesText = rawText ? rawText.split(/\f|\u000c/) : [];
-  
+
   const getPageForQuestionText = (qText, pagesText) => {
     if (!qText || pagesText.length === 0) return -1;
     const cleanQ = qText.replace(/\s+/g, ' ').trim().substring(0, 100).toLowerCase();
@@ -889,60 +927,106 @@ exports.extractMCQsFromDocument = async (filePath, subject = 'General', count = 
         // Identify questions with embedded images that need Vision enrichment
         const needsVision = questions.filter(q => q.image === '' && imageList.length > 0);
         if (needsVision.length > 0 && process.env.ANTHROPIC_API_KEY) {
-          logger.info(`[DOCX] ${needsVision.length} questions lack images — running Vision pass on orphaned images`);
-          const orphanedImgPaths = imageList
-            .filter(img => !questions.some(q => q.image === img.publicPath))
-            .map(img => path.join(UPLOAD_DIR, img.filename));
+          try {
+            logger.info(`[DOCX] ${needsVision.length} questions lack images — running Vision pass on orphaned images`);
+            const orphanedImgPaths = imageList
+              .filter(img => !questions.some(q => q.image === img.publicPath))
+              .map(img => path.join(UPLOAD_DIR, img.filename));
 
-          if (orphanedImgPaths.length > 0) {
-            const rawText = html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
-            const visionQs = await claudeVisionExtract(orphanedImgPaths, rawText.substring(0, 2000), needsVision.length);
-            const validVision = visionQs.filter(isValidMCQ).map(sanitizeMCQ);
+            if (orphanedImgPaths.length > 0) {
+              const rawText = html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+              const visionQs = await claudeVisionExtract(orphanedImgPaths, rawText.substring(0, 2000), needsVision.length);
+              const validVision = visionQs.filter(isValidMCQ).map(sanitizeMCQ);
 
-            // Merge: attach EMBEDDED image flag to questions that Vision identified
-            let vIdx = 0;
-            questions = questions.map(q => {
-              if (q.image || vIdx >= validVision.length) return q;
-              const vq = validVision[vIdx++];
-              return { ...q, image: vq.image === 'EMBEDDED' ? (imageList[vIdx - 1]?.publicPath || '') : (vq.image || '') };
-            });
+              // Merge: attach EMBEDDED image flag to questions that Vision identified
+              let vIdx = 0;
+              questions = questions.map(q => {
+                if (q.image || vIdx >= validVision.length) return q;
+                const vq = validVision[vIdx++];
+                return { ...q, image: vq.image === 'EMBEDDED' ? (imageList[vIdx - 1]?.publicPath || '') : (vq.image || '') };
+              });
+            }
+          } catch (err) {
+            logger.error(`[DOCX] Orphaned images Vision enrichment error: ${err.message}`);
           }
         }
-        return { questions: questions.slice(0, count), meta: { model: 'docx-structured-parser', images: imageList.length } };
+        
+        if (questions.length >= count) {
+          return { questions: questions.slice(0, count), meta: { model: 'docx-structured-parser', images: imageList.length } };
+        }
       }
 
       // Stage 2: Regex on raw DOCX text
       const rawText = await extractWordTextFn(filePath);
       let regexQs = exports.regexExtractFromText(rawText);
       logger.info(`[DOCX] Regex fallback → ${regexQs.length} questions`);
-      if (regexQs.length >= 1) {
-        if (imageList && imageList.length > 0) {
-          regexQs = associatePdfImages(regexQs, imageList.map(img => ({ publicPath: img.publicPath })));
-        }
-        return { questions: regexQs.slice(0, count), meta: { model: 'regex-engine', images: imageList.length } };
+      if (regexQs.length >= 1 && imageList && imageList.length > 0) {
+        regexQs = associatePdfImages(regexQs, imageList.map(img => ({ publicPath: img.publicPath })));
+      }
+
+      // Pick the better set of questions between structured parser and regex parser
+      let bestLocalQs = questions.length >= regexQs.length ? questions : regexQs;
+
+      if (bestLocalQs.length >= count) {
+        return { 
+          questions: bestLocalQs.slice(0, count), 
+          meta: { 
+            model: questions.length >= regexQs.length ? 'docx-structured-parser' : 'regex-engine', 
+            images: imageList.length 
+          } 
+        };
       }
 
       // Stage 3: Claude Vision on all DOCX images
       if (imageList.length > 0 && process.env.ANTHROPIC_API_KEY) {
-        logger.info(`[DOCX] Attempting Claude Vision on ${imageList.length} images...`);
-        const imgPaths = imageList.map(i => path.join(UPLOAD_DIR, i.filename));
-        const visionQs = await claudeVisionExtract(imgPaths, rawText.substring(0, 2000), count);
-        const validated = visionQs.filter(isValidMCQ).map(sanitizeMCQ);
+        try {
+          logger.info(`[DOCX] Attempting Claude Vision on ${imageList.length} images...`);
+          const imgPaths = imageList.map(i => path.join(UPLOAD_DIR, i.filename));
+          const visionQs = await claudeVisionExtract(imgPaths, rawText.substring(0, 2000), count);
+          const validated = visionQs.filter(isValidMCQ).map(sanitizeMCQ);
 
-        // Replace EMBEDDED placeholder with actual image path
-        validated.forEach((q, idx) => {
-          if (q.image === 'EMBEDDED' && imageList[idx]) q.image = imageList[idx].publicPath;
-        });
+          // Replace EMBEDDED placeholder with actual image path
+          validated.forEach((q, idx) => {
+            if (q.image === 'EMBEDDED' && imageList[idx]) q.image = imageList[idx].publicPath;
+          });
 
-        if (validated.length > 0)
-          return { questions: validated.slice(0, count), meta: { model: 'claude-vision-docx' } };
+          if (validated.length >= count) {
+            return { questions: validated.slice(0, count), meta: { model: 'claude-vision-docx' } };
+          }
+          if (validated.length > bestLocalQs.length) {
+            bestLocalQs = validated;
+          }
+        } catch (err) {
+          logger.error(`[DOCX] Claude Vision error: ${err.message}`);
+        }
       }
 
       // Stage 4: Claude Text
       if (process.env.ANTHROPIC_API_KEY) {
-        logger.info(`[DOCX] Attempting Claude Text extraction...`);
-        const aiQs = (await claudeTextExtract(rawText, subject, count)).filter(isValidMCQ).map(sanitizeMCQ);
-        if (aiQs.length > 0) return { questions: aiQs.slice(0, count), meta: { model: 'claude-text-docx' } };
+        try {
+          logger.info(`[DOCX] Attempting Claude Text extraction...`);
+          const aiQs = (await claudeTextExtract(rawText, subject, count)).filter(isValidMCQ).map(sanitizeMCQ);
+          if (aiQs.length >= count) {
+            return { questions: aiQs.slice(0, count), meta: { model: 'claude-text-docx' } };
+          }
+          if (aiQs.length > bestLocalQs.length) {
+            bestLocalQs = aiQs;
+          }
+        } catch (err) {
+          logger.error(`[DOCX] Claude Text error: ${err.message}`);
+        }
+      }
+
+      // Final DOCX fallback using the best compiled list
+      if (bestLocalQs.length > 0) {
+        return { 
+          questions: bestLocalQs.slice(0, count), 
+          meta: { 
+            model: 'fallback-hybrid-docx', 
+            count: bestLocalQs.length,
+            images: imageList.length 
+          } 
+        };
       }
     }
 
@@ -950,11 +1034,11 @@ exports.extractMCQsFromDocument = async (filePath, subject = 'General', count = 
     else if (ext === '.pdf') {
       // Custom pagerender to inject form feeds (\u000c) for deterministic page splits
       const pdfOptions = {
-        pagerender: function(pageData) {
+        pagerender: function (pageData) {
           return pageData.getTextContent({
             normalizeWhitespace: false,
             disableCombineTextItems: false
-          }).then(function(textContent) {
+          }).then(function (textContent) {
             let lastY, text = '';
             for (let item of textContent.items) {
               if (lastY == item.transform[5] || !lastY) {
@@ -978,6 +1062,8 @@ exports.extractMCQsFromDocument = async (filePath, subject = 'General', count = 
       const text = pdfData.text || '';
       logger.info(`[PDF] Pages=${pdfData.numpages}  textLen=${text.length}  images=${pdfImages.length}`);
 
+      let bestLocalQs = [];
+
       // Stage 1: Regex on PDF text
       if (text.length > 50) {
         let regexQs = exports.regexExtractFromText(text);
@@ -986,39 +1072,71 @@ exports.extractMCQsFromDocument = async (filePath, subject = 'General', count = 
         if (regexQs.length >= 1) {
           // Associate extracted PDF images with questions missing images deterministically by page
           regexQs = associatePdfImagesByPage(regexQs, pdfImages, text);
-          return { questions: regexQs.slice(0, count), meta: { model: 'regex-engine-pdf', images: pdfImages.length } };
+          if (regexQs.length >= count) {
+            return { questions: regexQs.slice(0, count), meta: { model: 'regex-engine-pdf', images: pdfImages.length } };
+          }
+          bestLocalQs = regexQs;
         }
       }
 
       // Stage 2: Claude Vision on PDF images
       if (pdfImages.length > 0 && process.env.ANTHROPIC_API_KEY) {
-        logger.info(`[PDF] Running Claude Vision on ${pdfImages.length} PDF images...`);
-        // Process images in batches of 5 (Vision API limit)
-        const BATCH = 5;
-        const allVisionQs = [];
-        for (let b = 0; b < pdfImages.length; b += BATCH) {
-          const batch = pdfImages.slice(b, b + BATCH);
-          const imgPaths = batch.map(i => i.localPath);
-          const batchQs = await claudeVisionExtract(imgPaths, text.substring(0, 1500), Math.ceil(count / Math.ceil(pdfImages.length / BATCH)));
-          // Replace EMBEDDED placeholder with actual image path
-          batchQs.forEach((q, idx) => {
-            if (q.image === 'EMBEDDED' && batch[idx]) q.image = batch[idx].publicPath;
-          });
-          allVisionQs.push(...batchQs);
-          if (allVisionQs.length >= count) break;
-        }
+        try {
+          logger.info(`[PDF] Running Claude Vision on ${pdfImages.length} PDF images...`);
+          // Process images in batches of 5 (Vision API limit)
+          const BATCH = 5;
+          const allVisionQs = [];
+          for (let b = 0; b < pdfImages.length; b += BATCH) {
+            const batch = pdfImages.slice(b, b + BATCH);
+            const imgPaths = batch.map(i => i.localPath);
+            const batchQs = await claudeVisionExtract(imgPaths, text.substring(0, 1500), Math.ceil(count / Math.ceil(pdfImages.length / BATCH)));
+            // Replace EMBEDDED placeholder with actual image path
+            batchQs.forEach((q, idx) => {
+              if (q.image === 'EMBEDDED' && batch[idx]) q.image = batch[idx].publicPath;
+            });
+            allVisionQs.push(...batchQs);
+            if (allVisionQs.length >= count) break;
+          }
 
-        const validated = allVisionQs.filter(isValidMCQ).map(sanitizeMCQ);
-        if (validated.length > 0)
-          return { questions: validated.slice(0, count), meta: { model: 'claude-vision-pdf', pages: pdfData.numpages } };
+          const validated = allVisionQs.filter(isValidMCQ).map(sanitizeMCQ);
+          if (validated.length >= count) {
+            return { questions: validated.slice(0, count), meta: { model: 'claude-vision-pdf', pages: pdfData.numpages } };
+          }
+          if (validated.length > bestLocalQs.length) {
+            bestLocalQs = validated;
+          }
+        } catch (err) {
+          logger.error(`[PDF] Claude Vision error: ${err.message}`);
+        }
       }
 
       // Stage 3: Claude Text (for scanned PDFs that have legible text layer)
       if (text.length > 50 && process.env.ANTHROPIC_API_KEY) {
-        logger.info(`[PDF] Attempting Claude Text extraction...`);
-        let aiQs = (await claudeTextExtract(text, subject, count)).filter(isValidMCQ).map(sanitizeMCQ);
-        aiQs = associatePdfImagesByPage(aiQs, pdfImages, text);
-        if (aiQs.length > 0) return { questions: aiQs.slice(0, count), meta: { model: 'claude-text-pdf' } };
+        try {
+          logger.info(`[PDF] Attempting Claude Text extraction...`);
+          let aiQs = (await claudeTextExtract(text, subject, count)).filter(isValidMCQ).map(sanitizeMCQ);
+          aiQs = associatePdfImagesByPage(aiQs, pdfImages, text);
+          if (aiQs.length >= count) {
+            return { questions: aiQs.slice(0, count), meta: { model: 'claude-text-pdf' } };
+          }
+          if (aiQs.length > bestLocalQs.length) {
+            bestLocalQs = aiQs;
+          }
+        } catch (err) {
+          logger.error(`[PDF] Claude Text error: ${err.message}`);
+        }
+      }
+
+      // Final PDF fallback using the best compiled list
+      if (bestLocalQs.length > 0) {
+        return { 
+          questions: bestLocalQs.slice(0, count), 
+          meta: { 
+            model: 'fallback-hybrid-pdf', 
+            count: bestLocalQs.length,
+            images: pdfImages.length 
+          } 
+        };
       }
 
       if (text.length < 50 && pdfImages.length === 0) {
@@ -1030,7 +1148,7 @@ exports.extractMCQsFromDocument = async (filePath, subject = 'General', count = 
       throw new Error(`Unsupported file format: ${ext}. Supported: .docx, .doc, .pdf`);
     }
 
-    // Ultimate fallback — shouldn't reach here if API key is set
+    // Ultimate fallback
     logger.warn('[MCQ Engine] All extraction methods exhausted. No questions found.');
     return { questions: [], meta: { model: 'none', error: 'No questions could be extracted' } };
 

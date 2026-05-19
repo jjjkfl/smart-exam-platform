@@ -258,7 +258,13 @@ const ExamEngine = {
       const titleEl = document.getElementById('exam-title');
       const subtitleEl = document.getElementById('exam-subtitle');
       if (titleEl) titleEl.textContent = this.examData.title || 'Live Examination';
-      if (subtitleEl) subtitleEl.textContent = `${this.questions.length} Questions`;
+      if (subtitleEl) {
+        const startTime = this.startTime;
+        const durationMinutes = this.examData.duration || this.examData.durationMinutes || 60;
+        const endTime = new Date(startTime + durationMinutes * 60 * 1000);
+        const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: true };
+        subtitleEl.textContent = `${this.questions.length} Questions | Duration: ${durationMinutes} Mins (${new Date(startTime).toLocaleTimeString('en-US', timeOptions)} - ${endTime.toLocaleTimeString('en-US', timeOptions)})`;
+      }
 
       this.renderQuestion();
       this.renderProgress();

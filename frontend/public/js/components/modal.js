@@ -7,7 +7,7 @@ const Modal = {
   activeModal: null,
 
   show(id, contentHtml, options = {}) {
-    this.close();
+    this.close(true);
 
     const overlay = document.createElement('div');
     overlay.id = `modal-overlay-${id}`;
@@ -60,15 +60,20 @@ const Modal = {
     this.activeModal = overlay;
   },
 
-  close() {
+  close(immediate = false) {
     if (this.activeModal) {
-      const modal = this.activeModal.firstChild;
-      this.activeModal.style.opacity = '0';
-      modal.style.transform = 'scale(0.9) translateY(20px)';
-      setTimeout(() => {
-        this.activeModal.remove();
-        this.activeModal = null;
-      }, 300);
+      const overlayEl = this.activeModal;
+      const modal = overlayEl.firstChild;
+      this.activeModal = null;
+      if (immediate) {
+        overlayEl.remove();
+      } else {
+        overlayEl.style.opacity = '0';
+        if (modal) modal.style.transform = 'scale(0.9) translateY(20px)';
+        setTimeout(() => {
+          overlayEl.remove();
+        }, 300);
+      }
     }
   }
 };

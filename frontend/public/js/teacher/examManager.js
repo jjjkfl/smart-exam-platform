@@ -92,6 +92,7 @@ const ExamManager = {
         #modal-overlay-create-session .flex-between:first-child { display: none !important; }
       </style>
     `, { title: '', width: '650px' });
+    ExamManager.initFormTiming('create-session-form');
   },
 
   showEditSession(sessionId) {
@@ -108,9 +109,14 @@ const ExamManager = {
       return `<option value="${c._id}" ${selected}>${c.courseName}</option>`;
     }).join('');
 
-    const localDate = session.startTime
-      ? new Date(session.startTime).toISOString().slice(0, 16)
-      : '';
+    let localDate = '';
+    if (session.startTime) {
+      const d = new Date(session.startTime);
+      if (!isNaN(d.getTime())) {
+        const pad = (n) => String(n).padStart(2, '0');
+        localDate = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      }
+    }
 
     Modal.show('edit-session', `
       <div style="position: relative; padding: 10px;">
@@ -190,6 +196,7 @@ const ExamManager = {
         #modal-overlay-edit-session .flex-between:first-child { display: none !important; }
       </style>
     `, { title: '', width: '650px' });
+    ExamManager.initFormTiming('edit-session-form');
   },
 
   async handleCreate(event, bankId) {
@@ -249,6 +256,63 @@ const ExamManager = {
     } catch (err) {
       notifications.error(err.message);
     }
+  },
+
+  initFormTiming(formId) {
+    setTimeout(() => {
+      const form = document.getElementById(formId);
+      if (!form) return;
+      
+      const startInput = form.elements['scheduledStart'];
+      const durationInput = form.elements['durationMinutes'];
+      
+      // Inject preview element if it doesn't exist
+      let previewEl = form.querySelector('.calculated-stop-time');
+      if (!previewEl) {
+        previewEl = document.createElement('div');
+        previewEl.className = 'calculated-stop-time';
+        previewEl.style.cssText = 'font-size: 12px; margin-top: 6px; display: none;';
+        if (startInput && startInput.parentNode) {
+          startInput.parentNode.appendChild(previewEl);
+        }
+      }
+
+      const updateTiming = () => {
+        const startVal = startInput.value;
+        const durationVal = parseInt(durationInput.value, 10);
+        
+        previewEl.style.display = 'block';
+        
+        if (startVal && !isNaN(durationVal)) {
+          const start = new Date(startVal);
+          if (!isNaN(start.getTime())) {
+            const end = new Date(start.getTime() + durationVal * 60 * 1000);
+            
+            const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: true };
+            const dateOptions = { weekday: 'short', month: 'short', day: 'numeric' };
+            
+            previewEl.style.color = 'var(--primary-indigo)';
+            previewEl.style.fontWeight = '700';
+            previewEl.innerHTML = `<i class="far fa-clock"></i> Stops at: <strong>${end.toLocaleTimeString('en-US', timeOptions)}</strong> (${end.toLocaleDateString('en-US', dateOptions)})`;
+            return;
+          }
+        }
+        
+        previewEl.style.color = 'var(--text-muted, #64748b)';
+        previewEl.style.fontWeight = '500';
+        previewEl.innerHTML = `<i class="far fa-clock"></i> Stops at: <span style="font-weight: 600;">--:-- (awaiting start time)</span>`;
+      };
+
+      if (startInput) {
+        startInput.addEventListener('input', updateTiming);
+        startInput.addEventListener('change', updateTiming);
+      }
+      if (durationInput) {
+        durationInput.addEventListener('input', updateTiming);
+        durationInput.addEventListener('change', updateTiming);
+      }
+      updateTiming();
+    }, 100);
   }
 };
 

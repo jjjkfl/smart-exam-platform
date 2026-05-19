@@ -8,8 +8,32 @@ const utils = {
    * Format date to Apple-style readable string
    */
   formatDate(dateString) {
+    if (!dateString) return 'N/A';
+    const d = new Date(dateString);
+    if (isNaN(d.getTime())) return 'N/A';
     const options = { month: 'short', day: 'numeric', year: 'numeric' };
-    return new Date(dateString).toLocaleDateString('en-US', options);
+    return d.toLocaleDateString('en-US', options);
+  },
+
+  /**
+   * Format start and end datetime range using duration
+   */
+  formatDateTimeRange(startTime, durationMinutes) {
+    if (!startTime) return 'N/A';
+    const start = new Date(startTime);
+    if (isNaN(start.getTime())) return 'N/A';
+    
+    const end = new Date(start.getTime() + (durationMinutes || 60) * 60 * 1000);
+    if (isNaN(end.getTime())) return 'N/A';
+    
+    const dateOptions = { month: 'short', day: 'numeric', year: 'numeric' };
+    const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: true };
+    
+    const dateStr = start.toLocaleDateString('en-US', dateOptions);
+    const startStr = start.toLocaleTimeString('en-US', timeOptions);
+    const endStr = end.toLocaleTimeString('en-US', timeOptions);
+    
+    return `${dateStr}, ${startStr} - ${endStr} (${durationMinutes} Mins)`;
   },
 
   /**
