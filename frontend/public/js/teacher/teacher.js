@@ -331,7 +331,7 @@ const TeacherDashboard = {
     if (!container) return;
     
     // Only show loader on initial load to prevent UI flickering during polling
-    if (this.banks.length === 0 && !this.currentBoardFolder) {
+    if (this.banks.length === 0 && !this.currentBoardFolder && !this._lastBanksHash) {
       Loader.show('mcq-banks-grid', 'Syncing MCQ Repositories...');
     }
 
@@ -429,6 +429,7 @@ const TeacherDashboard = {
       }
     } catch (err) {
       console.error(err);
+      container.innerHTML = `<p class="p-dim" style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--danger);">Failed to load repositories: ${err.message || err}</p>`;
     }
   },
 
