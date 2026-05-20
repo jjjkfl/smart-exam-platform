@@ -17,6 +17,7 @@ const { execSync, execFileSync } = require('child_process');
 const pdfParse = require('pdf-parse');
 const mammoth = require('mammoth');
 const Anthropic = require('@anthropic-ai/sdk');
+const OpenAI = require('openai');
 const logger = require('../utils/logger');
 
 /* ─── Anthropic client (lazy) ───────────────────────────────────── */
@@ -28,6 +29,23 @@ const getAnthropic = () => {
     _anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
   }
   return _anthropic;
+};
+
+/* ─── OpenAI client (lazy) ──────────────────────────────────────── */
+let _openai = null;
+const getOpenAI = () => {
+  if (!_openai) {
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey || apiKey === 'your_openai_api_key_here') {
+      throw new Error('OPENAI_API_KEY is not set or is placeholder');
+    }
+    _openai = new OpenAI({ apiKey });
+  }
+  return _openai;
+};
+
+const hasApiKey = (key) => {
+  return key && typeof key === 'string' && key.trim() !== '' && !key.includes('your_openai_api_key_here') && !key.includes('your_anthropic_api_key_here');
 };
 
 /* ─── Upload directory ──────────────────────────────────────────── */
@@ -118,14 +136,69 @@ const convertDocxToHtml = async (filePath) => {
  *
  * Returns an array of { page, publicPath, localPath } objects.
  */
+const getPdfimagesBinary = () => {
+  try {
+    const checkCmd = process.platform === 'win32' ? 'where' : 'which';
+    execSync(`${checkCmd} pdfimages`, { stdio: 'ignore' });
+    return 'pdfimages';
+  } catch (e) {
+    // Not in PATH
+  }
+
+  if (process.platform === 'win32') {
+    const userProfile = process.env.USERPROFILE || 'C:\\Users\\shrinidhi';
+    const wingetFolder = path.join(userProfile, 'AppData\\Local\\Microsoft\\WinGet\\Packages');
+    if (fs.existsSync(wingetFolder)) {
+      try {
+        const dirs = fs.readdirSync(wingetFolder);
+        const popplerDir = dirs.find(d => d.toLowerCase().includes('poppler'));
+        if (popplerDir) {
+          const possiblePaths = [
+            path.join(wingetFolder, popplerDir, 'poppler-25.07.0\\Library\\bin\\pdfimages.exe'),
+            path.join(wingetFolder, popplerDir, 'Library\\bin\\pdfimages.exe'),
+            path.join(wingetFolder, popplerDir, 'bin\\pdfimages.exe')
+          ];
+          for (const p of possiblePaths) {
+            if (fs.existsSync(p)) {
+              return p;
+            }
+          }
+          
+          const searchBin = (dir) => {
+            const files = fs.readdirSync(dir);
+            for (const file of files) {
+              const fullPath = path.join(dir, file);
+              const stat = fs.statSync(fullPath);
+              if (stat.isDirectory()) {
+                const found = searchBin(fullPath);
+                if (found) return found;
+              } else if (file.toLowerCase() === 'pdfimages.exe') {
+                return fullPath;
+              }
+            }
+            return null;
+          };
+          const foundPath = searchBin(path.join(wingetFolder, popplerDir));
+          if (foundPath) return foundPath;
+        }
+      } catch (err) {
+        logger.warn(`[PDF] WinGet poppler path traversal failed: ${err.message}`);
+      }
+    }
+  }
+
+  return 'pdfimages';
+};
+
 const extractPdfImages = (pdfPath) => {
   const sessionId = uid();
   const dumpDir = path.join(TMP_DIR, `pdf-img-${sessionId}`);
   fs.mkdirSync(dumpDir, { recursive: true });
 
   try {
+    const binary = getPdfimagesBinary();
     // -all extracts all image types; -png forces png output; -p appends page numbers to names
-    execFileSync('pdfimages', ['-all', '-png', '-p', pdfPath, path.join(dumpDir, 'img')],
+    execFileSync(binary, ['-all', '-png', '-p', pdfPath, path.join(dumpDir, 'img')],
       { timeout: 60000, stdio: 'pipe' });
   } catch (err) {
     if (err.code === 'ENOENT') {
@@ -167,6 +240,200 @@ const extractPdfImages = (pdfPath) => {
 
   logger.info(`[PDF] Extracted ${extracted.length} images from PDF`);
   return extracted;
+};
+
+const convertPdfToPageImages = (pdfPath) => {
+  const sessionId = uid();
+  const dumpDir = path.join(TMP_DIR, `pdf-pages-${sessionId}`);
+  fs.mkdirSync(dumpDir, { recursive: true });
+
+  try {
+    const binary = getPdfimagesBinary().replace('pdfimages', 'pdftoppm');
+    // pdftoppm -png -r 150 pdfPath dumpDir/page
+    execFileSync(binary, ['-png', '-r', '150', pdfPath, path.join(dumpDir, 'page')],
+      { timeout: 60000, stdio: 'pipe' });
+  } catch (err) {
+    logger.warn(`[PDF] pdftoppm failed: ${err.message}`);
+    try { fs.rmSync(dumpDir, { recursive: true, force: true }); } catch (_) { }
+    return [];
+  }
+
+  const pageImages = [];
+  try {
+    const files = fs.readdirSync(dumpDir).filter(f => /\.png$/i.test(f)).sort((a, b) => {
+      const numA = parseInt(a.match(/page-(\d+)/)?.[1] || 0, 10);
+      const numB = parseInt(b.match(/page-(\d+)/)?.[1] || 0, 10);
+      return numA - numB;
+    });
+
+    files.forEach((file, i) => {
+      const srcPath = path.join(dumpDir, file);
+      const destName = `pdf-page-${sessionId}-${String(i + 1).padStart(3, '0')}.png`;
+      const destPath = path.join(UPLOAD_DIR, destName);
+      fs.copyFileSync(srcPath, destPath);
+
+      pageImages.push({
+        pageNumber: i + 1,
+        publicPath: `/uploads/extracted/${destName}`,
+        localPath: destPath
+      });
+    });
+  } catch (err) {
+    logger.warn(`[PDF] Failed to copy page images: ${err.message}`);
+  } finally {
+    try { fs.rmSync(dumpDir, { recursive: true, force: true }); } catch (_) { }
+  }
+
+  logger.info(`[PDF] Converted PDF to ${pageImages.length} page images`);
+  return pageImages;
+};
+
+const claudePdfPageVisionExtract = async (pageImages, pdfImages, subject = 'General', targetCount = 20) => {
+  const anthropic = getAnthropic();
+
+  const contentBlocks = [];
+  
+  // Add page renders
+  for (const img of pageImages.slice(0, 5)) { // limit to 5 pages per API call to avoid payload limits
+    if (!fs.existsSync(img.localPath)) continue;
+    const ext = path.extname(img.localPath).toLowerCase();
+    const mime = mimeFromExt(ext);
+    contentBlocks.push({
+      type: 'image',
+      source: { type: 'base64', media_type: mime, data: toBase64(img.localPath) }
+    });
+  }
+
+  // Add the prompt instruction
+  contentBlocks.push({
+    type: 'text',
+    text: `You are an expert MCQ extractor. Analyze the PDF page renders above and extract every single question.
+
+Here is the list of individual image files that were extracted from the PDF:
+${JSON.stringify(pdfImages.map(img => ({ filename: path.basename(img.localPath), path: img.publicPath })))}
+
+For each question you extract, identify if it or any of its options contains a diagram/image in the page render. If it does, find the corresponding image path from the list above and set the "image" field of the question or the specific option's "image" field to that path.
+
+Return ONLY a valid JSON array (no markdown fences, no commentary):
+[
+  {
+    "questionText": "Full question text here (include any equation/formula/diagram description)",
+    "image": "/uploads/extracted/pdf-img-...", // Match with the correct path from the list above, or leave empty if no image
+    "options": [
+      { "label": "A", "text": "Option A text", "image": "/uploads/extracted/pdf-img-..." }, // set image path if option contains image, else empty
+      { "label": "B", "text": "Option B text", "image": "" },
+      { "label": "C", "text": "Option C text", "image": "" },
+      { "label": "D", "text": "Option D text", "image": "" }
+    ],
+    "correctAnswer": "A", // Or comma-separated if multiple answers are correct e.g. "A,C"
+    "explanation": "Brief rationale",
+    "difficulty": "medium",
+    "topic": "inferred topic",
+    "marks": 1
+  }
+]
+
+Rules:
+1. Extract questions in the sequential order they appear in the pages.
+2. Ensure the question text, options, correct answers, and explanations match perfectly and do not get mixed up.
+3. If a question spans across pages, combine it correctly.
+4. Extract up to ${targetCount} questions.`
+  });
+
+  try {
+    const response = await anthropic.messages.create({
+      model: 'claude-3-5-sonnet-20241022',
+      max_tokens: 8192,
+      messages: [{ role: 'user', content: contentBlocks }]
+    });
+
+    const raw = response.content.filter(b => b.type === 'text').map(b => b.text).join('');
+    return parseJSONSafe(raw);
+  } catch (err) {
+    logger.error(`[Claude PDF Vision] Error: ${err.message}`);
+    return [];
+  }
+};
+
+const gptPdfPageVisionExtract = async (pageImages, pdfImages, subject = 'General', targetCount = 20) => {
+  const openai = getOpenAI();
+
+  const messages = [
+    {
+      role: 'user',
+      content: [
+        {
+          type: 'text',
+          text: `You are an expert MCQ extractor. Analyze the PDF page renders provided and extract every single question.
+
+Here is the list of individual image files that were extracted from the PDF:
+${JSON.stringify(pdfImages.map(img => ({ filename: path.basename(img.localPath), path: img.publicPath })))}
+
+For each question you extract, identify if it or any of its options contains a diagram/image in the page render. If it does, find the corresponding image path from the list above and set the "image" field of the question or the specific option's "image" field to that path.
+
+Return ONLY a valid JSON array (no markdown fences, no commentary):
+[
+  {
+    "questionText": "Full question text here (include any equation/formula/diagram description)",
+    "image": "/uploads/extracted/pdf-img-...", // Match with the correct path from the list above, or leave empty if no image
+    "options": [
+      { "label": "A", "text": "Option A text", "image": "/uploads/extracted/pdf-img-..." }, // set image path if option contains image, else empty
+      { "label": "B", "text": "Option B text", "image": "" },
+      { "label": "C", "text": "Option C text", "image": "" },
+      { "label": "D", "text": "Option D text", "image": "" }
+    ],
+    "correctAnswer": "A", // Or comma-separated if multiple answers are correct e.g. "A,C"
+    "explanation": "Brief rationale",
+    "difficulty": "medium",
+    "topic": "inferred topic",
+    "marks": 1
+  }
+]
+
+Rules:
+1. Extract questions in the sequential order they appear in the pages.
+2. Ensure the question text, options, correct answers, and explanations match perfectly and do not get mixed up.
+3. If a question spans across pages, combine it correctly.
+4. Extract up to ${targetCount} questions.`
+        }
+      ]
+    }
+  ];
+
+  // Add page images
+  for (const img of pageImages.slice(0, 5)) {
+    if (!fs.existsSync(img.localPath)) continue;
+    const ext = path.extname(img.localPath).toLowerCase();
+    const mime = mimeFromExt(ext);
+    const base64 = toBase64(img.localPath);
+    messages[0].content.push({
+      type: 'image_url',
+      image_url: {
+        url: `data:${mime};base64,${base64}`
+      }
+    });
+  }
+
+  try {
+    const response = await openai.chat.completions.create({
+      model: process.env.OPENAI_MODEL || 'gpt-4o',
+      messages,
+      max_tokens: 4096,
+      response_format: { type: 'json_object' } // Enforce JSON
+    });
+
+    const raw = response.choices[0].message.content;
+    const parsed = parseJSONSafe(raw);
+    if (Array.isArray(parsed)) return parsed;
+    if (parsed && typeof parsed === 'object') {
+      if (Array.isArray(parsed.questions)) return parsed.questions;
+      return Object.values(parsed).find(Array.isArray) || [];
+    }
+    return [];
+  } catch (err) {
+    logger.error(`[GPT PDF Vision] Error: ${err.message}`);
+    return [];
+  }
 };
 
 /* ══════════════════════════════════════════════════════════════════
@@ -654,7 +921,7 @@ exports.regexExtractFromText = (text) => {
     const ansM = block.match(/(?:Answer|Ans|Correct(?:\s+Key)?|Key|Choice|Response)\s*[\:\-\s]*([\s\S]*?)(?:\f|\n|$)/i);
     if (ansM) {
       rawAnswerText = ansM[1].trim();
-      
+
       const expIdx = rawAnswerText.search(/(?:Explanation|Exp|Rationale|Solution|Detail|Ans Detail|Ans Explanation)/i);
       if (expIdx !== -1) {
         explanation = rawAnswerText.slice(expIdx).trim();
@@ -673,7 +940,7 @@ exports.regexExtractFromText = (text) => {
           if (optText.length > 0) {
             const escapedOptText = optText.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
             const isNumeric = /^\d+$/.test(optText);
-            
+
             if (rawAnswerText.toLowerCase() === optText.toLowerCase()) {
               matchedLabels.push(opt.label);
             } else if (!isNumeric) {
@@ -871,9 +1138,56 @@ const associatePdfImagesByPage = (questions, pdfImages, rawText) => {
     imagesByPage[p].push(img);
   });
 
+  // Keyword heuristic helper
+  const hasVisualKeywords = (q) => {
+    const textToSearch = (q.questionText + ' ' + (q.options || []).map(o => o.text).join(' ')).toLowerCase();
+    const keywords = [
+      'figure', 'diagram', 'graph', 'chart', 'image', 'plot', 'triangle', 
+      'geometry', 'shown', 'below', 'illustrate', 'map', 'coordinate', 
+      'equation of the line', 'slope', 'shaded', 'circle', 'angle', 'parallel',
+      'vector', 'matrix', 'visual', 'observe', 'picture', 'graphical', 'curves',
+      'represented', 'following diagram', 'following figure', 'histogram', 'coordinates'
+    ];
+    return keywords.some(k => textToSearch.includes(k));
+  };
+
+  // Math/science heuristic helper
+  const isMathQuestion = (q) => {
+    const textToSearch = (q.questionText + ' ' + (q.options || []).map(o => o.text).join(' ')).toLowerCase();
+    const mathSymbols = /[\+\-\*\/\=\<\>\√\π\θ\λ\α\β\γ\Σ\∫\²\³\^]|\d+\s*[\%\°]/;
+    const mathKeywords = [
+      'solve', 'value of', 'find x', 'find the value', 'calculate', 'simplify', 
+      'equation', 'expression', 'ratio', 'probability', 'mean', 'median', 'mode', 
+      'sum', 'difference', 'product', 'remainder', 'evaluate', 'fraction', 'percentage',
+      'trigonometry', 'sin(', 'cos(', 'tan('
+    ];
+    return mathSymbols.test(q.questionText) || mathKeywords.some(k => textToSearch.includes(k));
+  };
+
   const pageClaims = {};
 
-  return questionsWithPages.map(q => {
+  // First pass: assign images to questions that have visual keywords
+  let mappedQuestions = questionsWithPages.map(q => {
+    if (q.image) return q;
+    const p = q._pageNum;
+    const pageImgs = imagesByPage[p] || [];
+    if (pageImgs.length === 0) return q;
+
+    if (hasVisualKeywords(q)) {
+      if (!pageClaims[p]) pageClaims[p] = 0;
+      const claimIdx = pageClaims[p];
+      if (claimIdx < pageImgs.length) {
+        const img = pageImgs[claimIdx];
+        pageClaims[p]++;
+        logger.info(`[Associator-Page Keyword] Assigned Page ${p} image ${img.publicPath} to "${q.questionText.substring(0, 40)}..."`);
+        return { ...q, image: img.publicPath };
+      }
+    }
+    return q;
+  });
+
+  // Second pass: map remaining images to math/science questions
+  mappedQuestions = mappedQuestions.map(q => {
     if (q.image) return q;
     const p = q._pageNum;
     const pageImgs = imagesByPage[p] || [];
@@ -881,10 +1195,32 @@ const associatePdfImagesByPage = (questions, pdfImages, rawText) => {
 
     if (!pageClaims[p]) pageClaims[p] = 0;
     const claimIdx = pageClaims[p];
-    if (claimIdx < pageImgs.length) {
+
+    if (claimIdx < pageImgs.length && isMathQuestion(q)) {
       const img = pageImgs[claimIdx];
       pageClaims[p]++;
-      logger.info(`[Associator-Page] Assigned Page ${p} image ${img.publicPath} to "${q.questionText.substring(0, 40)}..."`);
+      logger.info(`[Associator-Page Math Fallback] Assigned Page ${p} image ${img.publicPath} to math question "${q.questionText.substring(0, 40)}..."`);
+      return { ...q, image: img.publicPath };
+    }
+    return q;
+  });
+
+  // Third pass: only assign to any question if there's exactly 1 question on the page
+  return mappedQuestions.map(q => {
+    if (q.image) return q;
+    const p = q._pageNum;
+    const pageImgs = imagesByPage[p] || [];
+    if (pageImgs.length === 0) return q;
+
+    if (!pageClaims[p]) pageClaims[p] = 0;
+    const claimIdx = pageClaims[p];
+
+    const pageQuestions = mappedQuestions.filter(mq => mq._pageNum === p);
+
+    if (claimIdx < pageImgs.length && pageQuestions.length === 1) {
+      const img = pageImgs[claimIdx];
+      pageClaims[p]++;
+      logger.info(`[Associator-Page Single Q Fallback] Assigned Page ${p} image ${img.publicPath} to sole question "${q.questionText.substring(0, 40)}..."`);
       return { ...q, image: img.publicPath };
     }
     return q;
@@ -950,7 +1286,7 @@ exports.extractMCQsFromDocument = async (filePath, subject = 'General', count = 
             logger.error(`[DOCX] Orphaned images Vision enrichment error: ${err.message}`);
           }
         }
-        
+
         if (questions.length >= count) {
           return { questions: questions.slice(0, count), meta: { model: 'docx-structured-parser', images: imageList.length } };
         }
@@ -968,12 +1304,12 @@ exports.extractMCQsFromDocument = async (filePath, subject = 'General', count = 
       let bestLocalQs = questions.length >= regexQs.length ? questions : regexQs;
 
       if (bestLocalQs.length >= count) {
-        return { 
-          questions: bestLocalQs.slice(0, count), 
-          meta: { 
-            model: questions.length >= regexQs.length ? 'docx-structured-parser' : 'regex-engine', 
-            images: imageList.length 
-          } 
+        return {
+          questions: bestLocalQs.slice(0, count),
+          meta: {
+            model: questions.length >= regexQs.length ? 'docx-structured-parser' : 'regex-engine',
+            images: imageList.length
+          }
         };
       }
 
@@ -1019,13 +1355,13 @@ exports.extractMCQsFromDocument = async (filePath, subject = 'General', count = 
 
       // Final DOCX fallback using the best compiled list
       if (bestLocalQs.length > 0) {
-        return { 
-          questions: bestLocalQs.slice(0, count), 
-          meta: { 
-            model: 'fallback-hybrid-docx', 
+        return {
+          questions: bestLocalQs.slice(0, count),
+          meta: {
+            model: 'fallback-hybrid-docx',
             count: bestLocalQs.length,
-            images: imageList.length 
-          } 
+            images: imageList.length
+          }
         };
       }
     }
@@ -1064,25 +1400,81 @@ exports.extractMCQsFromDocument = async (filePath, subject = 'General', count = 
 
       let bestLocalQs = [];
 
-      // Stage 1: Regex on PDF text
-      if (text.length > 50) {
+      // Stage 1: Render pages and run page vision pipeline if images exist and API key is set
+      const useClaude = hasApiKey(process.env.ANTHROPIC_API_KEY);
+      const useOpenAI = hasApiKey(process.env.OPENAI_API_KEY);
+      if (pdfImages.length > 0 && (useClaude || useOpenAI)) {
+        let pageImages = [];
+        try {
+          logger.info(`[PDF] Images detected (${pdfImages.length}). Running PDF page vision pipeline (${useClaude ? 'Claude' : 'OpenAI'})...`);
+          pageImages = convertPdfToPageImages(filePath);
+          
+          if (pageImages.length > 0) {
+            const BATCH = 5;
+            const allVisionQs = [];
+            for (let b = 0; b < pageImages.length; b += BATCH) {
+              const batch = pageImages.slice(b, b + BATCH);
+              let batchQs = [];
+              if (useClaude) {
+                batchQs = await claudePdfPageVisionExtract(batch, pdfImages, subject, Math.ceil(count / Math.ceil(pageImages.length / BATCH)));
+              } else {
+                batchQs = await gptPdfPageVisionExtract(batch, pdfImages, subject, Math.ceil(count / Math.ceil(pageImages.length / BATCH)));
+              }
+              allVisionQs.push(...batchQs);
+            }
+
+            const validated = allVisionQs.filter(isValidMCQ).map(sanitizeMCQ);
+            if (validated.length >= 1) {
+              logger.info(`[PDF] Page vision pipeline extracted ${validated.length} questions.`);
+              // Cleanup page images
+              pageImages.forEach(img => {
+                try { fs.unlinkSync(img.localPath); } catch (_) {}
+              });
+              if (validated.length >= count) {
+                return {
+                  questions: validated.slice(0, count),
+                  meta: {
+                    model: useClaude ? 'claude-pdf-page-vision' : 'gpt-pdf-page-vision',
+                    pages: pdfData.numpages,
+                    images: pdfImages.length
+                  }
+                };
+              }
+              bestLocalQs = validated;
+            }
+          }
+        } catch (err) {
+          logger.error(`[PDF] Page vision pipeline failed: ${err.message}`);
+        } finally {
+          if (pageImages && pageImages.length > 0) {
+            pageImages.forEach(img => {
+              try { fs.unlinkSync(img.localPath); } catch (_) {}
+            });
+          }
+        }
+      }
+
+      // Stage 2: Regex on PDF text (as fallback/supplement)
+      if (text.length > 50 && bestLocalQs.length < count) {
         let regexQs = exports.regexExtractFromText(text);
-        logger.info(`[PDF] Regex → ${regexQs.length} questions`);
+        logger.info(`[PDF] Regex fallback → ${regexQs.length} questions`);
 
         if (regexQs.length >= 1) {
           // Associate extracted PDF images with questions missing images deterministically by page
           regexQs = associatePdfImagesByPage(regexQs, pdfImages, text);
-          if (regexQs.length >= count) {
+          if (regexQs.length >= count && bestLocalQs.length === 0) {
             return { questions: regexQs.slice(0, count), meta: { model: 'regex-engine-pdf', images: pdfImages.length } };
           }
-          bestLocalQs = regexQs;
+          if (regexQs.length > bestLocalQs.length) {
+            bestLocalQs = regexQs;
+          }
         }
       }
 
-      // Stage 2: Claude Vision on PDF images
-      if (pdfImages.length > 0 && process.env.ANTHROPIC_API_KEY) {
+      // Stage 3: Claude Vision on PDF images (Legacy fallback)
+      if (pdfImages.length > 0 && process.env.ANTHROPIC_API_KEY && bestLocalQs.length < count) {
         try {
-          logger.info(`[PDF] Running Claude Vision on ${pdfImages.length} PDF images...`);
+          logger.info(`[PDF] Running legacy Claude Vision on ${pdfImages.length} PDF images...`);
           // Process images in batches of 5 (Vision API limit)
           const BATCH = 5;
           const allVisionQs = [];
@@ -1110,8 +1502,8 @@ exports.extractMCQsFromDocument = async (filePath, subject = 'General', count = 
         }
       }
 
-      // Stage 3: Claude Text (for scanned PDFs that have legible text layer)
-      if (text.length > 50 && process.env.ANTHROPIC_API_KEY) {
+      // Stage 4: Claude Text (for scanned PDFs that have legible text layer)
+      if (text.length > 50 && process.env.ANTHROPIC_API_KEY && bestLocalQs.length < count) {
         try {
           logger.info(`[PDF] Attempting Claude Text extraction...`);
           let aiQs = (await claudeTextExtract(text, subject, count)).filter(isValidMCQ).map(sanitizeMCQ);
@@ -1129,13 +1521,13 @@ exports.extractMCQsFromDocument = async (filePath, subject = 'General', count = 
 
       // Final PDF fallback using the best compiled list
       if (bestLocalQs.length > 0) {
-        return { 
-          questions: bestLocalQs.slice(0, count), 
-          meta: { 
-            model: 'fallback-hybrid-pdf', 
+        return {
+          questions: bestLocalQs.slice(0, count),
+          meta: {
+            model: 'fallback-hybrid-pdf',
             count: bestLocalQs.length,
-            images: pdfImages.length 
-          } 
+            images: pdfImages.length
+          }
         };
       }
 

@@ -17,25 +17,26 @@ const guardianStats = {
     status: 'ACTIVE'
 };
 
+let isScanning = false;
+
 const runGuardianScan = async () => {
+    if (isScanning) return;
+    isScanning = true;
+
     // Lazy-require to avoid circular dependencies / model load order issues
     const Result = require('../../models/Result');
     const ResultSnapshot = require('../../models/ResultSnapshot');
     const mongoose = require('mongoose');
 
     try {
-        const snapshots = await ResultSnapshot.find().lean();
-
-        if (snapshots.length === 0) {
-            guardianStats.lastScanTime = new Date();
-            return;
-        }
-
+        const cursor = ResultSnapshot.find().lean().cursor();
+        let snapshotCount = 0;
         let tampersFound = 0;
         let tampersReverted = 0;
         guardianStats.totalScans++;
 
-        for (const snapshot of snapshots) {
+        for (let snapshot = await cursor.next(); snapshot != null; snapshot = await cursor.next()) {
+            snapshotCount++;
             const result = await Result.findById(snapshot.resultId).lean();
             if (!result) continue;
 
@@ -116,7 +117,9 @@ const runGuardianScan = async () => {
         guardianStats.lastScanTime = new Date();
 
     } catch (err) {
-        logger.error(`Guardian scan failed: ${err.message}`);
+        logger.error(`Guardian scan failed: ${err.message}\n${err.stack}`);
+    } finally {
+        isScanning = false;
     }
 };
 

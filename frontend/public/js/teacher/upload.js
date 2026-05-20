@@ -19,7 +19,7 @@ const PDFUpload = {
       return;
     }
 
-    this.selectedFile = file;
+    PDFUpload.selectedFile = file;
 
     const isDocx = file.name.toLowerCase().endsWith('.docx');
 
@@ -67,7 +67,7 @@ const PDFUpload = {
     event.target.value = '';
   },
 
-  async process(event) {
+  async process(event, isReextract = false) {
     if (event) event.preventDefault();
     
     // Immediately show the new pleasant loader
@@ -97,16 +97,44 @@ const PDFUpload = {
     `, { title: '📖 AI Extraction Hall', width: '450px' });
 
     try {
-      const form = event.target;
-      const formData = new FormData(form);
       const finalData = new FormData();
 
-      finalData.append('pdf', this.selectedFile);
-      finalData.append('title', formData.get('title'));
-      finalData.append('subject', formData.get('subject'));
-      finalData.append('board', formData.get('board'));
-      if (formData.get('numQuestions')) {
-        finalData.append('numQuestions', formData.get('numQuestions'));
+      if (isReextract) {
+        if (!PDFUpload.selectedFile) {
+          throw new Error('No document file is cached. Please select the file again.');
+        }
+        if (!PDFUpload.lastFormData) {
+          PDFUpload.lastFormData = {
+            title: 'Re-extracted MCQ Bank',
+            subject: 'General',
+            board: 'All',
+            numQuestions: 20
+          };
+        }
+        finalData.append('pdf', PDFUpload.selectedFile);
+        finalData.append('title', PDFUpload.lastFormData.title);
+        finalData.append('subject', PDFUpload.lastFormData.subject);
+        finalData.append('board', PDFUpload.lastFormData.board);
+        if (PDFUpload.lastFormData.numQuestions) {
+          finalData.append('numQuestions', PDFUpload.lastFormData.numQuestions);
+        }
+      } else {
+        const form = event.target;
+        const formData = new FormData(form);
+        PDFUpload.lastFormData = {
+          title: formData.get('title'),
+          subject: formData.get('subject'),
+          board: formData.get('board'),
+          numQuestions: formData.get('numQuestions')
+        };
+
+        finalData.append('pdf', PDFUpload.selectedFile);
+        finalData.append('title', PDFUpload.lastFormData.title);
+        finalData.append('subject', PDFUpload.lastFormData.subject);
+        finalData.append('board', PDFUpload.lastFormData.board);
+        if (PDFUpload.lastFormData.numQuestions) {
+          finalData.append('numQuestions', PDFUpload.lastFormData.numQuestions);
+        }
       }
 
       // Cycle witty study messages
@@ -133,14 +161,14 @@ const PDFUpload = {
       window._studyLoaderMsgInterval = msgInterval;
 
       // Animate progress bar
-      this._animateProgress();
+      PDFUpload._animateProgress();
 
       const result = await api.upload('/portal/teacher/mcq-banks/upload', finalData);
       clearInterval(window._studyLoaderMsgInterval);
 
       if (result.success) {
         notifications.success(`✅ Extracted ${result.data.questionCount} questions!`);
-        this._showPreview(result.data);
+        PDFUpload._showPreview(result.data);
       } else {
         throw new Error(result.message);
       }
@@ -156,6 +184,7 @@ const PDFUpload = {
    * Show extracted MCQ preview with images
    */
   _showPreview(data) {
+    PDFUpload.lastBankId = data._id;
     const questions = data.questions || [];
     const meta = data.meta || {};
 
@@ -199,7 +228,7 @@ const PDFUpload = {
           margin-bottom: 24px; 
           font-weight: 600;
           letter-spacing: -0.01em;
-        ">${this._escapeHtml(q.questionText)}</h3>
+        ">${PDFUpload._escapeHtml(q.questionText)}</h3>
 
         ${q.image ? `
           <div style="margin-bottom: 20px; border-radius: 12px; overflow: hidden; border: 1px solid #f1f5f9;">
@@ -236,7 +265,7 @@ const PDFUpload = {
               ">${opt.label}</span>
               <div style="flex: 1;">
                 <div style="font-size: 15px; font-weight: 500; color: ${q.correctAnswer && q.correctAnswer.includes(opt.label) ? '#065f46' : '#334155'}; line-height: 1.5; word-break: break-word;">
-                  ${this._escapeHtml(opt.text)}
+                  ${PDFUpload._escapeHtml(opt.text)}
                 </div>
                 ${opt.image ? `
                   <div style="margin-top: 8px; border-radius: 8px; overflow: hidden; border: 1px solid rgba(0,0,0,0.05);">
@@ -261,7 +290,7 @@ const PDFUpload = {
               <span>💡 Explanation / Rationale</span>
             </div>
             <div style="font-size: 14px; color: #1e3a8a; line-height: 1.6;">
-              ${this._escapeHtml(q.explanation)}
+              ${PDFUpload._escapeHtml(q.explanation)}
             </div>
           </div>
         ` : ''}
@@ -310,15 +339,34 @@ const PDFUpload = {
         <div class="preview-scroll-custom" style="max-height: 60vh; overflow-y: auto; padding: 4px 16px 4px 4px; margin-right: -16px;">
           ${questionsHtml}
         </div>
-        <button onclick="Modal.close(); if(typeof TeacherDashboard !== 'undefined') TeacherDashboard.loadMCQBanks();" 
-                class="btn btn-primary" style="width: 100%; margin-top: 24px; height: 56px; font-size: 16px; font-weight: 700; border-radius: 16px;">
-          ✅ Done — Return to Dashboard
-        </button>
+        <div style="display: flex; gap: 16px; margin-top: 24px;">
+          <button onclick="PDFUpload.reextract()" 
+                  class="btn btn-secondary" style="flex: 1; height: 56px; font-size: 16px; font-weight: 700; border-radius: 16px; background: rgba(37, 99, 235, 0.08); color: var(--secondary-blue); border: 1px solid rgba(37, 99, 235, 0.15);">
+            🔄 Re-extract Document
+          </button>
+          <button onclick="Modal.close(); if(typeof TeacherDashboard !== 'undefined') TeacherDashboard.loadMCQBanks();" 
+                  class="btn btn-primary" style="flex: 1.5; height: 56px; font-size: 16px; font-weight: 700; border-radius: 16px;">
+            ✅ Done — Return to Dashboard
+          </button>
+        </div>
       </div>
     `, { 
       title: `📋 ${data.title} — Extraction Results`,
       width: '850px' 
     });
+  },
+
+  async reextract() {
+    console.log('Reextract triggered. lastBankId:', PDFUpload.lastBankId);
+    if (PDFUpload.lastBankId) {
+      try {
+        await api.delete(`/portal/teacher/mcq-banks/${PDFUpload.lastBankId}`);
+        console.log('Previous MCQ bank deleted successfully');
+      } catch (e) {
+        console.warn('Failed to delete previous MCQ bank during re-extraction:', e);
+      }
+    }
+    await PDFUpload.process(null, true);
   },
 
   /**
@@ -329,6 +377,10 @@ const PDFUpload = {
     const bar = document.getElementById('upload-progress');
     if (!bar) return;
 
+    if (PDFUpload._progressInterval) {
+      clearInterval(PDFUpload._progressInterval);
+    }
+
     const interval = setInterval(() => {
       progress += Math.random() * 8;
       if (progress > 90) progress = 90;
@@ -336,7 +388,7 @@ const PDFUpload = {
     }, 300);
 
     // Store interval for cleanup
-    this._progressInterval = interval;
+    PDFUpload._progressInterval = interval;
   },
 
   _escapeHtml(text) {
