@@ -450,23 +450,44 @@ const StudentDashboard = {
         return;
       }
 
-      container.innerHTML = exams.map(e => `
-        <div class="exam-card-v2 animate-slide-up">
-          <div class="exam-card-icon">
-            <img src="https://img.icons8.com/color/96/trophy.png" alt="trophy" />
-          </div>
-          <div class="exam-card-content" style="width: 100%;">
-            <h3 class="exam-card-title">${e.title}</h3>
-            <div class="exam-card-meta">
-              <div class="meta-pill"><i class="fas fa-globe"></i> ${e.board && e.board !== 'All' ? e.board : 'Global'}</div>
-              <div class="meta-pill"><i class="fas fa-users"></i> ${e.division || 'All Classes'}</div>
-              <div class="meta-pill"><i class="fas fa-book-open"></i> ${e.subject || 'General'}</div>
-              <div class="meta-pill"><i class="far fa-clock"></i> ${utils.formatDateTimeRange(e.scheduledStart || e.startTime, e.duration || e.durationMinutes)}</div>
+      container.innerHTML = exams.map(e => {
+        const now = new Date();
+        const start = new Date(e.scheduledStart || e.startTime);
+        const duration = e.duration || e.durationMinutes || 60;
+        const end = new Date(start.getTime() + duration * 60 * 1000);
+        
+        let buttonText = 'Take Test';
+        let disabledAttr = '';
+        let buttonStyle = '';
+
+        if (now < start) {
+          buttonText = 'Upcoming';
+          disabledAttr = 'disabled';
+          buttonStyle = 'background: #cbd5e1; border-color: #cbd5e1; color: #64748b; cursor: not-allowed;';
+        } else if (now > end) {
+          buttonText = 'Expired';
+          disabledAttr = 'disabled';
+          buttonStyle = 'background: #f1f5f9; border-color: #e2e8f0; color: #94a3b8; cursor: not-allowed;';
+        }
+
+        return `
+          <div class="exam-card-v2 animate-slide-up">
+            <div class="exam-card-icon">
+              <img src="https://img.icons8.com/color/96/trophy.png" alt="trophy" />
             </div>
-            <button onclick="StudentDashboard.joinExam('${e._id}')" class="btn btn-primary">Take Test</button>
+            <div class="exam-card-content" style="width: 100%;">
+              <h3 class="exam-card-title">${e.title}</h3>
+              <div class="exam-card-meta">
+                <div class="meta-pill"><i class="fas fa-globe"></i> ${e.board && e.board !== 'All' ? e.board : 'Global'}</div>
+                <div class="meta-pill"><i class="fas fa-users"></i> ${e.division || 'All Classes'}</div>
+                <div class="meta-pill"><i class="fas fa-book-open"></i> ${e.subject || 'General'}</div>
+                <div class="meta-pill"><i class="far fa-clock"></i> ${utils.formatDateTimeRange(e.scheduledStart || e.startTime, e.duration || e.durationMinutes)}</div>
+              </div>
+              <button onclick="StudentDashboard.joinExam('${e._id}')" class="btn btn-primary" style="${buttonStyle}" ${disabledAttr}>${buttonText}</button>
+            </div>
           </div>
-        </div>
-      `).join('');
+        `;
+      }).join('');
     } catch (err) { notifications.error('Failed to load exams'); }
   },
 
@@ -489,23 +510,44 @@ const StudentDashboard = {
       }
 
       // Show top 3 active exams on dashboard
-      container.innerHTML = activeExams.slice(0, 3).map(e => `
-        <div class="exam-card-v2 animate-slide-up">
-          <div class="exam-card-icon">
-            <img src="https://img.icons8.com/color/96/trophy.png" alt="trophy" />
-          </div>
-          <div class="exam-card-content" style="width: 100%;">
-            <h3 class="exam-card-title">${e.title}</h3>
-            <div class="exam-card-meta">
-              <div class="meta-pill"><i class="fas fa-globe"></i> ${e.board && e.board !== 'All' ? e.board : 'Global'}</div>
-              <div class="meta-pill"><i class="fas fa-users"></i> ${e.division || 'All Classes'}</div>
-              <div class="meta-pill"><i class="fas fa-book-open"></i> ${e.subject || 'General'}</div>
-              <div class="meta-pill"><i class="far fa-clock"></i> ${utils.formatDateTimeRange(e.scheduledStart || e.startTime, e.duration || e.durationMinutes)}</div>
+      container.innerHTML = activeExams.slice(0, 3).map(e => {
+        const now = new Date();
+        const start = new Date(e.scheduledStart || e.startTime);
+        const duration = e.duration || e.durationMinutes || 60;
+        const end = new Date(start.getTime() + duration * 60 * 1000);
+        
+        let buttonText = 'Take Test';
+        let disabledAttr = '';
+        let buttonStyle = '';
+
+        if (now < start) {
+          buttonText = 'Upcoming';
+          disabledAttr = 'disabled';
+          buttonStyle = 'background: #cbd5e1; border-color: #cbd5e1; color: #64748b; cursor: not-allowed;';
+        } else if (now > end) {
+          buttonText = 'Expired';
+          disabledAttr = 'disabled';
+          buttonStyle = 'background: #f1f5f9; border-color: #e2e8f0; color: #94a3b8; cursor: not-allowed;';
+        }
+
+        return `
+          <div class="exam-card-v2 animate-slide-up">
+            <div class="exam-card-icon">
+              <img src="https://img.icons8.com/color/96/trophy.png" alt="trophy" />
             </div>
-            <button onclick="StudentDashboard.joinExam('${e._id}')" class="btn btn-primary">Take Test</button>
+            <div class="exam-card-content" style="width: 100%;">
+              <h3 class="exam-card-title">${e.title}</h3>
+              <div class="exam-card-meta">
+                <div class="meta-pill"><i class="fas fa-globe"></i> ${e.board && e.board !== 'All' ? e.board : 'Global'}</div>
+                <div class="meta-pill"><i class="fas fa-users"></i> ${e.division || 'All Classes'}</div>
+                <div class="meta-pill"><i class="fas fa-book-open"></i> ${e.subject || 'General'}</div>
+                <div class="meta-pill"><i class="far fa-clock"></i> ${utils.formatDateTimeRange(e.scheduledStart || e.startTime, e.duration || e.durationMinutes)}</div>
+              </div>
+              <button onclick="StudentDashboard.joinExam('${e._id}')" class="btn btn-primary" style="${buttonStyle}" ${disabledAttr}>${buttonText}</button>
+            </div>
           </div>
-        </div>
-      `).join('');
+        `;
+      }).join('');
     } catch (err) {
       console.warn('Failed to load priority exams');
     }

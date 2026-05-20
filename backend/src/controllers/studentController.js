@@ -199,6 +199,25 @@ exports.getExamQuestions = async (req, res) => {
     const exam = await Session.findOne(query).lean();
     if (!exam) return res.status(404).json({ success: false, message: 'Exam not found or access denied' });
 
+    const now = new Date();
+    const startTime = new Date(exam.startTime);
+    const duration = exam.duration || 60;
+    const endTime = new Date(startTime.getTime() + duration * 60 * 1000);
+
+    if (now < startTime) {
+      return res.status(403).json({
+        success: false,
+        message: `This exam is scheduled to start at ${startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}. Please join at the scheduled time.`
+      });
+    }
+
+    if (now > endTime) {
+      return res.status(403).json({
+        success: false,
+        message: 'This exam duration has expired.'
+      });
+    }
+
     // Inject isMSQ flag and sanitize correct answers
     exam.questions = exam.questions.map(q => {
       const isMSQ = q.correctAnswer && q.correctAnswer.includes(',');

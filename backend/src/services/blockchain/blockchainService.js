@@ -307,9 +307,15 @@ exports.revokeResult = async (resultHash) => {
 
 /* ─── GET STATS ───────────────────────────────────────────────────── */
 exports.getBlockchainStats = async () => {
+  if (isBlockchainOffline) {
+    return { totalSealed: '0', status: 'OFFLINE', error: 'Blockchain node is offline' };
+  }
   try {
     const c = getContract();
-    const total = await c.getTotalSealed();
+    const total = await Promise.race([
+      c.getTotalSealed(),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Connection timeout')), 2000))
+    ]);
     const owner = await c.owner();
     const block = await provider.getBlockNumber();
     const net = await provider.getNetwork();
@@ -322,17 +328,25 @@ exports.getBlockchainStats = async () => {
     };
   } catch (err) {
     logger.error(`getBlockchainStats error: ${err.message}`);
-    return { error: err.message };
+    isBlockchainOffline = true;
+    return { error: err.message, status: 'OFFLINE' };
   }
 };
 
 /* ─── HEALTH CHECK ────────────────────────────────────────────────── */
 exports.blockchainHealthCheck = async () => {
+  if (isBlockchainOffline) {
+    return { healthy: false, error: 'Blockchain node is marked offline' };
+  }
   try {
     const p = provider || new ethers.JsonRpcProvider(process.env.BLOCKCHAIN_NETWORK || 'http://127.0.0.1:8545');
-    await p.getBlockNumber();
+    await Promise.race([
+      p.getBlockNumber(),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Connection timeout')), 2000))
+    ]);
     return { healthy: true, network: process.env.BLOCKCHAIN_NETWORK };
   } catch (err) {
+    isBlockchainOffline = true;
     return { healthy: false, error: err.message };
   }
 };

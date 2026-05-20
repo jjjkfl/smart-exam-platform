@@ -185,7 +185,7 @@ const ExamEngine = {
       this.examData = result.data;
     } catch (err) {
       console.error('Initial exam fetch error:', err);
-      notifications.error('Failed to load exam details.');
+      notifications.error(err.message || 'Failed to load exam details.');
       setTimeout(() => window.location.href = '/index.html', 2000);
       return;
     }
@@ -258,12 +258,26 @@ const ExamEngine = {
       const titleEl = document.getElementById('exam-title');
       const subtitleEl = document.getElementById('exam-subtitle');
       if (titleEl) titleEl.textContent = this.examData.title || 'Live Examination';
+
+      const fullDurationSeconds = (this.examData.duration || this.examData.durationMinutes || 60) * 60;
+      const scheduledStart = new Date(this.examData.startTime);
+      const scheduledEnd = new Date(scheduledStart.getTime() + fullDurationSeconds * 1000);
+      const now = new Date();
+      
+      const secondsUntilEnd = Math.max(0, Math.floor((scheduledEnd.getTime() - now.getTime()) / 1000));
+      const duration = Math.min(fullDurationSeconds, secondsUntilEnd);
+
       if (subtitleEl) {
         const startTime = this.startTime;
-        const durationMinutes = this.examData.duration || this.examData.durationMinutes || 60;
-        const endTime = new Date(startTime + durationMinutes * 60 * 1000);
+        const durationMinutes = Math.round(duration / 60);
+        const endTime = new Date(startTime + duration * 1000);
         const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: true };
-        subtitleEl.textContent = `${this.questions.length} Questions | Duration: ${durationMinutes} Mins (${new Date(startTime).toLocaleTimeString('en-US', timeOptions)} - ${endTime.toLocaleTimeString('en-US', timeOptions)})`;
+        
+        let labelText = `${this.questions.length} Questions | Duration: ${durationMinutes} Mins (${new Date(startTime).toLocaleTimeString('en-US', timeOptions)} - ${endTime.toLocaleTimeString('en-US', timeOptions)})`;
+        if (duration < fullDurationSeconds - 60) {
+          labelText += ` | ⚠️ Time reduced due to late start (Scheduled End: ${scheduledEnd.toLocaleTimeString('en-US', timeOptions)})`;
+        }
+        subtitleEl.textContent = labelText;
       }
 
       this.renderQuestion();
@@ -271,7 +285,6 @@ const ExamEngine = {
       this.updateCounters();
 
       // Start timer
-      const duration = (this.examData.duration || this.examData.durationMinutes || 60) * 60;
       ExamTimer.start(duration, () => this.autoSubmit());
 
       // Init security bar
