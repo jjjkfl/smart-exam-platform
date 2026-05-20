@@ -49,10 +49,16 @@ const auth = {
   },
 
   logout() {
+    const user = this.getUser();
+    const isTeacher = (user && user.role === 'teacher') || window.location.pathname.includes('teacher');
     sessionStorage.removeItem('token');
     sessionStorage.removeItem('user');
     // Use replace to prevent the user from clicking "Back" to a logged-out session
-    window.location.replace('/login.html');
+    if (isTeacher) {
+      window.location.replace('/teacher-login.html');
+    } else {
+      window.location.replace('/login.html');
+    }
   },
 
   redirectByRole(role) {
@@ -70,7 +76,11 @@ const auth = {
    */
   checkAuth() {
     if (!this.isAuthenticated()) {
-      window.location.replace('/login.html');
+      if (window.location.pathname.includes('teacher')) {
+        window.location.replace('/teacher-login.html');
+      } else {
+        window.location.replace('/login.html');
+      }
       return false;
     }
 
@@ -104,7 +114,11 @@ window.addEventListener('pageshow', function (event) {
   // If the page is loaded from cache (e.g., via back button)
   if (event.persisted) {
     if (!auth.isAuthenticated()) {
-      window.location.replace('/login.html');
+      if (window.location.pathname.includes('teacher')) {
+        window.location.replace('/teacher-login.html');
+      } else {
+        window.location.replace('/login.html');
+      }
     }
   }
 });

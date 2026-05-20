@@ -60,6 +60,7 @@ app.use('/api', (req, res) => {
 // SPA Fallbacks
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, '..', 'frontend', 'public', 'landing.html')));
 app.get('/login', (req, res) => res.sendFile(path.join(__dirname, '..', 'frontend', 'public', 'login.html')));
+app.get('/teacher-login', (req, res) => res.sendFile(path.join(__dirname, '..', 'frontend', 'public', 'teacher-login.html')));
 app.get('/student', (req, res) => res.sendFile(path.join(__dirname, '..', 'frontend', 'public', 'index.html')));
 app.get('/teacher', (req, res) => res.sendFile(path.join(__dirname, '..', 'frontend', 'public', 'teacher.html')));
 app.get('/exam', (req, res) => res.sendFile(path.join(__dirname, '..', 'frontend', 'public', 'exam.html')));

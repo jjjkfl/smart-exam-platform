@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Teacher Login | MCQPro</title>
+  <meta name="description" content="Login to access your MCQPro teacher dashboard.">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --primary-indigo: #4f46e5;
+      --primary-indigo-hover: #4338ca;
+      --secondary-blue: #2563eb;
+      --accent-cyan: #06b6d4;
+      --bg-light: #f4f7fb;
+      --text-dark: #1e293b;
+      --text-muted: #64748b;
+      --border-color: #e2e8f0;
+      --glass-bg: rgba(255, 255, 255, 0.7);
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background-color: var(--bg-light);
+      color: var(--text-dark);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Auth Container ── */
+    .auth-container {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* ── Left Illustration Side ── */
+    .auth-illustration {
+      flex: 1;
+      background: linear-gradient(135deg, #0f172a, #312e81);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: white;
+      text-align: center;
+      padding: 3rem 2rem;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .auth-illustration::before {
+      content: '';
+      position: absolute;
+      width: 400px;
+      height: 400px;
+      border-radius: 50%;
+      background: rgba(79, 70, 229, 0.15);
+      top: -100px;
+      left: -100px;
+      filter: blur(80px);
+    }
+
+    .auth-illustration::after {
+      content: '';
+      position: absolute;
+      width: 300px;
+      height: 300px;
+      border-radius: 50%;
+      background: rgba(6, 182, 212, 0.1);
+      bottom: -80px;
+      right: -80px;
+      filter: blur(60px);
+    }
+
+    .illustration-content {
+      max-width: 440px;
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .image-card-wrapper {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(16px);
+      padding: 1.25rem;
+      border-radius: 24px;
+      box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4);
+      margin-bottom: 2rem;
+      width: 90%;
+      max-width: 340px;
+      animation: float 4s ease-in-out infinite;
+    }
+
+    .auth-image-premium {
+      width: 100%;
+      height: auto;
+      border-radius: 16px;
+      display: block;
+    }
+
+    @keyframes float {
+      0%, 100% {
+        transform: translateY(0);
+      }
+      50% {
+        transform: translateY(-12px);
+      }
+    }
+
+    .illustration-content h2 {
+      font-size: 2.25rem;
+      font-weight: 800;
+      margin-bottom: 0.75rem;
+      background: linear-gradient(135deg, #ffffff 0%, #c7d2fe 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.5px;
+    }
+
+    .illustration-content p {
+      font-size: 1.05rem;
+      opacity: 0.85;
+      line-height: 1.6;
+      margin-bottom: 2rem;
+    }
+
+    .illus-features {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      text-align: left;
+      width: 100%;
+      max-width: 360px;
+    }
+
+    .illus-feat {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-weight: 500;
+      font-size: 0.95rem;
+      background: rgba(255, 255, 255, 0.05);
+      padding: 0.75rem 1.25rem;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      transition: all 0.3s;
+    }
+
+    .illus-feat:hover {
+      background: rgba(255, 255, 255, 0.08);
+      transform: translateX(4px);
+    }
+
+    .illus-feat i {
+      color: #10b981;
+      font-size: 1.1rem;
+    }
+
+    /* ── Right Form Side ── */
+    .auth-form-container {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 2rem;
+      background-color: white;
+      overflow-y: auto;
+    }
+
+    .auth-form-wrapper {
+      width: 100%;
+      max-width: 400px;
+    }
+
+    /* ── Logo ── */
+    .auth-logo {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--primary-indigo);
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: 1px;
+      margin-bottom: 2rem;
+      text-decoration: none;
+    }
+
+    .auth-logo i {
+      font-size: 1.75rem;
+    }
+
+    /* ── Form Title ── */
+    .auth-title {
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--text-dark);
+      margin-bottom: 0.4rem;
+      letter-spacing: -0.5px;
+    }
+
+    .auth-subtitle {
+      color: var(--text-muted);
+      margin-bottom: 2rem;
+      font-size: 0.95rem;
+    }
+
+    /* ── Fields ── */
+    .auth-group {
+      margin-bottom: 1.25rem;
+      position: relative;
+    }
+
+    .auth-group label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 0.35rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .auth-input {
+      width: 100%;
+      padding: 0.8rem 1rem;
+      border: 1.5px solid var(--border-color);
+      border-radius: 12px;
+      font-size: 0.9rem;
+      font-family: inherit;
+      color: var(--text-dark);
+      background: #f8fafc;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+
+    .auth-input:focus {
+      border-color: var(--primary-indigo);
+      background: #ffffff;
+      box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.08);
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+      width: 100%;
+    }
+
+    .input-wrapper .eye-btn {
+      position: absolute;
+      right: 1rem;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ── Options Row ── */
+    .auth-options {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+    }
+
+    .forgot-link {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.85rem;
+      font-weight: 500;
+    }
+
+    .forgot-link:hover {
+      color: var(--primary-indigo);
+      text-decoration: underline;
+    }
+
+    /* ── Submit Button ── */
+    .btn-auth {
+      width: 100%;
+      background: linear-gradient(135deg, var(--secondary-blue), var(--primary-indigo));
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 0.95rem;
+      font-size: 1.05rem;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.3s;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3);
+    }
+
+    .btn-auth:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(79, 70, 229, 0.4);
+    }
+
+    .btn-auth:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* ── Helper Texts ── */
+    .register-text {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      text-align: center;
+      line-height: 1.5;
+    }
+
+    .register-link {
+      color: var(--primary-indigo);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .register-link:hover {
+      text-decoration: underline;
+    }
+
+    /* ── Error ── */
+    .error-msg {
+      color: #ef4444;
+      background: #fef2f2;
+      border-left: 4px solid #ef4444;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      margin-bottom: 1.5rem;
+      font-size: 0.875rem;
+    }
+
+    /* ── Notification Toast ── */
+    #toast-container {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .toast {
+      padding: 14px 20px;
+      border-radius: 10px;
+      color: white;
+      font-weight: 600;
+      font-size: 0.9rem;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+      animation: slideIn 0.3s ease;
+      max-width: 320px;
+    }
+
+    .toast.success {
+      background: #10b981;
+    }
+
+    .toast.error {
+      background: #ef4444;
+    }
+
+    .toast.info {
+      background: var(--primary-indigo);
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(40px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      .auth-container {
+        flex-direction: column;
+      }
+
+      .auth-illustration {
+        padding: 3rem 1.5rem;
+        min-height: 380px;
+        height: auto;
+      }
+
+      .image-card-wrapper {
+        max-width: 240px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div id="toast-container"></div>
+
+  <div class="auth-container" id="login-page">
+    <!-- LEFT: Illustration -->
+    <div class="auth-illustration">
+      <div class="illustration-content">
+        <div class="image-card-wrapper">
+          <img src="/teacher_portal.png" alt="Educator panel illustration" class="auth-image-premium">
+        </div>
+        <h2>MCQPro for Educators</h2>
+        <p>A secure, AI-powered exam creation and proctoring suite for teachers</p>
+        <div class="illus-features">
+          <div class="illus-feat"><i class="fas fa-check-circle"></i> Create & Manage Exam Papers</div>
+          <div class="illus-feat"><i class="fas fa-check-circle"></i> Secure Proctoring Monitor</div>
+          <div class="illus-feat"><i class="fas fa-check-circle"></i> Instant Grade & Class Analytics</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Form -->
+    <div class="auth-form-container">
+      <div class="auth-form-wrapper">
+        <a href="javascript:location.replace('/landing.html')" class="auth-logo">
+          <i class="fas fa-graduation-cap"></i> MCQPro <span style="font-size: 0.9rem; font-weight: 500; margin-left: 0.5rem; color: var(--text-muted);">Teacher Portal</span>
+        </a>
+
+        <!-- LOGIN FORM -->
+        <div id="login-form-section">
+          <h2 class="auth-title">Teacher Login</h2>
+          <p class="auth-subtitle">Enter your credentials to manage exams</p>
+          <div id="login-error" class="error-msg" style="display:none;"></div>
+          
+          <form id="login-form" onsubmit="handleLogin(event)">
+            <div class="auth-group">
+              <label>Email Address</label>
+              <input type="email" id="login-email" name="email" class="auth-input" placeholder="teacher@school.edu"
+                required autocomplete="username">
+            </div>
+            
+            <div class="auth-group password-group">
+              <label>Password</label>
+              <div class="input-wrapper">
+                <input type="password" id="login-password" name="password" class="auth-input" placeholder="••••••••"
+                  required autocomplete="current-password">
+                <button type="button" class="eye-btn" onclick="togglePwd('login-password', this)">
+                  <i class="fas fa-eye"></i>
+                </button>
+              </div>
+            </div>
+            
+            <div class="auth-options">
+              <a href="javascript:void(0)" class="forgot-link">Forgot Password?</a>
+            </div>
+            
+            <button type="submit" class="btn-auth" id="login-btn">Login</button>
+          </form>
+
+          <!-- Administrator Note (Closed Registration) -->
+          <div style="margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--border-color);">
+            <p class="register-text" style="color: var(--text-muted); font-size: 0.85rem;">
+              <i class="fas fa-lock" style="margin-right: 4px; color: var(--primary-indigo);"></i> 
+              Registration is managed by the <strong>System Administrator</strong>. Please contact your administrator to request access credentials.
+            </p>
+          </div>
+
+          <!-- Student Redirect Link -->
+          <p class="register-text" style="margin-top: 2rem;">
+            Are you a student? <a class="register-link" href="/login.html" style="font-weight: 600;">Access Student Portal</a>
+          </p>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/shared/api.js?v=22"></script>
+  <script src="/js/shared/auth.js?v=22"></script>
+
+  <script>
+    // ── Password toggle ──
+    function togglePwd(inputId, btn) {
+      const input = document.getElementById(inputId);
+      const icon = btn.querySelector('i');
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.className = 'fas fa-eye-slash';
+      } else {
+        input.type = 'password';
+        icon.className = 'fas fa-eye';
+      }
+    }
+
+    // ── Toast ──
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.textContent = message;
+      container.appendChild(toast);
+      setTimeout(() => toast.remove(), 4000);
+    }
+
+    // ── Login ──
+    async function handleLogin(e) {
+      e.preventDefault();
+      const btn = document.getElementById('login-btn');
+      const errEl = document.getElementById('login-error');
+      errEl.style.display = 'none';
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing in...';
+
+      const email = document.getElementById('login-email').value;
+      const password = document.getElementById('login-password').value;
+
+      try {
+        const result = await api.post('/auth/login', { email, password });
+        
+        // Strict role validation: only allow role 'teacher'
+        if (result.user.role !== 'teacher') {
+          throw new Error('Access Denied: Only authorized educators can access the Teacher Portal.');
+        }
+        
+        auth.setSession(result.accessToken, result.user);
+        auth.redirectByRole(result.user.role);
+        showToast('Welcome back, Educator!', 'success');
+      } catch (err) {
+        errEl.textContent = err.message || 'Login failed. Please check your credentials.';
+        errEl.style.display = 'block';
+        btn.disabled = false;
+        btn.innerHTML = 'Login';
+      }
+    }
+
+    window.addEventListener('pageshow', function (event) {
+      if (auth.isAuthenticated()) {
+        auth.redirectByRole(auth.getUser().role);
+      }
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      if (auth.isAuthenticated()) {
+        auth.redirectByRole(auth.getUser().role);
+      }
+    });
+  </script>
+</body>
+
+</html>
