@@ -443,52 +443,95 @@ const StudentDashboard = {
     try {
       const board = localStorage.getItem('mcqpro_selected_board') || '';
       const res = await api.get(`/portal/student/exams?board=${board}`);
-      const exams = res.data || [];
+      let exams = res.data || [];
 
-      if (exams.length === 0) {
-        container.innerHTML = '<div class="glass-card" style="grid-column: 1 / -1; text-align:center; padding:60px;"><i class="fas fa-check-circle" style="font-size:48px; color:var(--secondary); margin-bottom:20px;"></i><h3 class="h2">No Active Exams</h3><p class="p-dim">There are no live exams scheduled globally across any board stream right now.</p></div>';
-        return;
+      // Sort exams so the latest is at the top
+      exams.sort((a, b) => {
+        const dateA = new Date(a.scheduledStart || a.startTime).getTime();
+        const dateB = new Date(b.scheduledStart || b.startTime).getTime();
+        return dateB - dateA;
+      });
+
+      this.allLiveExams = exams;
+
+      // Populate subjects filter
+      const subjectSelect = document.getElementById('filter-subject');
+      if (subjectSelect) {
+        const subjects = [...new Set(exams.map(e => e.subject || 'General'))];
+        subjectSelect.innerHTML = '<option value="all">All Subjects</option>' + 
+          subjects.map(s => `<option value="${s}">${s}</option>`).join('');
       }
 
-      container.innerHTML = exams.map(e => {
-        const now = new Date();
-        const start = new Date(e.scheduledStart || e.startTime);
-        const duration = e.duration || e.durationMinutes || 60;
-        const end = new Date(start.getTime() + duration * 60 * 1000);
-        
-        let buttonText = 'Take Test';
-        let disabledAttr = '';
-        let buttonStyle = '';
-
-        if (now < start) {
-          buttonText = 'Upcoming';
-          disabledAttr = 'disabled';
-          buttonStyle = 'background: #cbd5e1; border-color: #cbd5e1; color: #64748b; cursor: not-allowed;';
-        } else if (now > end) {
-          buttonText = 'Expired';
-          disabledAttr = 'disabled';
-          buttonStyle = 'background: #f1f5f9; border-color: #e2e8f0; color: #94a3b8; cursor: not-allowed;';
-        }
-
-        return `
-          <div class="exam-card-v2 animate-slide-up">
-            <div class="exam-card-icon">
-              <img src="https://img.icons8.com/color/96/trophy.png" alt="trophy" />
-            </div>
-            <div class="exam-card-content" style="width: 100%;">
-              <h3 class="exam-card-title">${e.title}</h3>
-              <div class="exam-card-meta">
-                <div class="meta-pill"><i class="fas fa-globe"></i> ${e.board && e.board !== 'All' ? e.board : 'Global'}</div>
-                <div class="meta-pill"><i class="fas fa-users"></i> ${e.division || 'All Classes'}</div>
-                <div class="meta-pill"><i class="fas fa-book-open"></i> ${e.subject || 'General'}</div>
-                <div class="meta-pill"><i class="far fa-clock"></i> ${utils.formatDateTimeRange(e.scheduledStart || e.startTime, e.duration || e.durationMinutes)}</div>
-              </div>
-              <button onclick="StudentDashboard.joinExam('${e._id}')" class="btn btn-primary" style="${buttonStyle}" ${disabledAttr}>${buttonText}</button>
-            </div>
-          </div>
-        `;
-      }).join('');
+      this.renderLiveExams();
     } catch (err) { notifications.error('Failed to load exams'); }
+  },
+
+  applyLiveExamFilters() {
+    this.renderLiveExams();
+  },
+
+  renderLiveExams() {
+    const container = document.getElementById('live-exams-grid');
+    if (!container) return;
+
+    let exams = this.allLiveExams || [];
+    
+    // Apply filters
+    const subjectFilter = document.getElementById('filter-subject')?.value || 'all';
+
+    const now = new Date();
+
+    exams = exams.filter(e => {
+      let matchSubject = true;
+      if (subjectFilter !== 'all') {
+        matchSubject = (e.subject || 'General') === subjectFilter;
+      }
+
+      return matchSubject;
+    });
+
+    if (exams.length === 0) {
+      container.innerHTML = '<div class="glass-card" style="grid-column: 1 / -1; text-align:center; padding:60px;"><i class="fas fa-check-circle" style="font-size:48px; color:var(--secondary); margin-bottom:20px;"></i><h3 class="h2">No Active Exams</h3><p class="p-dim">There are no live exams matching your filters right now.</p></div>';
+      return;
+    }
+
+    container.innerHTML = exams.map(e => {
+      const start = new Date(e.scheduledStart || e.startTime);
+      const duration = e.duration || e.durationMinutes || 60;
+      const end = new Date(start.getTime() + duration * 60 * 1000);
+      
+      let buttonText = 'Take Test';
+      let disabledAttr = '';
+      let buttonStyle = '';
+
+      if (now < start) {
+        buttonText = 'Upcoming';
+        disabledAttr = 'disabled';
+        buttonStyle = 'background: #cbd5e1; border-color: #cbd5e1; color: #64748b; cursor: not-allowed;';
+      } else if (now > end) {
+        buttonText = 'Expired';
+        disabledAttr = 'disabled';
+        buttonStyle = 'background: #f1f5f9; border-color: #e2e8f0; color: #94a3b8; cursor: not-allowed;';
+      }
+
+      return `
+        <div class="exam-card-v2 animate-slide-up">
+          <div class="exam-card-icon">
+            <img src="https://img.icons8.com/color/96/trophy.png" alt="trophy" />
+          </div>
+          <div class="exam-card-content" style="width: 100%;">
+            <h3 class="exam-card-title">${e.title}</h3>
+            <div class="exam-card-meta">
+              <div class="meta-pill"><i class="fas fa-globe"></i> ${e.board && e.board !== 'All' ? e.board : 'Global'}</div>
+              <div class="meta-pill"><i class="fas fa-users"></i> ${e.division || 'All Classes'}</div>
+              <div class="meta-pill"><i class="fas fa-book-open"></i> ${e.subject || 'General'}</div>
+              <div class="meta-pill"><i class="far fa-clock"></i> ${utils.formatDateTimeRange(e.scheduledStart || e.startTime, e.duration || e.durationMinutes)}</div>
+            </div>
+            <button onclick="StudentDashboard.joinExam('${e._id}')" class="btn btn-primary" style="${buttonStyle}" ${disabledAttr}>${buttonText}</button>
+          </div>
+        </div>
+      `;
+    }).join('');
   },
 
   async loadPriorityExams() {

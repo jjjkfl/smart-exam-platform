@@ -231,13 +231,21 @@ const TeacherDashboard = {
 
   setBoardFilter(board) {
     this.lastSelectedBoard = board;
-    this.renderSessions(); // Re-render with cached sessions
+    this.sessionsPage = 1;
+    this.renderSessions(null, 1); // Re-render with cached sessions
   },
 
-  renderSessions(sessions) {
+  renderSessions(sessions, page = null) {
     if (sessions) this.sessions = sessions;
+    if (page !== null) {
+      this.sessionsPage = page;
+    } else if (!this.sessionsPage) {
+      this.sessionsPage = 1;
+    }
+
     const list = document.getElementById('recent-sessions');
     const boardFilterEl = document.getElementById('filter-session-board');
+    const paginationContainer = document.getElementById('recent-sessions-pagination');
     
     // Ensure the dropdown matches our state (useful when polling refreshes the data)
     if (boardFilterEl && this.lastSelectedBoard) {
@@ -259,10 +267,18 @@ const TeacherDashboard = {
 
     if (filteredSessions.length === 0) {
       list.innerHTML = '<tr><td colspan="5" class="p-dim" style="text-align:center">No sessions found</td></tr>';
+      if (paginationContainer) paginationContainer.innerHTML = '';
       return;
     }
 
-    list.innerHTML = filteredSessions.map(s => `
+    const itemsPerPage = 5;
+    const totalPages = Math.ceil(filteredSessions.length / itemsPerPage);
+    if (this.sessionsPage > totalPages) this.sessionsPage = totalPages;
+    const p = this.sessionsPage;
+
+    const paginated = filteredSessions.slice((p - 1) * itemsPerPage, p * itemsPerPage);
+
+    list.innerHTML = paginated.map(s => `
       <tr>
         <td style="white-space: nowrap;">
           <strong>${s.title || s.examId}</strong>
@@ -279,6 +295,10 @@ const TeacherDashboard = {
         </td>
       </tr>
     `).join('');
+
+    if (paginationContainer) {
+      this.renderSquarePagination('recent-sessions-pagination', p, totalPages, 'TeacherDashboard.renderSessions(null, ');
+    }
   },
 
   async deleteSession(sessionId) {
@@ -309,14 +329,32 @@ const TeacherDashboard = {
     }
   },
 
-  renderResults(results) {
+  renderResults(results, page = null) {
+    if (results) this.results = results;
+    if (page !== null) {
+      this.resultsPage = page;
+    } else if (!this.resultsPage) {
+      this.resultsPage = 1;
+    }
+
     const list = document.getElementById('recent-results');
-    if (!results || results.length === 0) {
+    const paginationContainer = document.getElementById('recent-results-pagination');
+    const allResults = this.results || [];
+
+    if (allResults.length === 0) {
       list.innerHTML = '<tr><td colspan="4" class="p-dim" style="text-align:center">No submissions yet</td></tr>';
+      if (paginationContainer) paginationContainer.innerHTML = '';
       return;
     }
 
-    list.innerHTML = results.map(r => `
+    const itemsPerPage = 5;
+    const totalPages = Math.ceil(allResults.length / itemsPerPage);
+    if (this.resultsPage > totalPages) this.resultsPage = totalPages;
+    const p = this.resultsPage;
+
+    const paginated = allResults.slice((p - 1) * itemsPerPage, p * itemsPerPage);
+
+    list.innerHTML = paginated.map(r => `
       <tr>
         <td><strong>${r.studentName}</strong></td>
         <td>${r.examTitle}</td>
@@ -324,6 +362,33 @@ const TeacherDashboard = {
         <td>${utils.formatDate(r.submittedAt)}</td>
       </tr>
     `).join('');
+
+    if (paginationContainer) {
+      this.renderSquarePagination('recent-results-pagination', p, totalPages, 'TeacherDashboard.renderResults(null, ');
+    }
+  },
+
+  renderSquarePagination(containerId, current, total, prefix) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    let html = `<div class="sq-pagination">`;
+    html += `<button class="sq-nav-btn" ${current === 1 ? 'disabled' : ''} onclick="${prefix}${current - 1})"><i class="fas fa-chevron-left"></i></button>`;
+    
+    for (let i = 1; i <= total; i++) {
+      if (i === 1 || i === total || (i >= current - 1 && i <= current + 1)) {
+        html += `<button class="sq-num-btn ${i === current ? 'active' : ''}" onclick="${prefix}${i})">${i}</button>`;
+      } else if (i === current - 2 || i === current + 2) {
+        html += `<span class="sq-num-btn" style="cursor:default">...</span>`;
+      }
+    }
+    
+    // Remove duplicate ellipsis if any
+    html = html.replace(/<span class="sq-num-btn" style="cursor:default">\.\.\.<\/span><span class="sq-num-btn" style="cursor:default">\.\.\.<\/span>/g, '<span class="sq-num-btn" style="cursor:default">...</span>');
+
+    html += `<button class="sq-nav-btn" ${current === total ? 'disabled' : ''} onclick="${prefix}${current + 1})"><i class="fas fa-chevron-right"></i></button>`;
+    html += `</div>`;
+    
+    container.innerHTML = html;
   },
 
   async loadMCQBanks() {
@@ -475,142 +540,256 @@ const TeacherDashboard = {
         Charts.renderGrades('global-grade-chart', data.gradeBreakdown, true);
       }
 
-      const listContainer = document.getElementById('global-exams-list-container');
-      if (listContainer && data.sessions) {
-        const formatTime = (s) => {
-          const m = Math.floor(s / 60);
-          const sec = s % 60;
-          return `${m}m ${sec}s`;
-        };
-
-        listContainer.innerHTML = `
-          <div style="margin-top: 64px; margin-bottom: 40px; border-top: 1px solid #e2e8f0; padding-top: 48px;">
-            <h2 class="h2" style="font-size: 1.75rem; color: #1e293b;">Detailed Session Reports</h2>
-            <p class="p-dim" style="font-size: 14px;">In-depth performance analysis for each examination session.</p>
-          </div>
-          ${data.sessions.map((session) => {
-            const normalized = Analytics.normalizePayload({ results: session.results, sessionTitle: session.title });
-            const stats = normalized.stats;
-            const results = normalized.results;
-            const passRate = stats.total > 0 ? ((stats.passed / stats.total) * 100).toFixed(1) : '0.0';
-
-            return `
-              <div class="glass-card" style="margin-bottom: 48px; padding: 40px;">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px;">
-                  <div>
-                    <h3 class="h3" style="font-size: 1.5rem; margin-bottom: 8px; color: #1e293b;">${normalized.sessionTitle}</h3>
-                    <div style="display: flex; gap: 16px; align-items: center;">
-                      <span class="status-pill status-success" style="padding: 4px 12px; font-size: 11px;">Completed</span>
-                      <p class="p-dim" style="font-size: 13px; font-weight: 500;">
-                        <i class="far fa-user-circle"></i> ${stats.total} Total Submissions
-                      </p>
-                    </div>
-                  </div>
-                  <button class="btn btn-outline" style="font-size: 12px; padding: 8px 16px;" onclick="TeacherDashboard.exportToExcel('${session._id}')">
-                    <i class="fas fa-file-export"></i> Export Report
-                  </button>
-                </div>
-                
-                <div style="display: grid; grid-template-columns: 240px 1fr; gap: 32px; margin-bottom: 40px; align-items: start;">
-                  <!-- Left: Session Metrics (Vertical) -->
-                  <div style="display: flex; flex-direction: column; gap: 12px;">
-                    <div class="glass-card metric-card" style="padding: 16px; border: 1px solid rgba(16,185,129,0.1); background: rgba(16,185,129,0.02); flex: 1;">
-                      <p class="p-dim" style="font-size:10px; font-weight:700; text-transform:uppercase; margin-bottom: 4px;">Pass Rate</p>
-                      <div class="metric-value" style="font-size:22px; color: #10b981; margin:0;">${passRate}%</div>
-                    </div>
-                    <div class="glass-card metric-card" style="padding: 16px; border: 1px solid rgba(59,130,246,0.1); background: rgba(59,130,246,0.02); flex: 1;">
-                      <p class="p-dim" style="font-size:10px; font-weight:700; text-transform:uppercase; margin-bottom: 4px;">Avg Score</p>
-                      <div class="metric-value" style="font-size:22px; color: #3b82f6; margin:0;">${stats.avgPercent || 0}%</div>
-                    </div>
-                    <div class="glass-card metric-card" style="padding: 16px; border: 1px solid rgba(16,185,129,0.1); background: rgba(16,185,129,0.02); flex: 1;">
-                      <p class="p-dim" style="font-size:10px; font-weight:700; text-transform:uppercase; margin-bottom: 4px;">High Score</p>
-                      <div class="metric-value" style="font-size:22px; color: #10b981; margin:0;">${stats.highScore || 0}%</div>
-                    </div>
-                    <div class="glass-card metric-card" style="padding: 16px; border: 1px solid rgba(239,68,68,0.1); background: rgba(239,68,68,0.02); flex: 1;">
-                      <p class="p-dim" style="font-size:10px; font-weight:700; text-transform:uppercase; margin-bottom: 4px;">Low Score</p>
-                      <div class="metric-value" style="font-size:22px; color: #ef4444; margin:0;">${stats.lowScore || 0}%</div>
-                    </div>
-                  </div>
-
-                  <!-- Right: Session Grade Distribution -->
-                  <div style="background: rgba(0,0,0,0.01); padding: 24px; border-radius: 16px; border: 1px solid rgba(0,0,0,0.03); height: 100%; display: flex; flex-direction: column;">
-                    <div class="flex-between" style="margin-bottom: 20px;">
-                      <h4 style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Grade Distribution</h4>
-                      <span style="font-size: 10px; color: var(--text-muted); opacity: 0.6;">Session Analysis</span>
-                    </div>
-                    <div class="chart-container" style="flex: 1; min-height: 200px; position: relative;">
-                      <canvas id="chart-${session._id}"></canvas>
-                    </div>
-                  </div>
-                </div>
-
-                ${results.length === 0 ? `
-                  <div style="padding: 20px; text-align: center; background: rgba(0,0,0,0.02); border-radius: 10px;">
-                    <p class="p-dim" style="font-size:13px">No student submissions yet.</p>
-                  </div>
-                ` : `
-                  <div class="table-container">
-                    <table>
-                      <thead>
-                        <tr>
-                          <th>#</th>
-                          <th>Student</th>
-                          <th>Score</th>
-                          <th>Correct</th>
-                          <th>Time</th>
-                          <th>Violations</th>
-                          <th>Grade</th>
-                          <th>Status</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        ${results.map((r, i) => `
-                          <tr>
-                            <td>${i + 1}</td>
-                            <td>
-                              <div style="font-weight:600">${r.studentName}</div>
-                              <div class="p-dim" style="font-size:11px">${r.studentEmail}</div>
-                            </td>
-                            <td style="font-weight:700; color:${r.isPassed ? 'var(--success)' : 'var(--danger)'}">${r.score}%</td>
-                            <td>${r.correctCount}/${r.totalQuestions}</td>
-                            <td>${formatTime(r.timeTaken)}</td>
-                            <td>
-                              ${r.violations > 0
-                                ? `<span class="status-pill status-warning" style="cursor:help" 
-                                        title="${(r.violationHistory || []).map(v => `${v.type || v.violationType || 'Violation'}: ${v.detail || ''}`).join('\n')}">
-                                     ⚠️ ${r.violations}
-                                   </span>`
-                                : '<span class="p-dim">0</span>'}
-                            </td>
-                            <td><strong>${r.grade}</strong></td>
-                            <td>
-                              <span class="status-pill ${r.isPassed ? 'status-online' : 'status-offline'}">
-                                ${r.isPassed ? 'PASSED' : 'FAILED'}
-                              </span>
-                            </td>
-                          </tr>
-                        `).join('')}
-                      </tbody>
-                    </table>
-                  </div>
-                `}
-              </div>
-            `;
-          }).join('')}
-        `;
-
-        // Render all individual exam charts
-        setTimeout(() => {
-          data.sessions.forEach((session) => {
-            const normalized = Analytics.normalizePayload({ results: session.results, sessionTitle: session.title });
-            if (typeof Charts !== 'undefined') {
-              Charts.renderGrades(`chart-${session._id}`, normalized.stats.gradeBreakdown, true);
-            }
-          });
-        }, 100);
+      if (data.sessions) {
+        this._globalAnalyticsSessions = data.sessions;
+        this.renderAnalyticsExamsPage(1);
       }
     } catch (err) {
       notifications.error('Failed to load global analytics: ' + err.message);
+    }
+  },
+
+  renderAnalyticsExamsPage(page) {
+    const listContainer = document.getElementById('global-exams-list-container');
+    if (!listContainer || !this._globalAnalyticsSessions) return;
+    
+    this._globalAnalyticsPage = page;
+    const sessions = this._globalAnalyticsSessions;
+    const itemsPerPage = 5;
+    const totalPages = Math.ceil(sessions.length / itemsPerPage) || 1;
+    const startIdx = (page - 1) * itemsPerPage;
+    const paginatedSessions = sessions.slice(startIdx, startIdx + itemsPerPage);
+
+    const formatTime = (s) => {
+      const m = Math.floor(s / 60);
+      const sec = s % 60;
+      return `${m}m ${sec}s`;
+    };
+
+    listContainer.innerHTML = `
+      ${paginatedSessions.length === 0 ? '<p class="p-dim">No session data available.</p>' : ''}
+      ${paginatedSessions.map((session) => {
+        const normalized = Analytics.normalizePayload({ results: session.results, sessionTitle: session.title });
+        const stats = normalized.stats;
+        const results = normalized.results;
+        const passRate = stats.total > 0 ? ((stats.passed / stats.total) * 100).toFixed(1) : '0.0';
+
+        return `
+          <div class="glass-card" id="report-card-${session._id}" style="margin-bottom: 48px; padding: 40px;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px;">
+              <div>
+                <h3 class="h3" style="font-size: 1.5rem; margin-bottom: 8px; color: #1e293b;">${normalized.sessionTitle}</h3>
+                <div style="display: flex; gap: 16px; align-items: center;">
+                  <span class="status-pill status-success" style="padding: 4px 12px; font-size: 11px;">Completed</span>
+                  <p class="p-dim" style="font-size: 13px; font-weight: 500;">
+                    <i class="far fa-user-circle"></i> ${stats.total} Total Submissions
+                  </p>
+                </div>
+              </div>
+              <button class="btn btn-outline" style="font-size: 12px; padding: 8px 16px;" onclick="TeacherDashboard.exportToPDF('${session._id}')">
+                <i class="fas fa-file-pdf"></i> Export PDF
+              </button>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 240px 1fr; gap: 32px; margin-bottom: 40px; align-items: start;">
+              <!-- Left: Session Metrics (Vertical) -->
+              <div style="display: flex; flex-direction: column; gap: 12px;">
+                <div class="glass-card metric-card" style="padding: 16px; border: 1px solid rgba(16,185,129,0.1); background: rgba(16,185,129,0.02); flex: 1;">
+                  <p class="p-dim" style="font-size:10px; font-weight:700; text-transform:uppercase; margin-bottom: 4px;">Pass Rate</p>
+                  <div class="metric-value" style="font-size:22px; color: #10b981; margin:0;">${passRate}%</div>
+                </div>
+                <div class="glass-card metric-card" style="padding: 16px; border: 1px solid rgba(59,130,246,0.1); background: rgba(59,130,246,0.02); flex: 1;">
+                  <p class="p-dim" style="font-size:10px; font-weight:700; text-transform:uppercase; margin-bottom: 4px;">Avg Score</p>
+                  <div class="metric-value" style="font-size:22px; color: #3b82f6; margin:0;">${stats.avgPercent || 0}%</div>
+                </div>
+                <div class="glass-card metric-card" style="padding: 16px; border: 1px solid rgba(16,185,129,0.1); background: rgba(16,185,129,0.02); flex: 1;">
+                  <p class="p-dim" style="font-size:10px; font-weight:700; text-transform:uppercase; margin-bottom: 4px;">High Score</p>
+                  <div class="metric-value" style="font-size:22px; color: #10b981; margin:0;">${stats.highScore || 0}%</div>
+                </div>
+                <div class="glass-card metric-card" style="padding: 16px; border: 1px solid rgba(239,68,68,0.1); background: rgba(239,68,68,0.02); flex: 1;">
+                  <p class="p-dim" style="font-size:10px; font-weight:700; text-transform:uppercase; margin-bottom: 4px;">Low Score</p>
+                  <div class="metric-value" style="font-size:22px; color: #ef4444; margin:0;">${stats.lowScore || 0}%</div>
+                </div>
+              </div>
+
+              <!-- Right: Session Grade Distribution -->
+              <div style="background: rgba(0,0,0,0.01); padding: 24px; border-radius: 16px; border: 1px solid rgba(0,0,0,0.03); height: 100%; display: flex; flex-direction: column;">
+                <div class="flex-between" style="margin-bottom: 20px;">
+                  <h4 style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Grade Distribution</h4>
+                  <span style="font-size: 10px; color: var(--text-muted); opacity: 0.6;">Session Analysis</span>
+                </div>
+                <div class="chart-container" style="flex: 1; min-height: 200px; position: relative;">
+                  <canvas id="chart-${session._id}"></canvas>
+                </div>
+              </div>
+            </div>
+
+            ${results.length === 0 ? `
+              <div style="padding: 20px; text-align: center; background: rgba(0,0,0,0.02); border-radius: 10px;">
+                <p class="p-dim" style="font-size:13px">No student submissions yet.</p>
+              </div>
+            ` : `
+              <div class="table-container">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Student</th>
+                      <th>Score</th>
+                      <th>Correct</th>
+                      <th>Time</th>
+                      <th>Violations</th>
+                      <th>Grade</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${results.map((r, i) => `
+                      <tr>
+                        <td>${i + 1}</td>
+                        <td>
+                          <div style="font-weight:600">${r.studentName}</div>
+                          <div class="p-dim" style="font-size:11px">${r.studentEmail}</div>
+                        </td>
+                        <td style="font-weight:700; color:${r.isPassed ? 'var(--success)' : 'var(--danger)'}">${r.score}%</td>
+                        <td>${r.correctCount}/${r.totalQuestions}</td>
+                        <td>${formatTime(r.timeTaken)}</td>
+                        <td>
+                          ${r.violations > 0
+                            ? `<span class="status-pill status-warning" style="cursor:help" 
+                                    title="${(r.violationHistory || []).map(v => `${v.type || v.violationType || 'Violation'}: ${v.detail || ''}`).join('\n')}">
+                                 ⚠️ ${r.violations}
+                               </span>`
+                            : '<span class="p-dim">0</span>'}
+                        </td>
+                        <td><strong>${r.grade}</strong></td>
+                        <td>
+                          <span class="status-pill ${r.isPassed ? 'status-online' : 'status-offline'}">
+                            ${r.isPassed ? 'PASSED' : 'FAILED'}
+                          </span>
+                        </td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              </div>
+            `}
+          </div>
+        `;
+      }).join('')}
+      
+      ${totalPages > 1 ? `
+        <div class="pagination-wrapper">
+          <div class="pagination-pill">
+            <button class="page-btn text-btn" ${page === 1 ? 'disabled' : ''} onclick="TeacherDashboard.renderAnalyticsExamsPage(${page - 1})">&larr; Prev</button>
+            ${(() => {
+              let html = '';
+              const showEllipsis = totalPages > 5;
+              
+              if (!showEllipsis) {
+                // Show all pages if <= 5
+                for(let i=1; i<=totalPages; i++) {
+                  html += `<button class="page-btn num-btn ${i === page ? 'active' : ''}" onclick="TeacherDashboard.renderAnalyticsExamsPage(${i})">${i}</button>`;
+                }
+              } else {
+                // Handle pagination with ellipsis based on reference image pattern
+                // 1 2 3 ... 11
+                if (page <= 3) {
+                  for(let i=1; i<=3; i++) {
+                    html += `<button class="page-btn num-btn ${i === page ? 'active' : ''}" onclick="TeacherDashboard.renderAnalyticsExamsPage(${i})">${i}</button>`;
+                  }
+                  html += `<span class="page-btn num-btn ellipsis">...</span>`;
+                  html += `<button class="page-btn num-btn" onclick="TeacherDashboard.renderAnalyticsExamsPage(${totalPages})">${totalPages}</button>`;
+                } else if (page >= totalPages - 2) {
+                  html += `<button class="page-btn num-btn" onclick="TeacherDashboard.renderAnalyticsExamsPage(1)">1</button>`;
+                  html += `<span class="page-btn num-btn ellipsis">...</span>`;
+                  for(let i=totalPages-2; i<=totalPages; i++) {
+                    html += `<button class="page-btn num-btn ${i === page ? 'active' : ''}" onclick="TeacherDashboard.renderAnalyticsExamsPage(${i})">${i}</button>`;
+                  }
+                } else {
+                  html += `<button class="page-btn num-btn" onclick="TeacherDashboard.renderAnalyticsExamsPage(1)">1</button>`;
+                  html += `<span class="page-btn num-btn ellipsis">...</span>`;
+                  html += `<button class="page-btn num-btn active" onclick="TeacherDashboard.renderAnalyticsExamsPage(${page})">${page}</button>`;
+                  html += `<span class="page-btn num-btn ellipsis">...</span>`;
+                  html += `<button class="page-btn num-btn" onclick="TeacherDashboard.renderAnalyticsExamsPage(${totalPages})">${totalPages}</button>`;
+                }
+              }
+              return html;
+            })()}
+            <button class="page-btn text-btn" ${page === totalPages ? 'disabled' : ''} onclick="TeacherDashboard.renderAnalyticsExamsPage(${page + 1})">Next &rarr;</button>
+          </div>
+        </div>
+      ` : ''}
+    `;
+
+    // Render all individual exam charts
+    setTimeout(() => {
+      paginatedSessions.forEach((session) => {
+        const normalized = Analytics.normalizePayload({ results: session.results, sessionTitle: session.title });
+        if (typeof Charts !== 'undefined') {
+          Charts.renderGrades(`chart-${session._id}`, normalized.stats.gradeBreakdown, true);
+        }
+      });
+      const viewContainer = document.getElementById('view-analytics-all');
+      if (viewContainer) viewContainer.scrollTo({ top: 0, behavior: 'smooth' });
+      const mainContent = document.querySelector('.main-content');
+      if (mainContent) mainContent.scrollTo({ top: 0, behavior: 'smooth' });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 100);
+  },
+
+  exportToPDF(sessionId) {
+    const card = document.getElementById(`report-card-${sessionId}`);
+    if (!card) return;
+    
+    const titleEl = card.querySelector('h3');
+    const sessionTitle = titleEl ? titleEl.innerText : 'analytics';
+    
+    // Temporarily hide the export button
+    const btn = card.querySelector('.btn-outline');
+    if (btn) btn.style.display = 'none';
+
+    // Workaround for html2canvas rendering empty PDFs:
+    // 1. Disable backdrop-filter (known to break html2canvas completely)
+    // 2. Set a solid background
+    const originalBackground = card.style.background;
+    const originalBackdrop = card.style.backdropFilter;
+    const originalWebkitBackdrop = card.style.webkitBackdropFilter;
+    
+    card.style.background = '#ffffff';
+    card.style.backdropFilter = 'none';
+    card.style.webkitBackdropFilter = 'none';
+
+    // Set up html2pdf options
+    const opt = {
+      margin:       0.4,
+      filename:     `${sessionTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_report.pdf`,
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { 
+        scale: 2, 
+        useCORS: true,
+        scrollY: 0 // Helps if the element is in a scrolled container
+      },
+      jsPDF:        { unit: 'in', format: 'letter', orientation: 'landscape' }
+    };
+
+    // Generate PDF
+    if (typeof html2pdf !== 'undefined') {
+      html2pdf().set(opt).from(card).save().then(() => {
+        // Restore original styles
+        if (btn) btn.style.display = '';
+        card.style.background = originalBackground;
+        card.style.backdropFilter = originalBackdrop;
+        card.style.webkitBackdropFilter = originalWebkitBackdrop;
+      });
+    } else {
+      if (typeof notifications !== 'undefined') {
+        notifications.error("PDF engine not loaded yet. Please wait a moment and try again.");
+      }
+      if (btn) btn.style.display = '';
+      card.style.background = originalBackground;
+      card.style.backdropFilter = originalBackdrop;
+      card.style.webkitBackdropFilter = originalWebkitBackdrop;
     }
   },
 

@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="/css/student.css">
   <link rel="stylesheet" href="/css/teacher.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
@@ -707,6 +708,113 @@
         padding: 1rem 1.5rem;
       }
     }
+
+    /* Pagination Styles */
+    .pagination-wrapper {
+      display: flex;
+      justify-content: center;
+      margin-top: 40px;
+    }
+    .pagination-pill {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .pagination-pill .page-btn {
+      border: none;
+      outline: none;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .pagination-pill .page-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .pagination-pill .text-btn {
+      background: var(--primary-indigo);
+      color: #fff;
+      padding: 8px 20px;
+      border-radius: 30px;
+    }
+    .pagination-pill .text-btn:hover:not(:disabled) {
+      background: var(--secondary-blue);
+    }
+    .pagination-pill .num-btn {
+      background: #fff;
+      color: #64748b;
+      border: 1px solid #cbd5e1;
+      border-radius: 50%;
+      min-width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+    }
+    .pagination-pill .num-btn.active {
+      background: var(--primary-indigo);
+      color: #fff;
+      border-color: var(--primary-indigo);
+      font-weight: 600;
+    }
+    .pagination-pill .num-btn:hover:not(.active):not(.ellipsis) {
+      background: #f8fafc;
+      border-color: #94a3b8;
+    }
+    .pagination-pill .ellipsis {
+      cursor: default;
+    }
+
+    /* Square Pagination Styles */
+    .sq-pagination {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      justify-content: center;
+      margin-top: 16px;
+    }
+    .sq-pagination button {
+      border: none;
+      outline: none;
+      background: transparent;
+      font-size: 14px;
+      font-weight: 500;
+      color: #94a3b8;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      padding: 0;
+      transition: all 0.2s;
+    }
+    .sq-pagination .sq-nav-btn {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      color: #64748b;
+    }
+    .sq-pagination .sq-nav-btn:hover:not(:disabled) {
+      border-color: #cbd5e1;
+      color: #0f172a;
+    }
+    .sq-pagination button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .sq-pagination .sq-num-btn:hover:not(.active) {
+      background: #f1f5f9;
+      color: #0f172a;
+    }
+    .sq-pagination .sq-num-btn.active {
+      background: #000;
+      color: #fff;
+      font-weight: 600;
+    }
   </style>
 </head>
 
@@ -719,20 +827,19 @@
         <i class="fas fa-chalkboard-teacher"></i> MCQPro
       </a>
 
-      <div class="nav-item active" data-action="overview">
+      <div class="nav-item active" data-action="overview" onclick="TeacherDashboard.navigateToView('dashboard')">
         <i class="fas fa-chart-pie"></i> Dashboard
       </div>
-      <div class="nav-item" data-action="courses">
+      <div class="nav-item" data-action="courses" onclick="TeacherDashboard.navigateToView('materials')">
         <i class="fas fa-book"></i> Courses Management
       </div>
-      <div class="nav-item" data-action="students">
+      <div class="nav-item" data-action="students" onclick="TeacherDashboard.navigateToView('students')">
         <i class="fas fa-users"></i> Students
       </div>
-
-      <div class="nav-item" data-action="forum">
+      <div class="nav-item" data-action="forum" onclick="TeacherDashboard.navigateToView('forum')">
         <i class="fas fa-comments"></i> Forum
       </div>
-      <div class="nav-item" data-action="analytics">
+      <div class="nav-item" data-action="analytics" onclick="TeacherDashboard.navigateToView('analytics-all')">
         <i class="fas fa-chart-bar"></i> Global Analytics
       </div>
 
@@ -834,6 +941,7 @@
                   <tbody id="recent-sessions"></tbody>
                 </table>
               </div>
+              <div id="recent-sessions-pagination"></div>
             </section>
 
             <section class="section-card">
@@ -853,6 +961,7 @@
                   <tbody id="recent-results"></tbody>
                 </table>
               </div>
+              <div id="recent-results-pagination"></div>
             </section>
           </div>
 
@@ -916,34 +1025,42 @@
       </main>
 
       <!-- VIEW: All Analytics (Global) -->
-      <main id="view-analytics-all" class="view" style="display: none;">
-        <header class="flex-between" style="margin-bottom: 32px;">
-          <div>
-            <h2 class="h2">Academic Performance Overview</h2>
-            <p class="p-dim">Aggregated data across all active and completed exam sessions.</p>
-          </div>
-        </header>
-
-        <div style="display: grid; grid-template-columns: 320px 1fr; gap: 32px; align-items: start; margin-top: 32px;">
-          <!-- Left: Vertical Metrics -->
-          <div id="global-analytics-stats" style="display: flex; flex-direction: column; gap: 24px;"></div>
-
-          <!-- Right: Main Grade Chart -->
-          <div class="glass-card" style="padding: 32px; height: 100%; display: flex; flex-direction: column;">
-            <div class="flex-between" style="margin-bottom: 24px;">
-              <div>
-                <h3 class="h3" style="margin-bottom: 4px;">Global Grade Distribution</h3>
-                <p class="p-dim" style="font-size: 13px;">Frequency analysis across all student submissions.</p>
-              </div>
-              <span class="metric-label" style="font-size: 10px; opacity: 0.6;">Performance Spectrum</span>
+      <main id="view-analytics-all" class="view" style="display: none; padding: 0;">
+        <div style="background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%); padding: 3rem 3.5rem; border-bottom: 1px solid var(--border-color);">
+          <header class="flex-between" style="margin-bottom: 32px;">
+            <div>
+              <h2 class="h2">Academic Performance Overview</h2>
+              <p class="p-dim">Aggregated data across all active and completed exam sessions.</p>
             </div>
-            <div class="chart-container" style="flex: 1; min-height: 250px; position: relative;">
-              <canvas id="global-grade-chart"></canvas>
+          </header>
+
+          <div style="display: grid; grid-template-columns: 320px 1fr; gap: 32px; align-items: start; margin-top: 32px;">
+            <!-- Left: Vertical Metrics -->
+            <div id="global-analytics-stats" style="display: flex; flex-direction: column; gap: 24px;"></div>
+
+            <!-- Right: Main Grade Chart -->
+            <div class="glass-card" style="padding: 32px; height: 100%; display: flex; flex-direction: column; background: rgba(255,255,255,0.8); backdrop-filter: blur(10px);">
+              <div class="flex-between" style="margin-bottom: 24px;">
+                <div>
+                  <h3 class="h3" style="margin-bottom: 4px;">Global Grade Distribution</h3>
+                  <p class="p-dim" style="font-size: 13px;">Frequency analysis across all student submissions.</p>
+                </div>
+                <span class="metric-label" style="font-size: 10px; opacity: 0.6;">Performance Spectrum</span>
+              </div>
+              <div class="chart-container" style="flex: 1; min-height: 250px; position: relative;">
+                <canvas id="global-grade-chart"></canvas>
+              </div>
             </div>
           </div>
         </div>
 
-        <div id="global-exams-list-container" style="margin-top: 48px;"></div>
+        <div style="padding: 3rem 3.5rem;">
+          <div style="margin-bottom: 40px;">
+            <h2 class="h2" style="font-size: 1.75rem; color: #1e293b;">Detailed Session Reports</h2>
+            <p class="p-dim" style="font-size: 14px;">In-depth performance analysis for each examination session.</p>
+          </div>
+          <div id="global-exams-list-container"></div>
+        </div>
       </main>
 
 
