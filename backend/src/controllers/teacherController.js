@@ -511,7 +511,7 @@ exports.uploadMCQ = async (req, res) => {
   const filePath = req.file.path;
   try {
     const { title, subject, numQuestions, board } = req.body;
-    const n = Math.min(500, Math.max(1, parseInt(String(numQuestions || 20), 10) || 20));
+    const n = Math.min(1000, Math.max(1, parseInt(String(numQuestions || 20), 10) || 20));
 
     // Using the unified aiParserService which handles DOCX, PDF, Images, and Regex fallbacks
     const { questions: rawQuestions, meta } = await aiParserSvc.extractMCQsFromDocument(
