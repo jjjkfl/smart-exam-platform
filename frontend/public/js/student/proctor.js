@@ -150,11 +150,23 @@ const Proctor = {
     }
 
     try {
+      if (!navigator.mediaDevices) {
+        throw new Error('Camera access requires HTTPS or localhost (Secure Context).');
+      }
+
       if (!this.cameraStream) {
-        this.cameraStream = await navigator.mediaDevices.getUserMedia({
-          video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' },
-          audio: false
-        });
+        try {
+          this.cameraStream = await navigator.mediaDevices.getUserMedia({
+            video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' },
+            audio: false
+          });
+        } catch (constraintErr) {
+          console.warn('[PROCTOR] Ideal constraints failed, trying fallback constraints:', constraintErr.message);
+          this.cameraStream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: false
+          });
+        }
       }
 
       this._setupVideoElement(container);
@@ -168,6 +180,7 @@ const Proctor = {
       console.error('[PROCTOR] Camera error:', err.message);
       this.cameraActive = false;
       this._updateCameraStatusUI(false);
+      this._showCameraError(container, err.message);
       this._logViolation('camera-denied', err.message);
     }
   },
@@ -373,16 +386,51 @@ const Proctor = {
     }
   },
 
+  _syncVideoContainer() {
+    if (this.isDestroyed || !this.cameraActive) return;
+
+    const container = this._getContainer();
+    if (!container) return;
+
+    let changed = false;
+
+    // Teleport video element if needed
+    if (this._video && this._video.parentElement !== container) {
+      console.log(`[PROCTOR] Teleporting video element to container: ${container.id}`);
+      container.appendChild(this._video);
+      changed = true;
+    }
+
+    // Teleport canvas element if needed
+    if (this._canvas && this._canvas.parentElement !== container) {
+      console.log(`[PROCTOR] Teleporting canvas element to container: ${container.id}`);
+      container.appendChild(this._canvas);
+      this._ctx = this._canvas.getContext('2d'); // Re-acquire 2D context to ensure drawing works after DOM move
+      changed = true;
+    }
+
+    // Teleport live badge if needed
+    const badge = document.getElementById('cam-live-badge');
+    if (badge && badge.parentElement !== container) {
+      container.appendChild(badge);
+    }
+
+    // Hide any "initializing/denied" placeholder inside the container
+    const deniedBox = container.querySelector('.camera-denied');
+    if (deniedBox) {
+      deniedBox.style.display = 'none';
+    }
+
+    if (changed && this._video) {
+      // Crucial: video playback often pauses in Chrome/Safari when elements are moved or re-attached
+      this._video.play().catch(e => console.warn('[PROCTOR] Playback resume failed after teleport:', e.message));
+    }
+  },
+
   _startPersistenceCheck() {
     if (this._persistenceInterval) clearInterval(this._persistenceInterval);
     this._persistenceInterval = setInterval(() => {
-      if (this.isDestroyed || !this.cameraActive) return;
-
-      const container = this._getContainer();
-      if (container && this._canvas && this._canvas.parentElement !== container) {
-        console.warn('[PROCTOR] Canvas detached! Re-attaching...');
-        container.appendChild(this._canvas);
-      }
+      this._syncVideoContainer();
     }, 2000);
   },
 
@@ -520,17 +568,36 @@ const Proctor = {
   async _loadModels() {
     try {
       if (typeof tf !== 'undefined') {
-        // Attempt WebGL first (fastest), fallback to CPU if it takes too long or fails
-        const backends = ['webgl', 'cpu'];
+        // Set paths for WebAssembly (WASM) backend binaries
+        if (tf.wasm) {
+          tf.wasm.setWasmPaths('https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-wasm@4.x/dist/');
+        }
+
+        // Helper: reject if the promise takes longer than ms
+        const withTimeout = (promise, ms, name) => {
+          return new Promise((resolve, reject) => {
+            const timer = setTimeout(() => reject(new Error(`Backend ${name} initialization timed out`)), ms);
+            promise.then(
+              (res) => { clearTimeout(timer); resolve(res); },
+              (err) => { clearTimeout(timer); reject(err); }
+            );
+          });
+        };
+
+        // Attempt WebGL first, then WASM (high performance), fallback to CPU if both fail/hang
+        const backends = ['webgl', 'wasm', 'cpu'];
         for (const b of backends) {
           try {
             console.log(`[PROCTOR] Attempting ${b} backend...`);
-            await tf.setBackend(b);
-            await tf.ready();
+            // Put a 3.5-second timeout on backend setup to prevent WebGL driver hangs from blocking sync forever
+            await withTimeout(Promise.all([
+              tf.setBackend(b),
+              tf.ready()
+            ]), 3500, b);
             console.log(`[PROCTOR] TFJS initialized with ${b}`);
             break;
           } catch (err) {
-            console.warn(`[PROCTOR] Backend ${b} failed:`, err.message);
+            console.warn(`[PROCTOR] Backend ${b} failed or timed out:`, err.message);
           }
         }
       }
@@ -979,16 +1046,21 @@ const Proctor = {
   },
 
   _drawFaceMesh(ctx, kp, isPrimary) {
-    if (!kp) return;
+    if (!kp || kp.length === 0) return;
 
-    // Temporal Smoothing (Moving Average)
+    // Temporal Smoothing (Moving Average) with length/type safety
     if (isPrimary) {
-      if (!this._lastFaceKP) this._lastFaceKP = kp;
-      else {
-        this._lastFaceKP = kp.map((p, i) => ({
-          x: p.x * 0.5 + this._lastFaceKP[i].x * 0.5,
-          y: p.y * 0.5 + this._lastFaceKP[i].y * 0.5
-        }));
+      if (!this._lastFaceKP || this._lastFaceKP.length !== kp.length) {
+        this._lastFaceKP = kp;
+      } else {
+        this._lastFaceKP = kp.map((p, i) => {
+          const lastP = this._lastFaceKP[i];
+          if (!lastP) return p;
+          return {
+            x: p.x * 0.5 + lastP.x * 0.5,
+            y: p.y * 0.5 + lastP.y * 0.5
+          };
+        });
         kp = this._lastFaceKP;
       }
     }
@@ -1188,13 +1260,18 @@ const Proctor = {
     let kp = hand.keypoints;
     if (!kp || kp.length < 21) return;
 
-    // Temporal Smoothing for Hands
-    if (!this._lastHandsKP[index]) this._lastHandsKP[index] = kp;
-    else {
-      this._lastHandsKP[index] = kp.map((p, i) => ({
-        x: p.x * 0.5 + this._lastHandsKP[index][i].x * 0.5,
-        y: p.y * 0.5 + this._lastHandsKP[index][i].y * 0.5
-      }));
+    // Temporal Smoothing for Hands with length/type safety
+    if (!this._lastHandsKP[index] || this._lastHandsKP[index].length !== kp.length) {
+      this._lastHandsKP[index] = kp;
+    } else {
+      this._lastHandsKP[index] = kp.map((p, i) => {
+        const lastP = this._lastHandsKP[index][i];
+        if (!lastP) return p;
+        return {
+          x: p.x * 0.5 + lastP.x * 0.5,
+          y: p.y * 0.5 + lastP.y * 0.5
+        };
+      });
       kp = this._lastHandsKP[index];
     }
 
@@ -1318,6 +1395,9 @@ const Proctor = {
   },
 
   updateSecurityBar() {
+    // Sync the video container location synchronously (especially on transition from readiness view to exam view)
+    this._syncVideoContainer();
+
     const bar = document.getElementById('security-status');
     if (!bar) return;
 
@@ -1600,12 +1680,21 @@ const Proctor = {
   },
 
   _blockScreenCapture() {
-    if (navigator.mediaDevices?.getDisplayMedia) {
-      navigator.mediaDevices.getDisplayMedia = () => {
-        this._handleViolation('screen-share', 'Screen share blocked');
-        this._notify('error', '🚫 Screen sharing is prohibited');
-        return Promise.reject(new Error('Screen capture disabled'));
-      };
+    try {
+      if (navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) {
+        // Use Object.defineProperty to override, with a try-catch fallback
+        Object.defineProperty(navigator.mediaDevices, 'getDisplayMedia', {
+          value: () => {
+            this._handleViolation('screen-share', 'Screen share blocked');
+            this._notify('error', '🚫 Screen sharing is prohibited');
+            return Promise.reject(new Error('Screen capture disabled'));
+          },
+          configurable: true,
+          writable: true
+        });
+      }
+    } catch (err) {
+      console.warn('[PROCTOR] Could not restrict getDisplayMedia on this browser:', err.message);
     }
   },
 

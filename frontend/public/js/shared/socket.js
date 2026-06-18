@@ -3,7 +3,7 @@
  * Base socket initialization
  */
 
-const socket = io(window.SERVER_URL || 'http://localhost:5000', {
+const socket = io(window.SERVER_URL || window.location.origin, {
   autoConnect: false,
   auth: (cb) => {
     cb({ token: sessionStorage.getItem('token') });

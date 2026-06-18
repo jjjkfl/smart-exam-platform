@@ -11,7 +11,7 @@ const ExamSocket = {
     this.sessionId = sessionId;
     const token = auth.getToken();
 
-    this.socket = io('http://localhost:5000', {
+    this.socket = io(window.SERVER_URL || window.location.origin, {
       auth: { token }
     });
 

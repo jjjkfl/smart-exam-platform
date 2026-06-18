@@ -4,10 +4,9 @@
  */
 
 const origin = window.location.origin;
-// If we are not on the production domain, force localhost:5000 for backend requests
-const SERVER_URL = (origin.includes('mcqpro.com') || origin.includes('render.com')) 
-  ? origin 
-  : 'http://localhost:5000';
+// Determine server URL dynamically: use origin unless we are running frontend on a local dev port (not 5000)
+const isLocalDev = (origin.includes('localhost') || origin.includes('127.0.0.1')) && !origin.includes(':5000');
+const SERVER_URL = isLocalDev ? 'http://localhost:5000' : origin;
 const API_BASE_URL = `${SERVER_URL}/api`;
 console.log('API configuring SERVER_URL to:', SERVER_URL);
 

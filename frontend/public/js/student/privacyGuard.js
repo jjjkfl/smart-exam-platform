@@ -50,7 +50,13 @@ const PrivacyGuard = {
         document.addEventListener('keydown', (e) => {
             if (e.key === 'PrintScreen' || (e.metaKey && e.shiftKey && e.key === 'S')) {
                 this.lock('Screenshot attempt detected.');
-                navigator.clipboard.writeText('[SECURITY BLOCK: Content Protected]');
+                try {
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        navigator.clipboard.writeText('[SECURITY BLOCK: Content Protected]');
+                    }
+                } catch (clipErr) {
+                    console.warn('[PrivacyGuard] Could not write to clipboard:', clipErr.message);
+                }
             }
             if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I')) {
                 e.preventDefault();

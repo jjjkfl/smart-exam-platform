@@ -9,6 +9,7 @@ const portalRoutes = require('./src/routes/portalRoutes');
 const initSocket = require('./src/config/socket');
 const { initAuditPulse } = require('./src/services/blockchain/auditPulse');
 const { initChangeStreamGuardian } = require('./src/services/blockchain/changeStreamGuardian');
+const { initExamScheduler } = require('./src/services/examScheduler');
 
 const helmet = require('helmet');
 const mongoSanitize = require('express-mongo-sanitize');
@@ -71,6 +72,7 @@ initAuditPulse(5 * 60 * 1000); // 5 minute pulse
 // Initialize Change Stream Guardian (Self-Healing Immutable Results)
 // Note: Requires MongoDB with replica set (rs) mode for Change Streams
 setTimeout(initChangeStreamGuardian, 3000); // Start after DB is ready
+initExamScheduler();
 
 const PORT = process.env.PORT || 5000;
 const httpServer = http.createServer(app);

@@ -680,13 +680,52 @@
       width: 100%;
     }
 
+    .mobile-menu-toggle {
+      display: none;
+    }
+    
+    .sidebar-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.4);
+      z-index: 999;
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      pointer-events: none;
+    }
+    
+    .sidebar-backdrop.active {
+      display: block;
+      opacity: 1;
+      pointer-events: auto;
+    }
+
     @media(max-width:768px) {
       .student-layout {
         grid-template-columns: 1fr !important;
       }
 
       .sidebar {
-        display: none !important;
+        position: fixed !important;
+        top: 0;
+        left: -280px !important;
+        width: 260px !important;
+        height: 100vh !important;
+        z-index: 1000 !important;
+        display: flex !important;
+        transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        box-shadow: 5px 0 25px rgba(0,0,0,0.15) !important;
+      }
+
+      .sidebar.active {
+        left: 0 !important;
+      }
+
+      .mobile-menu-toggle {
+        display: inline-flex !important;
       }
 
       .dash-hero {
@@ -706,6 +745,16 @@
 
       .topbar {
         padding: 1rem 1.5rem;
+      }
+
+      .metrics-grid {
+        grid-template-columns: 1fr !important;
+        gap: 1rem !important;
+      }
+
+      .dashboard-grid {
+        grid-template-columns: 1fr !important;
+        gap: 1.5rem !important;
       }
     }
 
@@ -820,6 +869,8 @@
 
 <body>
 
+  <div class="sidebar-backdrop" onclick="toggleSidebar()"></div>
+
   <div class="student-layout">
     <!-- Sidebar -->
     <nav class="sidebar">
@@ -862,7 +913,12 @@
 
       <!-- TOPBAR -->
       <div class="topbar">
-        <span class="topbar-title" id="topbar-title">Dashboard</span>
+        <div style="display: flex; align-items: center; gap: 1rem;">
+          <button class="mobile-menu-toggle" onclick="toggleSidebar()" aria-label="Toggle Menu" style="background: none; border: none; font-size: 1.35rem; color: var(--text-dark); cursor: pointer; display: none; align-items: center; justify-content: center;">
+            <i class="fas fa-bars"></i>
+          </button>
+          <span class="topbar-title" id="topbar-title">Dashboard</span>
+        </div>
         <div class="topbar-right">
           <div class="integrity-pill"><i class="fas fa-shield-alt"></i> Secure Session</div>
         </div>
@@ -1209,6 +1265,15 @@
   <script src="/js/teacher/teacher.js?v=27"></script>
 
   <script>
+    function toggleSidebar() {
+      const sidebar = document.querySelector('.sidebar');
+      const backdrop = document.querySelector('.sidebar-backdrop');
+      if (sidebar && backdrop) {
+        sidebar.classList.toggle('active');
+        backdrop.classList.toggle('active');
+      }
+    }
+
     // Strict Auth Guard - Run immediately before DOM is fully loaded
     if (!auth.isAuthenticated()) {
       window.location.replace('/teacher-login.html');
@@ -1216,6 +1281,18 @@
 
     document.addEventListener('DOMContentLoaded', () => {
       TeacherDashboard.init();
+
+      // Close sidebar drawer on nav-item clicks on mobile
+      document.querySelectorAll('.sidebar .nav-item').forEach(item => {
+        item.addEventListener('click', () => {
+          const sidebar = document.querySelector('.sidebar');
+          const backdrop = document.querySelector('.sidebar-backdrop');
+          if (window.innerWidth <= 768 && sidebar && sidebar.classList.contains('active')) {
+            sidebar.classList.remove('active');
+            backdrop.classList.remove('active');
+          }
+        });
+      });
     });
   </script>
 </body>

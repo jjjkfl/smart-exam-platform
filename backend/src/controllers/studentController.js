@@ -55,7 +55,10 @@ exports.getDashboard = async (req, res) => {
       peerAvgs
     ] = await Promise.all([
       Session.find({
-        status: 'active',
+        $or: [
+          { status: 'active' },
+          { status: 'pending', startTime: { $lte: new Date() } }
+        ],
         startTime: { $gte: new Date(Date.now() - 3600000) }
       })
         .sort({ startTime: 1 })
@@ -161,16 +164,28 @@ exports.getCourses = async (req, res) => {
 exports.getAvailableExams = async (req, res) => {
   try {
     const { board } = req.query;
-    const query = { status: 'active' };
+    const now = new Date();
+    const query = {
+      $and: [
+        {
+          $or: [
+            { status: 'active' },
+            { status: 'pending', startTime: { $lte: now } }
+          ]
+        }
+      ]
+    };
     
     if (board && board !== 'None' && board !== 'All') {
-      query.$or = [
-        { board: board },
-        { board: 'All' },
-        { board: '' },
-        { board: { $exists: false } },
-        { board: null }
-      ];
+      query.$and.push({
+        $or: [
+          { board: board },
+          { board: 'All' },
+          { board: '' },
+          { board: { $exists: false } },
+          { board: null }
+        ]
+      });
     }
 
     const exams = await Session.find(query).lean();

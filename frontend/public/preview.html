@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MCQPro Device Viewport Simulator</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    :root {
+      --primary: #4f46e5;
+      --secondary: #0ea5e9;
+      --dark-bg: #090d16;
+      --dark-card: rgba(30, 41, 59, 0.7);
+      --glass-border: rgba(255, 255, 255, 0.08);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: linear-gradient(135deg, #060913 0%, #0f172a 100%);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Header Bar */
+    header {
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--glass-border);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 100;
+      flex-shrink: 0;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: #fff;
+      text-decoration: none;
+    }
+    .logo i {
+      color: #818cf8;
+      font-size: 1.6rem;
+      text-shadow: 0 0 15px rgba(129, 140, 248, 0.4);
+    }
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .control-group {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .control-label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+    select {
+      background: #1e293b;
+      border: 1px solid var(--glass-border);
+      color: #fff;
+      padding: 0.6rem 2.5rem 0.6rem 1rem;
+      border-radius: 10px;
+      font-family: inherit;
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      outline: none;
+      transition: all 0.25s;
+      appearance: none;
+      background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23cbd5e1%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+      background-repeat: no-repeat;
+      background-position: right 1rem top 50%;
+      background-size: 0.65rem auto;
+    }
+    select:hover {
+      border-color: var(--primary);
+    }
+    .btn-group {
+      display: flex;
+      background: #1e293b;
+      padding: 3px;
+      border-radius: 10px;
+      border: 1px solid var(--glass-border);
+    }
+    .view-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 0.5rem 1rem;
+      font-family: inherit;
+      font-weight: 600;
+      font-size: 0.85rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .view-btn.active {
+      background: var(--primary);
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+    }
+    .icon-btn {
+      background: #1e293b;
+      border: 1px solid var(--glass-border);
+      color: #fff;
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.25s;
+    }
+    .icon-btn:hover {
+      border-color: var(--secondary);
+      color: var(--secondary);
+    }
+    .icon-btn.active {
+      background: var(--secondary);
+      border-color: var(--secondary);
+      color: #fff;
+    }
+
+    /* Simulator Workspace */
+    .workspace {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      overflow-y: auto;
+      position: relative;
+    }
+
+    /* Device Containers */
+    .device-container {
+      position: relative;
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Desktop View Mode */
+    .device-container.desktop {
+      width: 100%;
+      height: 100%;
+      max-width: 100%;
+      border-radius: 0;
+      box-shadow: none;
+      background: transparent;
+    }
+    .device-container.desktop iframe {
+      width: 100%;
+      height: 100%;
+      border-radius: 0;
+      border: none;
+    }
+
+    /* Tablet View Mode */
+    .device-container.tablet {
+      width: 768px;
+      height: 1024px;
+      background: #1e1e24;
+      border: 16px solid #27272a;
+      border-radius: 36px;
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7);
+    }
+    .device-container.tablet.landscape {
+      width: 1024px;
+      height: 768px;
+    }
+    .device-container.tablet::after {
+      content: '';
+      position: absolute;
+      background: #71717a;
+      border-radius: 4px;
+    }
+    .device-container.tablet:not(.landscape)::after {
+      bottom: 6px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100px;
+      height: 4px;
+    }
+    .device-container.tablet.landscape::after {
+      right: 6px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 4px;
+      height: 100px;
+    }
+
+    /* Mobile View Mode */
+    .device-container.mobile {
+      width: 375px;
+      height: 812px;
+      background: #1e1e24;
+      border: 12px solid #27272a;
+      border-radius: 40px;
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7);
+    }
+    .device-container.mobile.landscape {
+      width: 812px;
+      height: 375px;
+    }
+    .device-container.mobile::before {
+      content: '';
+      position: absolute;
+      background: #27272a;
+      z-index: 10;
+      border-radius: 0 0 16px 16px;
+    }
+    .device-container.mobile:not(.landscape)::before {
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 150px;
+      height: 24px;
+    }
+    .device-container.mobile.landscape::before {
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 24px;
+      height: 150px;
+      border-radius: 0 16px 16px 0;
+    }
+    .device-container.mobile::after {
+      content: '';
+      position: absolute;
+      background: #71717a;
+      border-radius: 4px;
+    }
+    .device-container.mobile:not(.landscape)::after {
+      bottom: 5px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 120px;
+      height: 4px;
+    }
+    .device-container.mobile.landscape::after {
+      right: 5px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 4px;
+      height: 120px;
+    }
+
+    /* Split Workspace (Mobile + Desktop side-by-side) */
+    .split-workspace {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+      gap: 4rem;
+      padding: 3rem 2rem;
+      width: 100%;
+      min-height: 100%;
+      overflow-x: auto;
+    }
+
+    /* Desktop Monitor Mockup for Split View */
+    .device-container.desktop-mockup {
+      width: 900px;
+      height: 560px;
+      background: #1e1e24;
+      border: 14px solid #27272a;
+      border-radius: 20px;
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7);
+      position: relative;
+    }
+    .device-container.desktop-mockup iframe {
+      border-radius: 8px;
+    }
+    /* Monitor Stand Base */
+    .device-container.desktop-mockup::after {
+      content: '';
+      position: absolute;
+      bottom: -36px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 110px;
+      height: 22px;
+      background: #3f3f46;
+      border-radius: 4px 4px 0 0;
+      z-index: -1;
+    }
+    .device-container.desktop-mockup::before {
+      content: '';
+      position: absolute;
+      bottom: -42px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 180px;
+      height: 6px;
+      background: #27272a;
+      border-radius: 3px;
+      z-index: -1;
+    }
+
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      background: #fff;
+      transition: all 0.3s;
+    }
+    .device-container.mobile iframe {
+      border-radius: 28px;
+    }
+    .device-container.tablet iframe {
+      border-radius: 20px;
+    }
+
+    /* Resolution Badge */
+    .resolution-badge {
+      position: absolute;
+      bottom: 1.5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--glass-border);
+      padding: 0.5rem 1rem;
+      border-radius: 100px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      z-index: 200;
+      pointer-events: none;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+    }
+
+    /* Media Overrides for Simulator Screens */
+    @media (max-width: 1400px) {
+      .device-container.desktop-mockup {
+        width: 680px;
+        height: 425px;
+      }
+    }
+    @media (max-width: 1200px) {
+      .split-workspace {
+        flex-direction: column;
+        gap: 4rem;
+        overflow-y: auto;
+        padding-bottom: 5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <a href="/landing.html" class="logo" target="_blank">
+      <i class="fas fa-graduation-cap"></i> MCQPro Simulator
+    </a>
+
+    <div class="controls">
+      <!-- Screen selector -->
+      <div class="control-group">
+        <span class="control-label">Screen:</span>
+        <select id="page-select" onchange="updatePage()">
+          <option value="/landing.html">Landing Page</option>
+          <option value="/login">Login / Sign Up</option>
+          <option value="/student">Student Dashboard</option>
+          <option value="/teacher">Teacher Dashboard</option>
+          <option value="/exam">Exam Screen (Mock)</option>
+          <option value="/result.html?resultId=mock">Exam Results (Mock)</option>
+        </select>
+      </div>
+
+      <!-- Device View toggles -->
+      <div class="control-group">
+        <span class="control-label">Viewports:</span>
+        <div class="btn-group">
+          <button class="view-btn active" id="btn-desktop" onclick="setDevice('desktop')">
+            <i class="fas fa-desktop"></i> Desktop
+          </button>
+          <button class="view-btn" id="btn-tablet" onclick="setDevice('tablet')">
+            <i class="fas fa-tablet-alt"></i> Tablet
+          </button>
+          <button class="view-btn" id="btn-mobile" onclick="setDevice('mobile')">
+            <i class="fas fa-mobile-alt"></i> Mobile
+          </button>
+          <button class="view-btn" id="btn-split" onclick="setDevice('split')">
+            <i class="fas fa-columns"></i> Split View (Mobile + Desktop)
+          </button>
+        </div>
+      </div>
+
+      <!-- Orientation Toggle -->
+      <button class="icon-btn" id="btn-rotate" onclick="toggleOrientation()" title="Rotate Screen" disabled>
+        <i class="fas fa-sync-alt"></i>
+      </button>
+    </div>
+  </header>
+
+  <div class="workspace">
+    <!-- Single Device View Wrapper -->
+    <div class="device-container desktop" id="device-wrapper">
+      <iframe src="/landing.html" id="preview-iframe"></iframe>
+    </div>
+
+    <!-- Split View Wrapper -->
+    <div class="split-workspace" id="split-wrapper" style="display: none;">
+      <!-- Left: Mobile Mockup -->
+      <div class="device-container mobile">
+        <iframe src="/landing.html" id="split-iframe-mobile"></iframe>
+      </div>
+      <!-- Right: Desktop Mockup -->
+      <div class="device-container desktop-mockup">
+        <iframe src="/landing.html" id="split-iframe-desktop"></iframe>
+      </div>
+    </div>
+  </div>
+
+  <div class="resolution-badge" id="res-badge">Responsive View (100% Width)</div>
+
+  <script>
+    let currentDevice = 'desktop';
+    let isLandscape = false;
+    
+    const mainIframe = document.getElementById('preview-iframe');
+    const splitIframeMobile = document.getElementById('split-iframe-mobile');
+    const splitIframeDesktop = document.getElementById('split-iframe-desktop');
+    
+    const singleWrapper = document.getElementById('device-wrapper');
+    const splitWrapper = document.getElementById('split-wrapper');
+    const badge = document.getElementById('res-badge');
+    const rotateBtn = document.getElementById('btn-rotate');
+
+    function setDevice(device) {
+      currentDevice = device;
+      
+      // Update buttons
+      document.querySelectorAll('.view-btn').forEach(btn => btn.classList.remove('active'));
+      document.getElementById(`btn-${device}`).classList.add('active');
+
+      if (device === 'split') {
+        singleWrapper.style.display = 'none';
+        splitWrapper.style.display = 'flex';
+        rotateBtn.disabled = true;
+        rotateBtn.classList.remove('active');
+        isLandscape = false;
+      } else {
+        splitWrapper.style.display = 'none';
+        singleWrapper.style.display = 'flex';
+        
+        // Clear layout
+        singleWrapper.className = 'device-container';
+        
+        if (device === 'desktop') {
+          singleWrapper.classList.add('desktop');
+          rotateBtn.disabled = true;
+          rotateBtn.classList.remove('active');
+          isLandscape = false;
+        } else {
+          singleWrapper.classList.add(device);
+          rotateBtn.disabled = false;
+          if (isLandscape) {
+            singleWrapper.classList.add('landscape');
+          }
+        }
+      }
+      
+      updateBadge();
+    }
+
+    function toggleOrientation() {
+      if (currentDevice === 'desktop' || currentDevice === 'split') return;
+      isLandscape = !isLandscape;
+      singleWrapper.classList.toggle('landscape', isLandscape);
+      rotateBtn.classList.toggle('active', isLandscape);
+      updateBadge();
+    }
+
+    function updatePage() {
+      const page = document.getElementById('page-select').value;
+      mainIframe.src = page;
+      splitIframeMobile.src = page;
+      splitIframeDesktop.src = page;
+    }
+
+    function updateBadge() {
+      if (currentDevice === 'desktop') {
+        badge.textContent = 'Responsive View (100% Width)';
+      } else if (currentDevice === 'tablet') {
+        badge.textContent = isLandscape ? 'Tablet Landscape (1024 x 768)' : 'Tablet Portrait (768 x 1024)';
+      } else if (currentDevice === 'mobile') {
+        badge.textContent = isLandscape ? 'Mobile Landscape (812 x 375)' : 'Mobile Portrait (375 x 812)';
+      } else if (currentDevice === 'split') {
+        badge.textContent = 'Dual View: Mobile (375x812) + Desktop Monitor (900x560)';
+      }
+    }
+  </script>
+</body>
+</html>

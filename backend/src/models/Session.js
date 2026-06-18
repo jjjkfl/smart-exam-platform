@@ -24,6 +24,7 @@ const sessionSchema = new mongoose.Schema({
   liveClassLink: { type: String, default: '' },
   negativeMarking: { type: Boolean, default: false },
   board: { type: String, required: false },
+  creatorId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', index: true },
   
   // Advanced Proctoring Settings
   enableAIProctoring: { type: Boolean, default: true },

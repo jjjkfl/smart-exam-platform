@@ -306,6 +306,41 @@
       }
     }
 
+    @media (max-width: 768px) {
+      .result-layout {
+        padding: 16px;
+      }
+      .result-stats-hero-card {
+        padding: 1.5rem 1rem !important;
+        margin-bottom: 1.5rem !important;
+        justify-content: center !important;
+        text-align: center;
+      }
+      .result-detailed-card {
+        padding: 1.5rem !important;
+      }
+      .result-question-card {
+        padding: 1.25rem !important;
+      }
+      .result-options-grid {
+        margin-left: 0 !important;
+        grid-template-columns: 1fr !important;
+      }
+      .result-answer-explanation {
+        margin-left: 0 !important;
+        padding: 1rem !important;
+      }
+      .result-fullpage-header {
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: 1rem;
+      }
+      .result-title-container {
+        flex-direction: column;
+        align-items: flex-start !important;
+      }
+    }
+
     @media (max-width: 600px) {
       .answer-options {
         grid-template-columns: 1fr;
@@ -370,14 +405,12 @@
       const unanswered = answers.filter(a => !a.selectedAnswer).length;
       const totalQuestions = answers.length;
       const attemptedCount = answers.filter(a => a.selectedAnswer).length;
-      const accuracy = attemptedCount > 0 ? Math.round((correctCount / attemptedCount) * 100) : 0;
-
-      document.getElementById('result-content').innerHTML = `
+      const accuracy = attemptedCount > 0 ? Math.round      document.getElementById('result-content').innerHTML = `
         <div class="result-fullpage-container animate-fade-in" style="width: 100%;">
           
           <!-- Premium Navigation Header -->
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 2.5rem;">
-            <div style="display: flex; align-items: center; gap: 1.5rem;">
+          <div class="result-fullpage-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 2.5rem;">
+            <div class="result-title-container" style="display: flex; align-items: center; gap: 1.5rem;">
               <a href="/index.html" style="border-radius: 50%; width: 44px; height: 44px; padding: 0; display: flex; align-items: center; justify-content: center; border: 1px solid #e2e8f0; background: white; cursor: pointer; color: #475569; text-decoration: none; transition: all 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.02);"><i class="fas fa-home"></i></a>
               <div>
                 <h1 style="font-size: 2.2rem; font-weight: 900; color: #0f172a; line-height: 1.2; letter-spacing: -0.5px;">${data.session ? data.session.title : data.examId || 'Examination Result'}</h1>
@@ -388,7 +421,7 @@
           </div>
 
           <!-- High-Impact Hero Stats Section -->
-          <div style="background: linear-gradient(135deg, #1e1b4b 0%, #3730a3 100%); border-radius: 24px; padding: 3rem 4rem; color: white; display: flex; justify-content: space-between; align-items: center; margin-bottom: 3rem; box-shadow: 0 20px 40px rgba(55, 48, 163, 0.25); position: relative; overflow: hidden; flex-wrap: wrap; gap: 2rem;">
+          <div class="result-stats-hero-card" style="background: linear-gradient(135deg, #1e1b4b 0%, #3730a3 100%); border-radius: 24px; padding: 3rem 4rem; color: white; display: flex; justify-content: space-between; align-items: center; margin-bottom: 3rem; box-shadow: 0 20px 40px rgba(55, 48, 163, 0.25); position: relative; overflow: hidden; flex-wrap: wrap; gap: 2rem;">
             <!-- Decorative background elements -->
             <div style="position: absolute; top: -50%; right: -10%; width: 500px; height: 500px; background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 70%); border-radius: 50%; pointer-events: none;"></div>
             
@@ -443,7 +476,7 @@
           </div>
 
           <!-- Professional Review Section -->
-          <div style="background: white; border-radius: 24px; padding: 3.5rem; box-shadow: 0 10px 40px rgba(0,0,0,0.03); border: 1px solid #f1f5f9;">
+          <div class="result-detailed-card" style="background: white; border-radius: 24px; padding: 3.5rem; box-shadow: 0 10px 40px rgba(0,0,0,0.03); border: 1px solid #f1f5f9;">
             <div style="display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #f8fafc; padding-bottom: 1.5rem; margin-bottom: 3rem;">
                <h3 style="font-size: 1.5rem; font-weight: 800; color: #0f172a; margin: 0;">Detailed Question Analysis</h3>
                <div style="display: flex; gap: 1.5rem;">
@@ -463,7 +496,7 @@
                 const bgPulse = isSelectedCorrect ? 'rgba(16, 185, 129, 0.03)' : (isUnanswered ? '#fff' : 'rgba(239, 68, 68, 0.03)');
 
                 return `
-                  <div style="border: 1px solid #e2e8f0; background: ${bgPulse}; border-radius: 16px; padding: 2rem; position: relative; overflow: hidden; transition: all 0.2s;">
+                  <div class="result-question-card" style="border: 1px solid #e2e8f0; background: ${bgPulse}; border-radius: 16px; padding: 2rem; position: relative; overflow: hidden; transition: all 0.2s;">
                     <div style="position: absolute; top: 0; left: 0; width: 6px; height: 100%; background: ${statusColor}; border-radius: 16px 0 0 16px;"></div>
                     
                     <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem;">
@@ -479,7 +512,7 @@
                       </div>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem; margin-left: 3.75rem;">
+                    <div class="result-options-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem; margin-left: 3.75rem;">
                       ${(a.options || []).map(opt => {
                         const isCorrectOpt = correctAnswerArr.includes(opt.label);
                         const isSelectedOpt = Array.isArray(a.selectedAnswer) ? a.selectedAnswer.includes(opt.label) : a.selectedAnswer === opt.label;
@@ -498,7 +531,7 @@
                                <div style="display: flex; flex-direction: column; gap: 8px;">
                                  <span style="line-height: 1.4;">${esc(opt.text)}</span>
                                  ${opt.image ? `<img src="${window.SERVER_URL}${opt.image}" style="max-width: 160px; max-height: 100px; border-radius: 6px; border: 1px solid #e2e8f0;" onerror="this.style.display='none'">` : ''}
-                               </div>
+                                </div>
                              </div>
                              ${isCorrectOpt ? '<i class="fas fa-check-circle" style="color: #10b981; font-size: 1.25rem; flex-shrink: 0;"></i>' : ''}
                              ${isSelectedOpt && !isCorrectOpt ? '<i class="fas fa-times-circle" style="color: #ef4444; font-size: 1.25rem; flex-shrink: 0;"></i>' : ''}
@@ -507,7 +540,7 @@
                     </div>
 
                     ${!isSelectedCorrect ? `
-                    <div style="margin-top: 2rem; margin-left: 3.75rem; padding: 1.25rem 1.5rem; background: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #3b82f6; border-radius: 12px; display: flex; align-items: flex-start; gap: 1rem;">
+                    <div class="result-answer-explanation" style="margin-top: 2rem; margin-left: 3.75rem; padding: 1.25rem 1.5rem; background: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #3b82f6; border-radius: 12px; display: flex; align-items: flex-start; gap: 1rem;">
                       <div style="color: #3b82f6; font-size: 1.25rem; margin-top: 2px;"><i class="fas fa-info-circle"></i></div>
                       <div>
                         <p style="font-size: 0.95rem; color: #334155; margin: 0;"><strong style="font-weight: 800; color: #0f172a;">Correct Answer:</strong> Option ${correctAnswerArr.join(', ')} - ${(a.options?.find(o => o.label === correctAnswerArr[0])?.text || '')}</p>
@@ -516,7 +549,7 @@
                     ` : ''}
 
                     ${a.explanation ? `
-                    <div style="margin-top: 1rem; margin-left: 3.75rem; padding: 1.5rem; background: #fdf4ff; border: 1px solid #fce7f3; border-left: 4px solid #d946ef; border-radius: 12px; display: flex; align-items: flex-start; gap: 1rem;">
+                    <div class="result-answer-explanation" style="margin-top: 1rem; margin-left: 3.75rem; padding: 1.5rem; background: #fdf4ff; border: 1px solid #fce7f3; border-left: 4px solid #d946ef; border-radius: 12px; display: flex; align-items: flex-start; gap: 1rem;">
                       <div style="color: #d946ef; font-size: 1.25rem; margin-top: 2px;"><i class="fas fa-lightbulb"></i></div>
                       <div>
                         <h4 style="font-size: 0.85rem; font-weight: 800; color: #86198f; margin: 0 0 0.5rem 0; text-transform: uppercase; letter-spacing: 1.5px;">Explanation</h4>

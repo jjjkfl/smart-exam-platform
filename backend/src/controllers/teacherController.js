@@ -42,17 +42,19 @@ exports.getDashboard = async (req, res) => {
         ? await Course.find({ _id: { $in: courseIds } }).select('courseName driveLink')
         : [];
 
+    const teacherSessionIds = await Session.find({ creatorId: teacher._id }).distinct('_id');
+
     const [activeSessions, totalSessions, totalStudents, totalMCQBanks, sessions, recentResultDocs] =
       await Promise.all([
-        Session.countDocuments({ status: 'active' }),
-        Session.countDocuments({}),
-        User.countDocuments({ role: 'student' }),
+        Session.countDocuments({ creatorId: teacher._id, status: 'active' }),
+        Session.countDocuments({ creatorId: teacher._id }),
+        User.countDocuments({ role: 'student', courseId: { $in: courseIds } }),
         MCQBank.countDocuments({ createdBy: teacher._id }),
-        Session.find({})
+        Session.find({ creatorId: teacher._id })
           .sort({ startTime: -1 })
           .limit(8)
           .lean(),
-        Result.find({})
+        Result.find({ sessionId: { $in: teacherSessionIds } })
           .sort({ createdAt: -1 })
           .limit(5)
           .populate('studentId', 'name')
@@ -134,6 +136,7 @@ exports.createSession = async (req, res) => {
       duration: durationMinutes,
       courseId: courseId ? courseId : null,
       board: board || 'All',
+      creatorId: req.user._id,
       requireCamera: requireCamera !== undefined ? requireCamera : true,
       enableAIProctoring: enableAIProctoring !== undefined ? enableAIProctoring : true,
       lockBrowser: lockBrowser !== undefined ? lockBrowser : true,
@@ -167,7 +170,7 @@ exports.updateCourseDrive = async (req, res) => {
 
 exports.getSessions = async (req, res) => {
   try {
-    const sessions = await Session.find({}).sort('-createdAt');
+    const sessions = await Session.find({ creatorId: req.user._id }).sort('-createdAt');
     res.json({ success: true, data: sessions });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -182,7 +185,7 @@ exports.updateSession = async (req, res) => {
     if (scheduledStart) updateData.startTime = new Date(scheduledStart);
 
     const session = await Session.findOneAndUpdate(
-      { _id: req.params.id },
+      { _id: req.params.id, creatorId: req.user._id },
       updateData,
       { new: true }
     );
@@ -197,7 +200,7 @@ exports.updateSession = async (req, res) => {
 exports.deleteSession = async (req, res) => {
   try {
     const session = await Session.findOneAndDelete({
-      _id: req.params.id
+      _id: req.params.id, creatorId: req.user._id
     });
     if (!session) return res.status(404).json({ success: false, message: 'Session not found' });
 
@@ -211,7 +214,7 @@ exports.updateSessionStatus = async (req, res) => {
   try {
     const { status } = req.body;
     const session = await Session.findOneAndUpdate(
-      { _id: req.params.sessionId },
+      { _id: req.params.sessionId, creatorId: req.user._id },
       { status },
       { new: true }
     );
@@ -224,8 +227,10 @@ exports.updateSessionStatus = async (req, res) => {
 
 exports.getStudents = async (req, res) => {
   try {
+    const courseIds = req.user.courseIds || [];
     const students = await User.find({
-      role: 'student'
+      role: 'student',
+      courseId: { $in: courseIds }
     }).select('-password').lean();
 
     // Attach total attendance count
@@ -323,8 +328,8 @@ const PASS_SCORE = 60;
 
 exports.getGeneralAnalytics = async (req, res) => {
   try {
-    const courseIds = (req.user.courseIds || []).map(id => new mongoose.Types.ObjectId(id));
-    if (courseIds.length === 0) {
+    const teacherSessionIds = await Session.find({ creatorId: req.user._id }).distinct('_id');
+    if (teacherSessionIds.length === 0) {
       return res.json({
         success: true,
         data: {
@@ -339,7 +344,7 @@ exports.getGeneralAnalytics = async (req, res) => {
 
     // 1. Efficient Summary & Grade Breakdown in ONE Aggregation
     const [analytics] = await Result.aggregate([
-      { $match: { courseId: { $in: courseIds } } },
+      { $match: { sessionId: { $in: teacherSessionIds } } },
       {
         $group: {
           _id: null,
@@ -355,10 +360,8 @@ exports.getGeneralAnalytics = async (req, res) => {
       }
     ]);
 
-    // 2. Optimized Session Retrieval (Only fetch sessions for teacher's courses if available)
-    const sessions = await Session.find({ 
-      $or: [{ courseId: { $in: courseIds } }, { courseId: { $exists: false } }] 
-    })
+    // 2. Optimized Session Retrieval (Only fetch sessions created by this teacher)
+    const sessions = await Session.find({ creatorId: req.user._id })
     .sort({ startTime: -1 })
     .limit(20) // Limit to recent sessions for dashboard performance
     .lean();
@@ -366,8 +369,7 @@ exports.getGeneralAnalytics = async (req, res) => {
     // 3. Optimized Result Retrieval (ONLY fetch results for the sessions we are looking at)
     const sessionIds = sessions.map(s => s._id);
     const sessionResults = await Result.find({ 
-      sessionId: { $in: sessionIds },
-      courseId: { $in: courseIds }
+      sessionId: { $in: sessionIds }
     })
     .select('sessionId score studentId createdAt') // LEAN Projection
     .populate('studentId', 'name email')
@@ -412,7 +414,8 @@ exports.getGeneralAnalytics = async (req, res) => {
 exports.getSessionResults = async (req, res) => {
   try {
     const session = await Session.findOne({
-      _id: req.params.sessionId
+      _id: req.params.sessionId,
+      creatorId: req.user._id
     });
     if (!session) {
       return res.status(404).json({ success: false, message: 'Session not found' });
