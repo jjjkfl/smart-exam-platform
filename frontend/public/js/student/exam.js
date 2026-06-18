@@ -670,7 +670,7 @@ const ExamEngine = {
             <a href="/result.html?resultId=${d.resultId}" style="display:block; padding:14px; background:#4f46e5; color:#fff; border-radius:12px; text-decoration:none; font-weight:700; font-size:15px; transition:all 0.2s;">
               📋 View Detailed Results
             </a>
-            <a href="/index.html" style="display:block; padding:12px; background:#f8fafc; color:#475569; border-radius:12px; text-decoration:none; font-weight:600; font-size:14px; border:1px solid #e2e8f0;">
+            <a href="/index.html?view=global-analytics" style="display:block; padding:12px; background:#f8fafc; color:#475569; border-radius:12px; text-decoration:none; font-weight:600; font-size:14px; border:1px solid #e2e8f0;">
               🏠 Return to Dashboard
             </a>
           </div>

@@ -11,7 +11,7 @@ const ResultDetail = {
     this.resultId = params.get('resultId');
 
     if (!this.resultId) {
-      window.location.href = '/index.html';
+      window.location.href = '/index.html?view=global-analytics';
       return;
     }
 
@@ -122,7 +122,7 @@ const ResultDetail = {
         </div>
 
         <div style="margin-top: 48px; text-align: center;">
-          <a href="/index.html" class="btn btn-outline">Back to Dashboard</a>
+          <a href="/index.html?view=global-analytics" class="btn btn-outline">Back to Dashboard</a>
           ${result.isPassed ? `<button onclick="Certificate.generate('${this.resultId}')" class="btn btn-primary" style="margin-left: 12px;">Download Certificate</button>` : ''}
         </div>
       </div>

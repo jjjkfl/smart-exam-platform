@@ -183,7 +183,13 @@ const StudentDashboard = {
     }
 
     // Update topbar title
-    const titles = { dashboard: 'Overview', overview: 'Overview', 'live-exams': 'Live Exams', 'exam-results': 'My Results' };
+    const titles = { 
+      dashboard: 'Overview', 
+      overview: 'Overview', 
+      'live-exams': 'Live Exams', 
+      'exam-results': 'My Results',
+      'global-analytics': 'Global Analytics'
+    };
     const tb = document.getElementById('topbar-title');
     if (tb) tb.textContent = titles[viewId] || 'Overview';
 
@@ -191,6 +197,7 @@ const StudentDashboard = {
     if (viewId === 'dashboard' || viewId === 'overview') this.renderAll();
     if (viewId === 'live-exams') this.loadLiveExams();
     if (viewId === 'exam-results') this.loadResults();
+    if (viewId === 'global-analytics') this.loadGlobalAnalytics();
   },
 
   bindSidebarNav() {
@@ -834,6 +841,206 @@ const StudentDashboard = {
 
   esc(t) { if (!t) return ''; const d = document.createElement('div'); d.textContent = t; return d.innerHTML; },
 
+  async loadGlobalAnalytics() {
+    const tableBody = document.getElementById('analytic-comparison-table-body');
+    if (tableBody) {
+      tableBody.innerHTML = `
+        <tr>
+          <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 3rem;">
+            <div class="spinner" style="margin: 0 auto 1rem;"></div>
+            <p>Syncing class analytics standing...</p>
+          </td>
+        </tr>
+      `;
+    }
+
+    try {
+      const res = await api.get('/portal/student/global-analytics');
+      if (!res.success) throw new Error(res.message);
+      this.renderGlobalAnalytics(res.data);
+    } catch (err) {
+      notifications.error('Failed to load global analytics: ' + err.message);
+      if (tableBody) {
+        tableBody.innerHTML = `
+          <tr>
+            <td colspan="6" style="text-align: center; color: var(--danger); padding: 3rem;">
+              <i class="fas fa-exclamation-triangle" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+              <p>Failed to retrieve analytics. Please try again later.</p>
+            </td>
+          </tr>
+        `;
+      }
+    }
+  },
+
+  renderGlobalAnalytics(data) {
+    if (!data) return;
+
+    // 1. Populate stats cards
+    const setVal = (id, val) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = val;
+    };
+
+    setVal('analytic-student-gpa', data.studentStats.gpa || '0.0');
+    setVal('analytic-student-rank', this.formatRank(data.studentStats.rank));
+    setVal('analytic-student-peers', `vs ${data.studentStats.totalPeers || 0} scholars`);
+    setVal('analytic-student-avg', (data.studentStats.avgScore || 0) + '%');
+    setVal('analytic-student-exams', data.studentStats.totalExamsTaken || 0);
+
+    setVal('analytic-cohort-avg', (data.tenantStats.avgScore || 0) + '%');
+    setVal('analytic-cohort-highest', (data.tenantStats.highestScore || 0) + '%');
+    setVal('analytic-cohort-submissions', data.tenantStats.totalSubmissions || 0);
+    setVal('analytic-cohort-passrate', (data.tenantStats.passRate || 0) + '%');
+
+    // 2. Render grade breakdown progress bars
+    const gradeDistributionContainer = document.getElementById('analytic-grade-distribution');
+    if (gradeDistributionContainer) {
+      const maxCount = Math.max(...Object.values(data.gradeBreakdown), 1);
+      const gradeColors = {
+        'A+': '#10b981',
+        'A': '#34d399',
+        'B': '#3b82f6',
+        'C': '#60a5fa',
+        'D': '#f59e0b',
+        'F': '#ef4444'
+      };
+
+      const hasGrades = Object.values(data.gradeBreakdown).some(c => c > 0);
+      if (!hasGrades) {
+        gradeDistributionContainer.innerHTML = `
+          <div style="text-align: center; color: var(--text-muted); padding: 2rem 0;">
+            <p style="font-size: 0.95rem;">No grades recorded yet.</p>
+          </div>
+        `;
+      } else {
+        gradeDistributionContainer.innerHTML = Object.entries(data.gradeBreakdown).map(([grade, count]) => {
+          const percent = (count / maxCount) * 100;
+          const color = gradeColors[grade] || '#94a3b8';
+          return `
+            <div class="grade-bar-container">
+              <span class="grade-label">${grade}</span>
+              <div class="grade-progress-bar">
+                <div class="grade-progress-fill" style="width: ${percent}%; background: ${color};"></div>
+              </div>
+              <span class="grade-count">${count}</span>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+
+    // 3. Render Subject Mastery Chart
+    const ctx = document.getElementById('studentSubjectAnalyticsChart');
+    if (ctx && typeof Chart !== 'undefined') {
+      if (this.subjectAnalyticsChart) {
+        this.subjectAnalyticsChart.destroy();
+      }
+
+      const subjects = data.subjectPerformance || [];
+      if (subjects.length === 0) {
+        // Render empty chart feedback
+        const parent = ctx.parentElement;
+        if (parent) {
+          parent.innerHTML = `
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--text-muted);">
+              <i class="fas fa-chart-bar" style="font-size: 2.5rem; opacity: 0.3; margin-bottom: 1rem;"></i>
+              <p>No subject performance data available yet.</p>
+            </div>
+            <canvas id="studentSubjectAnalyticsChart" style="display:none;"></canvas>
+          `;
+        }
+      } else {
+        // Clean out any previously-injected placeholder error/empty states before re-rendering the canvas
+        const parent = ctx.parentElement;
+        if (parent && parent.querySelector('.empty-state-placeholder')) {
+          parent.innerHTML = `<canvas id="studentSubjectAnalyticsChart"></canvas>`;
+        }
+
+        const freshCtx = document.getElementById('studentSubjectAnalyticsChart') || ctx;
+
+        this.subjectAnalyticsChart = new Chart(freshCtx, {
+          type: 'bar',
+          data: {
+            labels: subjects.map(s => s.subject),
+            datasets: [
+              {
+                label: 'Your Average',
+                data: subjects.map(s => s.studentAvg),
+                backgroundColor: 'rgba(79, 70, 229, 0.85)',
+                borderColor: '#4f46e5',
+                borderWidth: 1,
+                borderRadius: 8,
+                barThickness: 18
+              },
+              {
+                label: 'Class Cohort Average',
+                data: subjects.map(s => s.tenantAvg),
+                backgroundColor: 'rgba(203, 213, 225, 0.65)',
+                borderColor: '#cbd5e1',
+                borderWidth: 1,
+                borderRadius: 8,
+                barThickness: 18
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: 'top',
+                labels: { boxWidth: 12, font: { weight: '600', family: 'Outfit', size: 11 } }
+              }
+            },
+            scales: {
+              x: { grid: { display: false }, ticks: { font: { weight: '600', family: 'Outfit' } } },
+              y: { beginAtZero: true, max: 100, ticks: { font: { family: 'Outfit' } } }
+            }
+          }
+        });
+      }
+    }
+
+    // 4. Populate recent exams comparison table
+    const tableBody = document.getElementById('analytic-comparison-table-body');
+    if (tableBody) {
+      const exams = data.recentExams || [];
+      if (exams.length === 0) {
+        tableBody.innerHTML = `
+          <tr>
+            <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 3rem;">
+              <i class="fas fa-folder-open" style="font-size: 2rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+              <p>No examinations published in this tenant cohort yet.</p>
+            </td>
+          </tr>
+        `;
+      } else {
+        tableBody.innerHTML = exams.map(e => {
+          const studentScoreStr = e.studentScore != null ? `<span class="score-badge-pill student-score">${e.studentScore}%</span>` : `<span style="color:var(--text-muted); font-size:0.85rem; font-style:italic;">Not Taken</span>`;
+          const cohortAvgStr = e.avgScore != null ? `<span class="score-badge-pill cohort-avg">${e.avgScore}%</span>` : `<span style="color:var(--text-muted);">0%</span>`;
+          const highestScoreStr = e.maxScore != null ? `<span class="score-badge-pill highest-score">${e.maxScore}%</span>` : `<span style="color:var(--text-muted);">0%</span>`;
+
+          return `
+            <tr>
+              <td>
+                <div class="table-exam-title">${this.esc(e.title)}</div>
+                <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500; margin-top: 2px;">
+                  Scheduled: ${new Date(e.startTime).toLocaleDateString()}
+                </div>
+              </td>
+              <td><span class="badge badge-info" style="font-size: 10px; background: rgba(79, 70, 229, 0.1); color: var(--primary-indigo);">${this.esc(e.subject)}</span></td>
+              <td>${studentScoreStr}</td>
+              <td>${cohortAvgStr}</td>
+              <td>${highestScoreStr}</td>
+              <td><span style="font-weight: 700; color: var(--text-dark);">${e.submissionCount}</span></td>
+            </tr>
+          `;
+        }).join('');
+      }
+    }
+  },
+
   async loadInternalMarks() {
     const container = document.getElementById('student-marks-list');
     if (!container) return;
@@ -1058,7 +1265,8 @@ const StudentDashboard = {
           'live-exams': 'live-exams',
           'exam-results': 'exam-results',
           'internal-marks': 'internal-marks',
-          'certificates': 'certificates'
+          'certificates': 'certificates',
+          'global-analytics': 'global-analytics'
         };
         const viewId = viewIdMap[action] || 'dashboard';
 

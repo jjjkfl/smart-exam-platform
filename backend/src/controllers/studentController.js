@@ -19,30 +19,7 @@ const scoreToGpa = (avgPercent) => {
 exports.getDashboard = async (req, res) => {
   try {
     const student = req.user;
-    if (!student.courseId) {
-      return res.json({
-        success: true,
-        data: {
-          profile: {
-            name: student.name,
-            section: 'No course',
-            gpa: 0,
-            attendance: 0,
-            sessionsLogged: 0,
-            totalSessions: 0,
-            rank: 0,
-            totalPeers: 0,
-            tasks: 0
-          },
-          subjectPerformance: [],
-          tasks: [],
-          recentResults: [],
-          upcomingExams: []
-        }
-      });
-    }
-
-    const courseId = student.courseId;
+    const courseId = student.courseId || null;
     const studentId = student._id;
 
     const [
@@ -102,7 +79,7 @@ exports.getDashboard = async (req, res) => {
       Attendance.countDocuments({ studentId, status: 'present' }),
       Session.countDocuments({ courseId, division: student.division }),
       Result.aggregate([
-        { $match: { courseId: new mongoose.Types.ObjectId(String(courseId)) } },
+        { $match: { courseId: courseId ? new mongoose.Types.ObjectId(String(courseId)) : null } },
         { $group: { _id: '$studentId', avgScore: { $avg: '$score' } } },
         { $sort: { avgScore: -1 } }
       ])
@@ -127,7 +104,7 @@ exports.getDashboard = async (req, res) => {
       data: {
         profile: {
           name: student.name,
-          section: `Course ${String(courseId).slice(-6)} — Div ${student.division || 'N/A'}`,
+          section: courseId ? `Course ${String(courseId).slice(-6)} — Div ${student.division || 'N/A'}` : `General — Div ${student.division || 'N/A'}`,
           gpa,
           attendance: attendanceCount,
           sessionsLogged: attendanceCount, // Using attendance as proxy for sessions logged for now
@@ -533,3 +510,173 @@ exports.getMyMarks = async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 };
+
+exports.getGlobalAnalytics = async (req, res) => {
+  try {
+    const student = req.user;
+    const studentId = student._id;
+    // Global Analytics is dedicated to live/global examinations (courseId: null)
+    // to ensure it works for all students (both newly registered and existing)
+    const courseId = null;
+    const courseMatch = null;
+
+    // 1. Get student results
+    const studentResults = await Result.find({ studentId }).lean();
+    const totalExamsTaken = studentResults.length;
+    const studentScores = studentResults.map(r => r.score || 0);
+    const avgScore = totalExamsTaken > 0 ? studentScores.reduce((a, b) => a + b, 0) / totalExamsTaken : 0;
+    const gpa = scoreToGpa(avgScore);
+
+    // 2. Class Rank & Peers in Course (tenant boundaries)
+    const peerAvgs = await Result.aggregate([
+      { $match: { courseId: courseMatch } },
+      { $group: { _id: '$studentId', avgScore: { $avg: '$score' } } },
+      { $sort: { avgScore: -1 } }
+    ]);
+    const totalPeers = peerAvgs.length;
+    const rankIdx = peerAvgs.findIndex((a) => String(a._id) === String(studentId));
+    const rank = rankIdx >= 0 ? rankIdx + 1 : 0;
+
+    // 3. Tenant Statistics
+    const tenantStatsRow = await Result.aggregate([
+      { $match: { courseId: courseMatch } },
+      {
+        $group: {
+          _id: null,
+          avgScore: { $avg: '$score' },
+          maxScore: { $max: '$score' },
+          totalSubmissions: { $sum: 1 },
+          passed: { $sum: { $cond: [{ $gte: ['$score', 50] }, 1, 0] } }
+        }
+      }
+    ]);
+
+    const tenantStats = {
+      avgScore: tenantStatsRow[0] && tenantStatsRow[0].avgScore != null ? Math.round(tenantStatsRow[0].avgScore * 10) / 10 : 0,
+      highestScore: tenantStatsRow[0] && tenantStatsRow[0].maxScore != null ? tenantStatsRow[0].maxScore : 0,
+      totalSubmissions: tenantStatsRow[0] && tenantStatsRow[0].totalSubmissions != null ? tenantStatsRow[0].totalSubmissions : 0,
+      passRate: tenantStatsRow[0] && tenantStatsRow[0].totalSubmissions ? Math.round((tenantStatsRow[0].passed / tenantStatsRow[0].totalSubmissions) * 1000) / 10 : 0
+    };
+
+    // 4. Subject Performance: Student Avg vs Tenant Avg
+    const studentSubjectStats = await Result.aggregate([
+      { $match: { studentId: new mongoose.Types.ObjectId(String(studentId)) } },
+      {
+        $lookup: {
+          from: 'sessions',
+          localField: 'sessionId',
+          foreignField: '_id',
+          as: 'sess'
+        }
+      },
+      { $unwind: '$sess' },
+      {
+        $group: {
+          _id: { $ifNull: ['$sess.subject', 'General'] },
+          avgScore: { $avg: '$score' },
+          examCount: { $sum: 1 }
+        }
+      }
+    ]);
+
+    const tenantSubjectStats = await Result.aggregate([
+      { $match: { courseId: courseMatch } },
+      {
+        $lookup: {
+          from: 'sessions',
+          localField: 'sessionId',
+          foreignField: '_id',
+          as: 'sess'
+        }
+      },
+      { $unwind: '$sess' },
+      {
+        $group: {
+          _id: { $ifNull: ['$sess.subject', 'General'] },
+          avgScore: { $avg: '$score' }
+        }
+      }
+    ]);
+
+    const subjectPerformance = studentSubjectStats.map(s => {
+      const tStat = tenantSubjectStats.find(t => String(t._id) === String(s._id));
+      return {
+        subject: s._id,
+        studentAvg: Math.round(s.avgScore),
+        tenantAvg: tStat ? Math.round(tStat.avgScore) : 0,
+        examCount: s.examCount
+      };
+    });
+
+    // 5. Recent Tenant Exams with comparative stats
+    const sessions = await Session.find({ courseId, status: 'completed' }).sort({ startTime: -1 }).limit(10).lean();
+    const sessionStats = await Result.aggregate([
+      { $match: { sessionId: { $in: sessions.map(s => s._id) } } },
+      {
+        $group: {
+          _id: '$sessionId',
+          avgScore: { $avg: '$score' },
+          maxScore: { $max: '$score' },
+          totalSubmissions: { $sum: 1 },
+          studentResult: {
+            $push: {
+              $cond: [
+                { $eq: ['$studentId', new mongoose.Types.ObjectId(String(studentId))] },
+                '$score',
+                '$$REMOVE'
+              ]
+            }
+          }
+        }
+      }
+    ]);
+
+    const recentExams = sessions.map(s => {
+      const stats = sessionStats.find(st => String(st._id) === String(s._id));
+      return {
+        _id: s._id,
+        title: s.title,
+        subject: s.subject || 'General',
+        startTime: s.startTime,
+        avgScore: stats ? Math.round(stats.avgScore) : 0,
+        maxScore: stats ? Math.round(stats.maxScore) : 0,
+        studentScore: stats && stats.studentResult.length > 0 ? stats.studentResult[0] : null,
+        submissionCount: stats ? stats.totalSubmissions : 0
+      };
+    });
+
+    // 6. Student's Grade distribution
+    const gradeBreakdown = { 'A+': 0, 'A': 0, 'B': 0, 'C': 0, 'D': 0, 'F': 0 };
+    studentResults.forEach(r => {
+      const score = r.score || 0;
+      let grade = 'F';
+      if (score >= 90) grade = 'A+';
+      else if (score >= 80) grade = 'A';
+      else if (score >= 70) grade = 'B';
+      else if (score >= 60) grade = 'C';
+      else if (score >= 50) grade = 'D';
+      gradeBreakdown[grade]++;
+    });
+
+    res.json({
+      success: true,
+      data: {
+        studentStats: {
+          gpa: Math.round(gpa * 100) / 100,
+          totalExamsTaken,
+          avgScore: Math.round(avgScore * 10) / 10,
+          rank,
+          totalPeers
+        },
+        tenantStats,
+        subjectPerformance,
+        recentExams,
+        gradeBreakdown
+      }
+    });
+  } catch (err) {
+    console.error('[Student Analytics Error]', err);
+    res.status(500).json({ success: false, message: 'Failed to compute student analytics: ' + err.message });
+  }
+};
+

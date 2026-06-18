@@ -105,6 +105,7 @@ router.delete('/portal/admin/courses/:id', rbac(['admin']), (req, res) => adminC
 
 // Student Dashboard Extras
 router.get('/portal/student/dashboard', rbac(['student']), (req, res) => studentCtrl().getDashboard(req, res));
+router.get('/portal/student/global-analytics', rbac(['student']), (req, res) => studentCtrl().getGlobalAnalytics(req, res));
 router.get('/portal/student/courses', rbac(['student']), (req, res) => studentCtrl().getCourses(req, res));
 router.get('/portal/student/exams', rbac(['student']), (req, res) => studentCtrl().getAvailableExams(req, res));
 router.get('/portal/student/exams/:sessionId', rbac(['student']), (req, res) => studentCtrl().getExamQuestions(req, res));

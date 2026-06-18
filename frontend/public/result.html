@@ -378,7 +378,7 @@
       const resultId = params.get('resultId');
 
       if (!resultId) {
-        window.location.href = '/index.html';
+        window.location.href = '/index.html?view=global-analytics';
         return;
       }
 
@@ -391,7 +391,7 @@
           <div style="text-align:center; padding:60px;">
             <p style="font-size:18px; color:#dc2626; font-weight:600;">Failed to load results</p>
             <p class="p-dim" style="margin-top:8px;">${err.message}</p>
-            <a href="/index.html" class="btn btn-outline" style="margin-top:20px;">Go Home</a>
+            <a href="/index.html?view=global-analytics" class="btn btn-outline" style="margin-top:20px;">Go Home</a>
           </div>`;
       }
     });
@@ -411,7 +411,7 @@
           <!-- Premium Navigation Header -->
           <div class="result-fullpage-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 2.5rem;">
             <div class="result-title-container" style="display: flex; align-items: center; gap: 1.5rem;">
-              <a href="/index.html" style="border-radius: 50%; width: 44px; height: 44px; padding: 0; display: flex; align-items: center; justify-content: center; border: 1px solid #e2e8f0; background: white; cursor: pointer; color: #475569; text-decoration: none; transition: all 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.02);"><i class="fas fa-home"></i></a>
+              <a href="/index.html?view=global-analytics" style="border-radius: 50%; width: 44px; height: 44px; padding: 0; display: flex; align-items: center; justify-content: center; border: 1px solid #e2e8f0; background: white; cursor: pointer; color: #475569; text-decoration: none; transition: all 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.02);"><i class="fas fa-home"></i></a>
               <div>
                 <h1 style="font-size: 2.2rem; font-weight: 900; color: #0f172a; line-height: 1.2; letter-spacing: -0.5px;">${data.session ? data.session.title : data.examId || 'Examination Result'}</h1>
                 <p style="color: #64748b; font-weight: 600; font-size: 0.95rem; margin-top: 4px;">Academic Module &nbsp;&bull;&nbsp; Submitted ${new Date(data.createdAt || Date.now()).toLocaleDateString()}</p>
@@ -562,7 +562,7 @@
             </div>
             
             <div style="text-align: center; margin-top: 4rem;">
-              <a href="/index.html" class="btn btn-primary" style="padding: 16px 32px; font-size: 1.1rem; font-weight: 800; border-radius: 100px; box-shadow: 0 10px 25px rgba(79, 70, 229, 0.3);">🏠 Return to Dashboard</a>
+              <a href="/index.html?view=global-analytics" class="btn btn-primary" style="padding: 16px 32px; font-size: 1.1rem; font-weight: 800; border-radius: 100px; box-shadow: 0 10px 25px rgba(79, 70, 229, 0.3);">🏠 Return to Dashboard</a>
             </div>
           </div>
         </div>`;
