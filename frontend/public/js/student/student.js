@@ -683,12 +683,17 @@ const StudentDashboard = {
         <div class="result-fullpage-container animate-slide-up" style="max-width: 1100px; margin: 0 auto; padding: 2rem 0 4rem;">
           
           <!-- Premium Navigation Header -->
-          <div style="display: flex; align-items: center; gap: 1.5rem; margin-bottom: 2.5rem;">
-            <button onclick="StudentDashboard.loadResults()" style="border-radius: 50%; width: 44px; height: 44px; padding: 0; display: flex; align-items: center; justify-content: center; border: 1px solid #e2e8f0; background: white; cursor: pointer; color: #475569; transition: all 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.02);"><i class="fas fa-arrow-left"></i></button>
-            <div>
-              <h1 style="font-size: 2.2rem; font-weight: 900; color: #0f172a; line-height: 1.2; letter-spacing: -0.5px;">${data.sessionId?.title || 'Examination Result'}</h1>
-              <p style="color: #64748b; font-weight: 600; font-size: 0.95rem; margin-top: 4px;">${data.sessionId?.subject || 'Academic Module'} &nbsp;&bull;&nbsp; Submitted ${new Date(data.createdAt || Date.now()).toLocaleDateString()}</p>
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 2.5rem; flex-wrap: wrap; gap: 1rem;">
+            <div style="display: flex; align-items: center; gap: 1.5rem;">
+              <button onclick="StudentDashboard.loadResults()" style="border-radius: 50%; width: 44px; height: 44px; padding: 0; display: flex; align-items: center; justify-content: center; border: 1px solid #e2e8f0; background: white; cursor: pointer; color: #475569; transition: all 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.02);"><i class="fas fa-arrow-left"></i></button>
+              <div>
+                <h1 style="font-size: 2.2rem; font-weight: 900; color: #0f172a; line-height: 1.2; letter-spacing: -0.5px;">${data.sessionId?.title || 'Examination Result'}</h1>
+                <p style="color: #64748b; font-weight: 600; font-size: 0.95rem; margin-top: 4px;">${data.sessionId?.subject || 'Academic Module'} &nbsp;&bull;&nbsp; Submitted ${new Date(data.createdAt || Date.now()).toLocaleDateString()}</p>
+              </div>
             </div>
+            <button id="btn-download-result-pdf" class="btn btn-outline" style="font-size: 13px; font-weight:700; height:42px; border-radius:10px; display: inline-flex; align-items: center; gap: 8px; background: white;" onclick="StudentDashboard.exportResultToPDF('${data._id}')">
+              <i class="fas fa-file-pdf" style="color: #ef4444;"></i> Download PDF
+            </button>
           </div>
 
           <!-- High-Impact Hero Stats Section -->
@@ -838,6 +843,97 @@ const StudentDashboard = {
     }
   },
 
+  exportResultToPDF(resultId) {
+    const container = document.querySelector('.result-fullpage-container');
+    if (!container) return;
+
+    // Temporarily hide action/nav buttons during PDF generation
+    const backBtn = container.querySelector('button');
+    const downloadBtn = document.getElementById('btn-download-result-pdf');
+    
+    if (backBtn) backBtn.style.display = 'none';
+    if (downloadBtn) downloadBtn.style.display = 'none';
+
+    // Disable backdrop-filter and ensure white background
+    const originalBackground = container.style.background;
+    container.style.background = '#ffffff';
+
+    const examTitle = container.querySelector('h1')?.innerText || 'exam_result';
+
+    const opt = {
+      margin:       0.4,
+      filename:     `${examTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_report.pdf`,
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { 
+        scale: 2, 
+        useCORS: true,
+        scrollY: 0
+      },
+      jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+    };
+
+    if (typeof html2pdf !== 'undefined') {
+      html2pdf().set(opt).from(container).save().then(() => {
+        // Restore styles
+        if (backBtn) backBtn.style.display = '';
+        if (downloadBtn) downloadBtn.style.display = '';
+        container.style.background = originalBackground;
+      }).catch(err => {
+        console.error('PDF generation failed:', err);
+        if (backBtn) backBtn.style.display = '';
+        if (downloadBtn) downloadBtn.style.display = '';
+        container.style.background = originalBackground;
+      });
+    } else {
+      if (typeof notifications !== 'undefined') {
+        notifications.error("PDF engine is loading. Please wait a moment and try again.");
+      }
+      if (backBtn) backBtn.style.display = '';
+      if (downloadBtn) downloadBtn.style.display = '';
+      container.style.background = originalBackground;
+    }
+  },
+
+  exportGlobalAnalyticsToPDF() {
+    const container = document.getElementById('view-global-analytics');
+    if (!container) return;
+
+    const downloadBtn = document.getElementById('btn-download-global-pdf');
+    if (downloadBtn) downloadBtn.style.display = 'none';
+
+    // Disable backdrop-filter and ensure white background during PDF export
+    const originalBackground = container.style.background;
+    container.style.background = '#ffffff';
+
+    const opt = {
+      margin:       0.4,
+      filename:     `global_analytics_report.pdf`,
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { 
+        scale: 2, 
+        useCORS: true,
+        scrollY: 0
+      },
+      jsPDF:        { unit: 'in', format: 'letter', orientation: 'landscape' }
+    };
+
+    if (typeof html2pdf !== 'undefined') {
+      html2pdf().set(opt).from(container).save().then(() => {
+        if (downloadBtn) downloadBtn.style.display = '';
+        container.style.background = originalBackground;
+      }).catch(err => {
+        console.error('PDF generation failed:', err);
+        if (downloadBtn) downloadBtn.style.display = '';
+        container.style.background = originalBackground;
+      });
+    } else {
+      if (typeof notifications !== 'undefined') {
+        notifications.error("PDF engine is loading. Please wait a moment and try again.");
+      }
+      if (downloadBtn) downloadBtn.style.display = '';
+      container.style.background = originalBackground;
+    }
+  },
 
   esc(t) { if (!t) return ''; const d = document.createElement('div'); d.textContent = t; return d.innerHTML; },
 

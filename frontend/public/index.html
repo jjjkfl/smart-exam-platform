@@ -1011,12 +1011,13 @@
       pointer-events: auto;
     }
 
-    @media(max-width:768px) {
+    @media(max-width:992px) {
       .student-layout {
         grid-template-columns: 1fr;
       }
 
       .sidebar {
+        display: flex !important;
         position: fixed;
         top: 0;
         left: -280px;
@@ -1086,6 +1087,24 @@
       }
       .correct-ans-footer {
         margin-left: 1rem;
+      }
+    }
+
+    @media(max-width:480px) {
+      .dash-title {
+        font-size: 1.85rem !important;
+      }
+      .dash-subtitle {
+        font-size: 1.05rem !important;
+      }
+      .topbar {
+        padding: 1rem !important;
+      }
+      .welcome-header {
+        padding: 1.25rem !important;
+      }
+      .welcome-header h2 {
+        font-size: 1.35rem !important;
       }
     }
 
@@ -1779,11 +1798,14 @@
 
       <!-- VIEW: GLOBAL ANALYTICS -->
       <div id="view-global-analytics" class="view" style="display: none;">
-        <div class="page-header">
+        <div class="page-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
           <div>
             <h1>Global Analytics</h1>
             <p>Multitenant comparative class performance statistics</p>
           </div>
+          <button id="btn-download-global-pdf" class="btn btn-outline" style="font-size: 13px; font-weight:700; height:42px; border-radius:10px; display: inline-flex; align-items: center; gap: 8px; background: white;" onclick="StudentDashboard.exportGlobalAnalyticsToPDF()">
+            <i class="fas fa-file-pdf" style="color: #ef4444;"></i> Download Report
+          </button>
         </div>
 
         <div style="padding: 2rem 3rem;">
@@ -1918,6 +1940,7 @@
 
   <div id="announcement-toast" style="position:fixed;top:20px;right:20px;z-index:9999"></div>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <script src="/js/shared/api.js?v=27"></script>
   <script src="/js/shared/auth.js?v=27"></script>
   <script src="/js/shared/utils.js?v=27"></script>

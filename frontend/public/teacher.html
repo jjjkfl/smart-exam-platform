@@ -674,7 +674,7 @@
     /* Prevent horizontal overflow on dashboard tables grid */
     .dashboard-grid {
       display: grid;
-      grid-template-columns: 1fr !important;
+      grid-template-columns: 1fr 1fr;
       gap: 2.5rem;
       margin-top: 2.5rem;
       width: 100%;
@@ -703,7 +703,7 @@
       pointer-events: auto;
     }
 
-    @media(max-width:768px) {
+    @media(max-width:992px) {
       .student-layout {
         grid-template-columns: 1fr !important;
       }
@@ -729,7 +729,7 @@
       }
 
       .dash-hero {
-        padding: 2rem;
+        padding: 2.5rem 2rem;
         flex-direction: column;
         align-items: flex-start;
         gap: 1.5rem
@@ -748,13 +748,27 @@
       }
 
       .metrics-grid {
-        grid-template-columns: 1fr !important;
+        grid-template-columns: repeat(2, 1fr) !important;
         gap: 1rem !important;
       }
 
       .dashboard-grid {
         grid-template-columns: 1fr !important;
-        gap: 1.5rem !important;
+        gap: 2.5rem !important;
+      }
+    }
+
+    @media(max-width:480px) {
+      .metrics-grid {
+        grid-template-columns: 1fr !important;
+      }
+
+      .dash-hero h1 {
+        font-size: 1.75rem !important;
+      }
+
+      .topbar {
+        padding: 1rem !important;
       }
     }
 
