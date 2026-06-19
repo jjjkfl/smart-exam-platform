@@ -726,6 +726,26 @@
       margin-top: 32px;
     }
 
+    /* Individual Session Report CSS */
+    .session-header-flex {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 40px;
+    }
+    .session-actions-flex {
+      display: flex;
+      gap: 8px;
+    }
+    .session-report-grid {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      gap: 32px;
+      margin-bottom: 40px;
+      align-items: start;
+    }
+
+
     @media(max-width:992px) {
       .student-layout {
         grid-template-columns: 1fr !important;
@@ -795,6 +815,21 @@
         grid-template-columns: 1fr !important;
         gap: 24px !important;
       }
+      
+      .session-header-flex {
+        flex-direction: column;
+        gap: 16px;
+      }
+      
+      .session-actions-flex {
+        flex-wrap: wrap;
+        width: 100%;
+      }
+      
+      .session-report-grid {
+        grid-template-columns: 1fr !important;
+        gap: 24px !important;
+      }
 
       .view-header-flex {
         flex-direction: column !important;
@@ -832,6 +867,22 @@
       .topbar {
         padding: 1rem !important;
       }
+
+      /* Adjust padding inside the individual report cards on very small screens */
+      #view-analytics-all .glass-card[id^="report-card-"] {
+        padding: 20px !important;
+      }
+    }
+    
+    /* Fix horizontal overflow caused by tables and charts expanding grid items */
+    #view-analytics-all .glass-card[id^="report-card-"] {
+      overflow: hidden; /* Prevents card from expanding beyond viewport */
+    }
+    .session-report-grid > div {
+      min-width: 0; /* Prevents grid columns from refusing to shrink */
+    }
+    .chart-container {
+      min-width: 0;
     }
 
     /* Pagination Styles */

@@ -576,7 +576,7 @@ const TeacherDashboard = {
 
         return `
           <div class="glass-card" id="report-card-${session._id}" style="margin-bottom: 48px; padding: 40px;">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px;">
+            <div class="session-header-flex" style="margin-bottom: 40px;">
               <div>
                 <h3 class="h3" style="font-size: 1.5rem; margin-bottom: 8px; color: #1e293b;">${normalized.sessionTitle}</h3>
                 <div style="display: flex; gap: 16px; align-items: center;">
@@ -586,7 +586,7 @@ const TeacherDashboard = {
                   </p>
                 </div>
               </div>
-              <div style="display:flex; gap:8px;">
+              <div class="session-actions-flex">
                 <button class="btn btn-outline" style="font-size: 12px; padding: 8px 16px; border-color: #10b981; color: #10b981;" onclick="TeacherDashboard.exportToExcel('${session._id}')">
                   <i class="fas fa-file-excel"></i> Export Excel
                 </button>
@@ -596,7 +596,7 @@ const TeacherDashboard = {
               </div>
             </div>
             
-            <div style="display: grid; grid-template-columns: 240px 1fr; gap: 32px; margin-bottom: 40px; align-items: start;">
+            <div class="session-report-grid">
               <!-- Left: Session Metrics (Vertical) -->
               <div style="display: flex; flex-direction: column; gap: 12px;">
                 <div class="glass-card metric-card" style="padding: 16px; border: 1px solid rgba(16,185,129,0.1); background: rgba(16,185,129,0.02); flex: 1;">
