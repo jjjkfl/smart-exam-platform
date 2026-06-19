@@ -165,7 +165,7 @@ exports.getAvailableExams = async (req, res) => {
       });
     }
 
-    const exams = await Session.find(query).lean();
+    const exams = await Session.find(query).sort({ startTime: -1 }).lean();
     
     const safeExams = exams.map(exam => {
       if (exam.questions) {
@@ -350,7 +350,7 @@ exports.submitExam = async (req, res) => {
 
 exports.getMyResults = async (req, res) => {
   try {
-    const results = await Result.find({ studentId: req.user._id }).populate('sessionId', 'title');
+    const results = await Result.find({ studentId: req.user._id }).populate('sessionId', 'title').sort({ createdAt: -1 });
     res.json({ success: true, data: results });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -419,7 +419,7 @@ exports.getResultDetail = async (req, res) => {
     let totalExamsTaken = 1;
 
     try {
-      const peerResults = await Result.find({ sessionId: result.sessionId }).select('score timeTaken studentId').lean();
+      const peerResults = await Result.find({ sessionId: result.sessionId._id }).select('score timeTaken studentId').lean();
       if (peerResults && peerResults.length > 0) {
         totalExamsTaken = peerResults.length;
         const scores = peerResults.map(r => r.score || 0);

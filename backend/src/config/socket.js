@@ -218,6 +218,7 @@ const store = {
   }
 };
 
+let ioInstance = null;
 const initSocket = (httpServer) => {
   const io = new Server(httpServer, {
     cors: {
@@ -442,10 +443,13 @@ const initSocket = (httpServer) => {
     });
   });
 
+  ioInstance = io;
   return io;
 };
 
 module.exports = initSocket;
+module.exports.getIO = () => ioInstance;
+module.exports.store = store;
 module.exports.examRooms = memoryRooms;
 module.exports.userSocket = memoryUserSockets;
 module.exports.store = store;

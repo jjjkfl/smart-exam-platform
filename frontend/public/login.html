@@ -478,7 +478,7 @@
               </div>
             </div>
             <div class="auth-options">
-              <a href="javascript:void(0)" class="forgot-link">Forgot Password?</a>
+              <a href="javascript:void(0)" class="forgot-link" onclick="openForgotModal()">Forgot Password?</a>
             </div>
             <button type="submit" class="btn-auth" id="login-btn">Login</button>
           </form>
@@ -583,6 +583,56 @@
     </div>
   </div>
 
+  <!-- Forgot Password Modal -->
+  <div id="forgot-pwd-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; justify-content:center; align-items:center;">
+    <div style="background:white; padding:2rem; border-radius:12px; width:90%; max-width:400px; box-shadow:0 10px 25px rgba(0,0,0,0.2);">
+      <h2 class="auth-title" style="font-size:1.5rem; margin-bottom:0.5rem;" id="fp-title">Reset Password</h2>
+      <p class="auth-subtitle" id="fp-subtitle" style="margin-bottom:1.5rem;">Enter your email to receive a code</p>
+      
+      <div id="fp-error" class="error-msg" style="display:none;"></div>
+      
+      <!-- Step 1: Email -->
+      <form id="fp-step1-form" onsubmit="handleForgotStep1(event)">
+        <div class="auth-group">
+          <label>Email Address</label>
+          <input type="email" id="fp-email" class="auth-input" required>
+        </div>
+        <div style="display:flex; gap:10px; margin-top:1.5rem;">
+          <button type="button" class="btn-auth" style="background:#e2e8f0; color:var(--text-dark); box-shadow:none;" onclick="closeForgotModal()">Cancel</button>
+          <button type="submit" class="btn-auth" id="fp-btn-1" style="margin-bottom:0;">Send Code</button>
+        </div>
+      </form>
+
+      <!-- Step 2: Code -->
+      <form id="fp-step2-form" style="display:none;" onsubmit="handleForgotStep2(event)">
+        <div class="auth-group">
+          <label>6-Digit Code</label>
+          <input type="text" id="fp-code" class="auth-input" required maxlength="6" pattern="\d{6}">
+        </div>
+        <div style="display:flex; gap:10px; margin-top:1.5rem;">
+          <button type="button" class="btn-auth" style="background:#e2e8f0; color:var(--text-dark); box-shadow:none;" onclick="closeForgotModal()">Cancel</button>
+          <button type="submit" class="btn-auth" id="fp-btn-2" style="margin-bottom:0;">Verify Code</button>
+        </div>
+      </form>
+
+      <!-- Step 3: New Password -->
+      <form id="fp-step3-form" style="display:none;" onsubmit="handleForgotStep3(event)">
+        <div class="auth-group password-group">
+          <label>New Password</label>
+          <div class="input-wrapper">
+            <input type="password" id="fp-new-password" class="auth-input" required>
+            <button type="button" class="eye-btn" onclick="togglePwd('fp-new-password', this)">
+              <i class="fas fa-eye"></i>
+            </button>
+          </div>
+        </div>
+        <div style="display:flex; gap:10px; margin-top:1.5rem;">
+          <button type="button" class="btn-auth" style="background:#e2e8f0; color:var(--text-dark); box-shadow:none;" onclick="closeForgotModal()">Cancel</button>
+          <button type="submit" class="btn-auth" id="fp-btn-3" style="margin-bottom:0;">Reset Password</button>
+        </div>
+      </form>
+    </div>
+  </div>
   <script src="/js/shared/api.js?v=22"></script>
   <script src="/js/shared/auth.js?v=22"></script>
 
@@ -775,6 +825,108 @@
         switchTab('register');
       }
     });
+
+    // ── Forgot Password Flow ──
+    let resetEmail = '';
+    let resetCode = '';
+
+    function openForgotModal() {
+      document.getElementById('forgot-pwd-modal').style.display = 'flex';
+      showFpStep(1);
+    }
+
+    function closeForgotModal() {
+      document.getElementById('forgot-pwd-modal').style.display = 'none';
+      resetEmail = '';
+      resetCode = '';
+      document.getElementById('fp-email').value = '';
+      document.getElementById('fp-code').value = '';
+      document.getElementById('fp-new-password').value = '';
+    }
+
+    function showFpStep(step) {
+      document.getElementById('fp-error').style.display = 'none';
+      document.getElementById('fp-step1-form').style.display = step === 1 ? 'block' : 'none';
+      document.getElementById('fp-step2-form').style.display = step === 2 ? 'block' : 'none';
+      document.getElementById('fp-step3-form').style.display = step === 3 ? 'block' : 'none';
+      
+      const title = document.getElementById('fp-title');
+      const sub = document.getElementById('fp-subtitle');
+      if (step === 1) { title.textContent = 'Reset Password'; sub.textContent = 'Enter your email to receive a code'; }
+      if (step === 2) { title.textContent = 'Verify Code'; sub.textContent = 'Enter the 6-digit code sent to your email'; }
+      if (step === 3) { title.textContent = 'New Password'; sub.textContent = 'Create a new strong password'; }
+    }
+
+    async function handleForgotStep1(e) {
+      e.preventDefault();
+      const btn = document.getElementById('fp-btn-1');
+      const err = document.getElementById('fp-error');
+      const email = document.getElementById('fp-email').value;
+      
+      err.style.display = 'none';
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+
+      try {
+        await api.post('/auth/forgot-password', { email });
+        resetEmail = email;
+        showFpStep(2);
+        showToast('Reset code sent to your email', 'success');
+      } catch (error) {
+        err.textContent = error.message || 'Failed to send reset code.';
+        err.style.display = 'block';
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = 'Send Code';
+      }
+    }
+
+    async function handleForgotStep2(e) {
+      e.preventDefault();
+      const btn = document.getElementById('fp-btn-2');
+      const err = document.getElementById('fp-error');
+      const code = document.getElementById('fp-code').value;
+      
+      err.style.display = 'none';
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verifying...';
+
+      try {
+        await api.post('/auth/verify-reset-code', { email: resetEmail, code });
+        resetCode = code;
+        showFpStep(3);
+        showToast('Code verified', 'success');
+      } catch (error) {
+        err.textContent = error.message || 'Invalid code.';
+        err.style.display = 'block';
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = 'Verify Code';
+      }
+    }
+
+    async function handleForgotStep3(e) {
+      e.preventDefault();
+      const btn = document.getElementById('fp-btn-3');
+      const err = document.getElementById('fp-error');
+      const newPassword = document.getElementById('fp-new-password').value;
+      
+      err.style.display = 'none';
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Resetting...';
+
+      try {
+        await api.post('/auth/reset-password', { email: resetEmail, code: resetCode, newPassword });
+        showToast('Password reset successfully. You can now log in.', 'success');
+        closeForgotModal();
+      } catch (error) {
+        err.textContent = error.message || 'Failed to reset password.';
+        err.style.display = 'block';
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = 'Reset Password';
+      }
+    }
   </script>
 </body>
 

@@ -371,7 +371,7 @@ exports.getGeneralAnalytics = async (req, res) => {
     const sessionResults = await Result.find({ 
       sessionId: { $in: sessionIds }
     })
-    .select('sessionId score studentId createdAt') // LEAN Projection
+    .select('sessionId score studentId correctCount totalQuestions timeTaken violationCount createdAt') // LEAN Projection
     .populate('studentId', 'name email')
     .lean();
 

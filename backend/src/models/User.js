@@ -14,7 +14,9 @@ const userSchema = new mongoose.Schema({
   courseIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Course' }], // For teachers
   classTag: { type: String, default: '' }, // e.g. "10th Grade"
   division: { type: String },
-  board: { type: String, required: false }
+  board: { type: String, required: false },
+  resetPasswordCode: { type: String },
+  resetPasswordExpires: { type: Date }
 }, { timestamps: true });
 
 userSchema.pre('save', async function(next) {

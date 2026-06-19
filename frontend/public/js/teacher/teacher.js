@@ -586,9 +586,14 @@ const TeacherDashboard = {
                   </p>
                 </div>
               </div>
-              <button class="btn btn-outline" style="font-size: 12px; padding: 8px 16px;" onclick="TeacherDashboard.exportToPDF('${session._id}')">
-                <i class="fas fa-file-pdf"></i> Export PDF
-              </button>
+              <div style="display:flex; gap:8px;">
+                <button class="btn btn-outline" style="font-size: 12px; padding: 8px 16px; border-color: #10b981; color: #10b981;" onclick="TeacherDashboard.exportToExcel('${session._id}')">
+                  <i class="fas fa-file-excel"></i> Export Excel
+                </button>
+                <button class="btn btn-outline" style="font-size: 12px; padding: 8px 16px;" onclick="TeacherDashboard.exportToPDF('${session._id}')">
+                  <i class="fas fa-file-pdf"></i> Export PDF
+                </button>
+              </div>
             </div>
             
             <div style="display: grid; grid-template-columns: 240px 1fr; gap: 32px; margin-bottom: 40px; align-items: start;">
@@ -657,7 +662,7 @@ const TeacherDashboard = {
                         <td>
                           ${r.violations > 0
                             ? `<span class="status-pill status-warning" style="cursor:help" 
-                                    title="${(r.violationHistory || []).map(v => `${v.type || v.violationType || 'Violation'}: ${v.detail || ''}`).join('\n')}">
+                                    title="${(r.violationHistory || []).map(v => `${v.violationType || v.type || 'Violation'}: ${v.detail || ''}`).join('\n')}">
                                  ⚠️ ${r.violations}
                                </span>`
                             : '<span class="p-dim">0</span>'}
@@ -791,6 +796,38 @@ const TeacherDashboard = {
       card.style.backdropFilter = originalBackdrop;
       card.style.webkitBackdropFilter = originalWebkitBackdrop;
     }
+  },
+
+  exportToExcel(sessionId) {
+    const session = this._globalAnalyticsSessions.find(s => String(s._id) === String(sessionId));
+    if (!session) return;
+    
+    const normalized = Analytics.normalizePayload({ results: session.results, sessionTitle: session.title });
+    const results = normalized.results;
+    
+    const headers = ['Student Name', 'Student Email', 'Score (%)', 'Correct', 'Time Taken (s)', 'Violations', 'Grade', 'Status'];
+    const rows = results.map(r => [
+      `"${(r.studentName || '').replace(/"/g, '""')}"`,
+      `"${(r.studentEmail || '').replace(/"/g, '""')}"`,
+      r.score,
+      `="${r.correctCount}/${r.totalQuestions}"`,
+      r.timeTaken,
+      r.violations,
+      `"${r.grade || ''}"`,
+      `"${r.isPassed ? 'PASSED' : 'FAILED'}"`
+    ]);
+    
+    const csvContent = headers.join(',') + '\n' + rows.map(e => e.join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `${normalized.sessionTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_report.csv`);
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   },
 
   goToMonitor(sessionId) {
