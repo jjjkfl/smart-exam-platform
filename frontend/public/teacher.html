@@ -728,9 +728,6 @@
       align-items: start;
       margin-top: 32px;
     }
-    .global-analytics-grid > * {
-      min-width: 0;
-    }
 
     @media(max-width:992px) {
       .student-layout {
@@ -807,9 +804,6 @@
         grid-template-columns: 1fr !important;
         gap: 24px !important;
       }
-      .global-analytics-grid > * {
-        min-width: 0 !important;
-      }
 
       .view-header-flex {
         flex-direction: column !important;
@@ -847,6 +841,22 @@
       .topbar {
         padding: 1rem !important;
       }
+
+      /* Adjust padding inside the individual report cards on very small screens */
+      #view-analytics-all .glass-card[id^="report-card-"] {
+        padding: 20px !important;
+      }
+    }
+    
+    /* Fix horizontal overflow caused by tables and charts expanding grid items */
+    #view-analytics-all .glass-card[id^="report-card-"] {
+      overflow: hidden; /* Prevents card from expanding beyond viewport */
+    }
+    .session-report-grid > div {
+      min-width: 0; /* Prevents grid columns from refusing to shrink */
+    }
+    .chart-container {
+      min-width: 0;
     }
 
     /* Pagination Styles */
