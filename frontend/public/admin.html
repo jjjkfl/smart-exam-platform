@@ -4,159 +4,1420 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Command Center | MCQ Pro</title>
+  <title>Admin Dashboard | MCQ Pro</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="/css/common.css">
-  <link rel="stylesheet" href="/css/teacher.css">
+  <link rel="stylesheet" href="/css/student.css">
+  <link rel="stylesheet" href="/css/admin.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0
+    }
+
+    :root {
+      --primary-indigo: #4f46e5;
+      --secondary-blue: #2563eb;
+      --accent-cyan: #06b6d4;
+      --bg-light: #f8fafc;
+      --text-dark: #0f172a;
+      --text-muted: #64748b;
+      --border-color: #e2e8f0;
+      --glass-bg: rgba(255, 255, 255, 0.7);
+      --glass-border: rgba(255, 255, 255, 0.4);
+      --success: #10b981;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --bg-card: #ffffff;
+      --border: #e2e8f0;
+      --primary: #4f46e5;
+      --text-main: #0f172a;
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+      --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+      --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    }
+
+    html {
+      max-width: 100%;
+    }
+
+    body {
+      font-family: 'Inter', 'Poppins', sans-serif;
+      background: #f1f5f9; /* Slightly darker base for better contrast */
+      color: var(--text-dark);
+      -webkit-font-smoothing: antialiased;
+      line-height: 1.6;
+      max-width: 100%;
+    }
+
+    /* Professional UI Utilities */
+    .glass-card {
+      background: white;
+      border-radius: 16px;
+      border: 1px solid rgba(226, 232, 240, 0.8);
+      box-shadow: var(--shadow-sm);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      overflow: hidden;
+    }
+
+    .glass-card:hover {
+      box-shadow: var(--shadow-lg);
+      transform: translateY(-2px);
+    }
+
+    .metric-card {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 24px !important;
+      position: relative;
+    }
+
+    .metric-card::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      width: 60px;
+      height: 60px;
+      background: currentColor;
+      opacity: 0.03;
+      border-radius: 50% 0 16px 0;
+    }
+
+    .metric-value {
+      font-size: 2.25rem !important;
+      font-weight: 800 !important;
+      letter-spacing: -0.025em;
+      margin: 8px 0;
+      color: #1e293b;
+    }
+
+    .metric-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+    }
+
+    .table-container {
+      background: white;
+      border-radius: 16px;
+      border: 1px solid var(--border-color);
+      box-shadow: var(--shadow-md);
+      overflow: hidden;
+    }
+
+    table thead th {
+      background: #f8fafc;
+      padding: 16px 20px !important;
+      font-size: 11px !important;
+      letter-spacing: 0.05em !important;
+      color: #475569 !important;
+      border-bottom: 2px solid #f1f5f9;
+    }
+
+    table tbody tr:hover {
+      background: #f8fafc;
+    }
+
+    table td {
+      padding: 16px 20px !important;
+      border-bottom: 1px solid #f1f5f9;
+      font-size: 14px;
+    }
+
+    /* Layout */
+    .student-layout {
+      display: grid;
+      grid-template-columns: 260px 1fr !important;
+      min-height: 100vh;
+      width: 100%;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+      color: #fff;
+      padding: 1.5rem 1rem;
+      display: flex;
+      flex-direction: column;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+      border-right: 1px solid rgba(255, 255, 255, 0.05);
+      z-index: 40;
+    }
+
+    .sidebar-logo {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: #fff;
+      padding: .5rem;
+      margin-bottom: 2rem;
+      text-decoration: none;
+      letter-spacing: -0.5px
+    }
+
+    .sidebar-logo i {
+      color: #818cf8;
+      font-size: 1.6rem;
+      filter: drop-shadow(0 2px 8px rgba(129, 140, 248, 0.4))
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: .85rem;
+      padding: .85rem 1.1rem;
+      border-radius: 12px;
+      color: rgba(255, 255, 255, .7);
+      font-size: .92rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all .25s cubic-bezier(0.4, 0, 0.2, 1);
+      margin-bottom: .35rem
+    }
+
+    .nav-item:hover {
+      background: rgba(255, 255, 255, .08);
+      color: #fff;
+      transform: translateX(3px)
+    }
+
+    .nav-item.active {
+      background: linear-gradient(135deg, var(--primary-indigo), var(--secondary-blue));
+      color: #fff;
+      box-shadow: 0 4px 20px rgba(79, 70, 229, .4);
+      font-weight: 600
+    }
+
+    .nav-item i {
+      width: 20px;
+      text-align: center;
+      font-size: 1.1rem
+    }
+
+    .sidebar-footer {
+      margin-top: auto;
+      border-top: 1px solid rgba(255, 255, 255, .08);
+      padding-top: 1.2rem
+    }
+
+    .user-mini {
+      display: flex;
+      align-items: center;
+      gap: .85rem;
+      padding: .85rem;
+      background: rgba(255, 255, 255, .05);
+      border-radius: 12px;
+      margin-bottom: .85rem;
+      border: 1px solid rgba(255, 255, 255, 0.05)
+    }
+
+    .user-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary-indigo), var(--secondary-blue));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: .95rem;
+      color: #fff;
+      flex-shrink: 0;
+      box-shadow: 0 2px 10px rgba(79, 70, 229, 0.3)
+    }
+
+    .user-mini .uname {
+      font-size: .88rem;
+      font-weight: 600;
+      color: #fff;
+      line-height: 1.2
+    }
+
+    .user-mini .urole {
+      font-size: .75rem;
+      color: rgba(255, 255, 255, .5);
+      margin-top: 2px
+    }
+
+    .board-badge {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      padding: .5rem 1rem;
+      background: rgba(16, 185, 129, .15);
+      border-radius: 8px;
+      color: #4ade80;
+      font-size: .8rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-bottom: .5rem
+    }
+
+    /* Main */
+    .main-content {
+      overflow-y: auto;
+      min-height: 100vh;
+      background-color: var(--bg-light);
+      width: 100%;
+      min-width: 0;
+      padding: 0 !important;
+    }
+
+    .view {
+      display: none
+    }
+
+    .view.active {
+      display: block;
+      animation: fadeInView 0.4s cubic-bezier(0.16, 1, 0.3, 1)
+    }
+
+    @keyframes fadeInView {
+      from {
+        opacity: 0;
+        transform: translateY(8px)
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0)
+      }
+    }
+
+    /* Apply perfect padding for professional view consistency */
+    .view:not(#view-dashboard) {
+      padding: 2.5rem 3rem;
+      max-width: 1600px;
+      margin: 0 auto;
+    }
+
+    /* Topbar */
+    .topbar {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-color);
+      padding: 1rem 3rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02)
+    }
+
+    .topbar-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text-dark);
+      letter-spacing: -0.2px;
+    }
+
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 1.2rem
+    }
+
+    .integrity-pill {
+      display: flex;
+      align-items: center;
+      gap: .6rem;
+      padding: .45rem 1.1rem;
+      background: rgba(16, 185, 129, .08);
+      color: var(--success);
+      border-radius: 30px;
+      font-size: .82rem;
+      font-weight: 600;
+      border: 1px solid rgba(16, 185, 129, 0.2)
+    }
+
+    .integrity-pill::before {
+      content: '';
+      width: 8px;
+      height: 8px;
+      background: var(--success);
+      border-radius: 50%;
+      animation: pulse-dot 2s infinite;
+      box-shadow: 0 0 8px var(--success)
+    }
+
+    @keyframes pulse-dot {
+
+      0%,
+      100% {
+        opacity: 1;
+        transform: scale(1)
+      }
+
+      50% {
+        opacity: .4;
+        transform: scale(0.85)
+      }
+    }
+
+    /* Secondary View Headings & Typography */
+    .h2 {
+      font-size: 1.85rem;
+      font-weight: 800;
+      color: var(--primary-indigo) !important;
+      letter-spacing: -0.5px;
+      line-height: 1.2;
+      margin-bottom: 0.5rem;
+      border-left: 4px solid var(--primary-indigo);
+      padding-left: 0.75rem;
+    }
+
+    .h3 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--text-dark);
+      letter-spacing: -0.3px;
+      line-height: 1.3;
+      margin-bottom: 0.4rem;
+    }
+
+    .p-dim {
+      font-size: .95rem;
+      color: var(--text-muted);
+      font-weight: 500;
+      line-height: 1.5;
+    }
+
+    /* Standardized Metric Value & Cards for visual excellence */
+    .metric-value {
+      font-size: 2rem !important;
+      font-weight: 800 !important;
+      color: var(--primary-indigo);
+      line-height: 1.2;
+      margin-top: 0.25rem;
+      letter-spacing: -0.5px;
+    }
+
+    .glass-card {
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 1.75rem;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+      transition: all .25s ease;
+    }
+
+    .glass-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(79, 70, 229, 0.08);
+      border-color: rgba(79, 70, 229, 0.2);
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: .5rem;
+      height: 42px !important;
+      padding: 0 1.5rem !important;
+      border-radius: 10px !important;
+      font-family: inherit;
+      font-weight: 600;
+      font-size: .9rem;
+      cursor: pointer;
+      transition: all .25s cubic-bezier(0.4, 0, 0.2, 1);
+      text-decoration: none;
+      border: none;
+      outline: none;
+      box-sizing: border-box !important;
+      margin: 0 !important;
+      vertical-align: middle;
+    }
+
+    .btn-sm {
+      height: 34px !important;
+      padding: 0 0.85rem !important;
+      font-size: .8rem !important;
+      border-radius: 8px !important;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--secondary-blue), var(--primary-indigo));
+      color: #fff;
+      box-shadow: 0 4px 15px rgba(79, 70, 229, .25)
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 22px rgba(79, 70, 229, .35)
+    }
+
+    .btn-secondary {
+      background: rgba(37, 99, 235, .08);
+      color: var(--secondary-blue);
+      border: 1px solid rgba(37, 99, 235, 0.1)
+    }
+
+    .btn-secondary:hover {
+      background: rgba(37, 99, 235, .15);
+      transform: translateY(-1px)
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 2px solid var(--border-color);
+      color: var(--text-dark)
+    }
+
+    .btn-outline:hover {
+      border-color: var(--primary-indigo);
+      color: var(--primary-indigo);
+      background: rgba(79, 70, 229, 0.02);
+      transform: translateY(-1px)
+    }
+
+    /* Flex alignment helper classes for views */
+    .flex-between {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .flex-center {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    /* Enhanced Table Container & Wrapper support */
+    .table-wrapper,
+    .table-container {
+      background: #fff;
+      border-radius: 16px;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+      overflow-x: auto;
+      margin-top: 1rem;
+      width: 100%;
+      max-width: 100%;
+    }
+
+    .table-container table,
+    .table-wrapper table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      min-width: 600px;
+    }
+
+    .table-container th,
+    .table-wrapper th {
+      padding: 1.1rem 1.5rem;
+      background: #f8fafc;
+      font-size: .78rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      border-bottom: 1px solid var(--border-color);
+      white-space: nowrap;
+    }
+
+    .table-container td,
+    .table-wrapper td {
+      padding: 1.1rem 1.5rem;
+      font-size: .92rem;
+      color: var(--text-dark);
+      border-bottom: 1px solid #f1f5f9;
+      vertical-align: middle;
+    }
+
+    .table-container tbody tr:last-child td,
+    .table-wrapper tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .table-container tbody tr,
+    .table-wrapper tbody tr {
+      transition: background-color 0.2s ease;
+    }
+
+    .table-container tbody tr:hover,
+    .table-wrapper tbody tr:hover {
+      background-color: #fcfdfd;
+    }
+
+    /* Inputs and Controls */
+    .form-control,
+    .input-control {
+      height: 42px !important;
+      padding: 0 1rem !important;
+      font-family: inherit;
+      font-size: .9rem !important;
+      font-weight: 500 !important;
+      color: var(--text-dark) !important;
+      background: #ffffff !important;
+      border: 1px solid var(--border-color) !important;
+      border-radius: 10px !important;
+      outline: none;
+      transition: all .2s ease;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02) !important;
+      box-sizing: border-box !important;
+      margin: 0 !important;
+      vertical-align: middle;
+    }
+
+    .form-control:focus,
+    .input-control:focus {
+      border-color: var(--primary-indigo) !important;
+      box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.12) !important;
+    }
+
+    /* Card actions */
+    .card-action {
+      font-size: .85rem;
+      font-weight: 600;
+      color: var(--primary-indigo);
+      cursor: pointer;
+      transition: all .2s ease;
+      padding: 4px 8px;
+      border-radius: 6px;
+    }
+
+    .card-action:hover {
+      background: rgba(79, 70, 229, 0.08);
+      text-decoration: none;
+    }
+
+    /* Hero Override */
+    .dash-hero {
+      padding: 3rem 3.5rem;
+      background: #fff;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+    }
+
+    .dash-hero h1 {
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: var(--text-dark) !important;
+      margin-bottom: .4rem;
+      letter-spacing: -0.8px;
+      line-height: 1.2
+    }
+
+    .dash-hero h1 span {
+      background: linear-gradient(135deg, var(--primary-indigo), var(--accent-cyan));
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .dash-hero p {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+      font-weight: 400
+    }
+
+    .dash-actions {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    /* Adjust specific embedded view styling */
+    #view-dashboard>div[style*="padding: 2.5rem"] {
+      padding: 3rem 3.5rem !important;
+      max-width: 1600px;
+      margin: 0 auto;
+    }
+
+    /* Dashboard section headers */
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.25rem;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .section-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text-dark);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      letter-spacing: -0.3px;
+    }
+
+    /* Prevent horizontal overflow on dashboard tables grid */
+    .dashboard-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 2.5rem;
+      margin-top: 2.5rem;
+      width: 100%;
+    }
+
+    .mobile-menu-toggle {
+      display: none;
+    }
+    
+    .sidebar-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.4);
+      z-index: 999;
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      pointer-events: none;
+    }
+    
+    .sidebar-backdrop.active {
+      display: block;
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .analytics-header-wrapper {
+      background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%);
+      padding: 3rem 3.5rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .analytics-content-wrapper {
+      padding: 3rem 3.5rem;
+    }
+    .global-analytics-grid {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 32px;
+      align-items: start;
+      margin-top: 32px;
+    }
+
+    /* Individual Session Report CSS */
+    .session-header-flex {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 40px;
+    }
+    .session-actions-flex {
+      display: flex;
+      gap: 8px;
+    }
+    .session-report-grid {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      gap: 32px;
+      margin-bottom: 40px;
+      align-items: start;
+    }
+
+
+    @media(max-width:992px) {
+      .student-layout {
+        grid-template-columns: 1fr !important;
+      }
+
+      .sidebar {
+        position: fixed !important;
+        top: 0;
+        left: -280px !important;
+        width: 260px !important;
+        height: 100vh !important;
+        z-index: 1000 !important;
+        display: flex !important;
+        transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        box-shadow: 5px 0 25px rgba(0,0,0,0.15) !important;
+      }
+
+      .sidebar.active {
+        left: 0 !important;
+      }
+
+      .mobile-menu-toggle {
+        display: inline-flex !important;
+      }
+
+      .dash-hero {
+        padding: 2.5rem 2rem;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1.5rem
+      }
+
+      .view:not(#view-dashboard) {
+        padding: 1.5rem;
+      }
+
+      #view-dashboard>div[style*="padding: 2.5rem"] {
+        padding: 1.5rem !important;
+      }
+
+      .topbar {
+        padding: 1rem 1.25rem;
+      }
+
+      .integrity-pill {
+        padding: .25rem .75rem !important;
+        font-size: 0.78rem !important;
+      }
+
+      .metrics-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 1rem !important;
+      }
+
+      .dashboard-grid {
+        grid-template-columns: 1fr !important;
+        gap: 2.5rem !important;
+      }
+
+      .analytics-header-wrapper {
+        padding: 2rem 1.5rem !important;
+      }
+      .analytics-content-wrapper {
+        padding: 1.5rem !important;
+      }
+      .global-analytics-grid {
+        grid-template-columns: 1fr !important;
+        gap: 24px !important;
+      }
+      
+      .session-header-flex {
+        flex-direction: column;
+        gap: 16px;
+      }
+      
+      .session-actions-flex {
+        flex-wrap: wrap;
+        width: 100%;
+      }
+      
+      .session-report-grid {
+        grid-template-columns: 1fr !important;
+        gap: 24px !important;
+      }
+
+      .view-header-flex {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 1.25rem !important;
+      }
+      .view-header-flex > div[style*="display:flex"],
+      .view-header-flex > .flex-center {
+        width: 100% !important;
+        flex-wrap: wrap !important;
+        gap: 8px !important;
+      }
+      .view-header-flex > div[style*="display:flex"] > select,
+      .view-header-flex > div[style*="display:flex"] > button,
+      .view-header-flex > .flex-center > button {
+        flex: 1 1 calc(50% - 8px) !important;
+        min-width: 120px !important;
+        margin: 0 !important;
+        justify-content: center !important;
+      }
+      .view-header-flex > button {
+        width: 100% !important;
+      }
+    }
+
+    @media(max-width:480px) {
+      .metrics-grid {
+        grid-template-columns: 1fr !important;
+      }
+
+      .dash-hero h1 {
+        font-size: 1.75rem !important;
+      }
+
+      .topbar {
+        padding: 1rem !important;
+      }
+
+      /* Adjust padding inside the individual report cards on very small screens */
+      #view-analytics-all .glass-card[id^="report-card-"] {
+        padding: 20px !important;
+      }
+    }
+    
+    /* Fix horizontal overflow caused by tables and charts expanding grid items */
+    #view-analytics-all .glass-card[id^="report-card-"] {
+      overflow: hidden; /* Prevents card from expanding beyond viewport */
+    }
+    .session-report-grid > div {
+      min-width: 0; /* Prevents grid columns from refusing to shrink */
+    }
+    .chart-container {
+      min-width: 0;
+    }
+
+    /* Pagination Styles */
+    .pagination-wrapper {
+      display: flex;
+      justify-content: center;
+      margin-top: 40px;
+    }
+    .pagination-pill {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .pagination-pill .page-btn {
+      border: none;
+      outline: none;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .pagination-pill .page-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .pagination-pill .text-btn {
+      background: var(--primary-indigo);
+      color: #fff;
+      padding: 8px 20px;
+      border-radius: 30px;
+    }
+    .pagination-pill .text-btn:hover:not(:disabled) {
+      background: var(--secondary-blue);
+    }
+    .pagination-pill .num-btn {
+      background: #fff;
+      color: #64748b;
+      border: 1px solid #cbd5e1;
+      border-radius: 50%;
+      min-width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+    }
+    .pagination-pill .num-btn.active {
+      background: var(--primary-indigo);
+      color: #fff;
+      border-color: var(--primary-indigo);
+      font-weight: 600;
+    }
+    .pagination-pill .num-btn:hover:not(.active):not(.ellipsis) {
+      background: #f8fafc;
+      border-color: #94a3b8;
+    }
+    .pagination-pill .ellipsis {
+      cursor: default;
+    }
+
+    /* Square Pagination Styles */
+    .sq-pagination {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      justify-content: center;
+      margin-top: 16px;
+    }
+    .sq-pagination button {
+      border: none;
+      outline: none;
+      background: transparent;
+      font-size: 14px;
+      font-weight: 500;
+      color: #94a3b8;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      padding: 0;
+      transition: all 0.2s;
+    }
+    .sq-pagination .sq-nav-btn {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      color: #64748b;
+    }
+    .sq-pagination .sq-nav-btn:hover:not(:disabled) {
+      border-color: #cbd5e1;
+      color: #0f172a;
+    }
+    .sq-pagination button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .sq-pagination .sq-num-btn:hover:not(.active) {
+      background: #f1f5f9;
+      color: #0f172a;
+    }
+    .sq-pagination .sq-num-btn.active {
+      background: #000;
+      color: #fff;
+      font-weight: 600;
+    }
+  </style>
 </head>
 
 <body>
 
-  <div class="container">
-    <div id="nav-container"></div>
+  <div class="sidebar-backdrop" onclick="toggleSidebar()"></div>
 
-    <main class="view">
-      <header class="dashboard-header animate-fade-in">
-        <div class="monitor-info">
-          <div style="display: flex; align-items: center; gap: 12px;">
-            <h1 class="dashboard-title">System Admin</h1>
-            <div class="welcome-badge" style="margin-top: -12px;">
-              <i class="fas fa-shield-alt"></i> System Integrity Anchored
+  <div class="student-layout">
+    <!-- Sidebar -->
+    <nav class="sidebar">
+      <a href="javascript:void(0)" onclick="AdminDashboard.navigateToView('dashboard')" class="sidebar-logo">
+        <i class="fas fa-chalkboard-admin"></i> MCQPro
+      </a>
+
+      <div class="nav-item active" data-action="overview" onclick="AdminDashboard.navigateToView('dashboard')">
+        <i class="fas fa-chart-pie"></i> Dashboard
+      </div>
+      <!-- <div class="nav-item" data-action="courses" onclick="AdminDashboard.navigateToView('materials')">
+        <i class="fas fa-book"></i> Courses Management
+      </div> -->
+      <div class="nav-item" data-action="students" onclick="AdminDashboard.navigateToView('students')">
+        <i class="fas fa-users"></i> Students
+      </div>
+      <!-- <div class="nav-item" data-action="forum" onclick="AdminDashboard.navigateToView('forum')">
+        <i class="fas fa-comments"></i> Forum
+      </div> -->
+      <div class="nav-item" data-action="analytics" onclick="AdminDashboard.navigateToView('analytics-all')">
+        <i class="fas fa-chart-bar"></i> Global Analytics
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="user-mini">
+          <div class="user-avatar" id="sidebar-avatar">T</div>
+          <div>
+            <div class="uname" id="sidebar-name">Instructor</div>
+            <div class="urole">Educator Panel</div>
+          </div>
+        </div>
+        <div class="nav-item" onclick="auth.logout()">
+          <i class="fas fa-sign-out-alt"></i> Logout
+        </div>
+      </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="main-content">
+
+      <!-- TOPBAR -->
+      <div class="topbar">
+        <div style="display: flex; align-items: center; gap: 1rem;">
+          <button class="mobile-menu-toggle" onclick="toggleSidebar()" aria-label="Toggle Menu" style="background: none; border: none; font-size: 1.35rem; color: var(--text-dark); cursor: pointer; display: none; align-items: center; justify-content: center;">
+            <i class="fas fa-bars"></i>
+          </button>
+          <span class="topbar-title" id="topbar-title">Dashboard</span>
+        </div>
+        <div class="topbar-right">
+          <div class="integrity-pill"><i class="fas fa-shield-alt"></i> Secure Session</div>
+        </div>
+      </div>
+
+      <!-- VIEW: Dashboard -->
+      <main id="view-dashboard" class="view active">
+        <div class="dash-hero">
+          <div>
+            <h1>Welcome Back, Admin!</h1>
+            <p>Manage examinations, question banks, and monitor live proctored sessions.</p>
+          </div>
+          <div class="dash-actions">
+            <button onclick="AdminDashboard.showMCQUpload()" class="btn btn-outline"
+              style="color:var(--primary-indigo);border-color:var(--primary-indigo)">
+              <i class="fas fa-robot"></i> Create Exam
+            </button>
+            <!-- <button onclick="AdminDashboard.showUploadMaterial()" class="btn btn-outline"
+              style="color:var(--primary-indigo);border-color:var(--primary-indigo)">
+              <i class="fas fa-plus"></i> Upload Document
+            </button> -->
+            <input type="file" id="ai-mcq-upload" style="display: none" accept=".pdf,.doc,.docx"
+              onchange="PDFUpload.handleUpload(event)">
+          </div>
+        </div>
+
+        <div style="padding: 2.5rem;">
+          <div class="metrics-grid animate-fade-in" style="margin-bottom:2.5rem">
+            <div class="metric-card">
+              <div class="metric-icon blue"><i class="fas fa-satellite-dish"></i></div>
+              <p class="metric-label">Active Sessions</p>
+              <div class="metric-value" id="stat-active">0</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-icon purple"><i class="fas fa-users"></i></div>
+              <p class="metric-label">Total Students</p>
+              <div class="metric-value" id="stat-total-students">0</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-icon green"><i class="fas fa-database"></i></div>
+              <p class="metric-label">MCQ Banks</p>
+              <div class="metric-value" id="stat-banks">0</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-icon orange"><i class="fas fa-file-invoice"></i></div>
+              <p class="metric-label">Total Exams</p>
+              <div class="metric-value" id="stat-total-exams">0</div>
             </div>
           </div>
-          <p class="dashboard-subtitle">Manage users, curriculum modules, and oversee academic examination activity.</p>
+
+          <div class="dashboard-grid stagger">
+            <section class="section-card">
+              <div class="section-header" style="display:flex; justify-content:space-between; align-items:center;">
+                <h3 class="section-title"><i class="fas fa-history"></i> Recent Sessions</h3>
+                <select id="filter-session-board" class="form-control"
+                  style="width: auto; padding: 4px 12px; font-size: 12px;"
+                  onchange="AdminDashboard.setBoardFilter(this.value)">
+                  <option value="All">All Boards (Global)</option>
+                  <option value="CBSE">CBSE</option>
+                  <option value="ICSE">ICSE</option>
+                  <option value="State Board">State Board</option>
+                </select>
+              </div>
+              <div class="table-wrapper">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Title</th>
+                      <th>Scheduled</th>
+                      <th>Status</th>
+                      <th>Subs</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="recent-sessions"></tbody>
+                </table>
+              </div>
+              <div id="recent-sessions-pagination"></div>
+            </section>
+
+            <section class="section-card">
+              <div class="section-header">
+                <h3 class="section-title"><i class="fas fa-graduation-cap"></i> Recent Results</h3>
+              </div>
+              <div class="table-wrapper">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Student</th>
+                      <th>Exam</th>
+                      <th>Score</th>
+                      <th>Date</th>
+                    </tr>
+                  </thead>
+                  <tbody id="recent-results"></tbody>
+                </table>
+              </div>
+              <div id="recent-results-pagination"></div>
+            </section>
+          </div>
+
+          <section style="margin-top: 2.5rem;">
+            <div class="section-header">
+              <h3 class="section-title"><i class="fas fa-folder-open"></i> MCQ Banks</h3>
+              </div>
+            <div id="mcq-banks-grid" class="mcq-banks-grid"></div>
+          </section>
         </div>
-        <div class="dashboard-actions">
-          <button onclick="AdminDashboard.switchTab('overview')" class="btn btn-secondary">Overview</button>
-          <button onclick="AdminDashboard.switchTab('users')" class="btn btn-secondary">Users</button>
-          <button onclick="AdminDashboard.switchTab('courses')" class="btn btn-secondary">Courses</button>
+      </main>
+
+      <!-- VIEW: Monitoring -->
+      <main id="view-monitor" class="view" style="display: none;">
+        <div style="margin-bottom: 24px;">
+          <button onclick="AdminDashboard.navigateToView('dashboard')" class="btn btn-outline"
+            style="padding: 6px 12px; font-size: 12px; margin-bottom: 16px;">← Back to Dashboard</button>
         </div>
-      </header>
+        <header class="flex-between view-header-flex" style="margin-bottom: 32px;">
+          <div>
+            <h2 class="h2" id="session-title">Monitoring</h2>
+            <p id="student-count" class="p-dim"></p>
+          </div>
+          <div class="flex-center" style="gap:12px;">
+            <button onclick="AdminSocket.pauseExam()" class="btn btn-outline">Pause</button>
+            <button onclick="AdminSocket.resumeExam()" class="btn btn-primary">Resume</button>
+            <button onclick="AdminSocket.forceEnd()" class="btn btn-outline"
+              style="color:var(--danger); border-color:var(--danger)">End Exam</button>
+          </div>
+        </header>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Student</th>
+                <th>Status</th>
+                <th>Progress</th>
+                <th>Proctor Alerts</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="monitor-list"></tbody>
+          </table>
+        </div>
+      </main>
 
-      <!-- VIEW: Overview -->
-      <div id="tab-overview" class="animate-fade-in">
-        <div class="metrics-grid">
-          <div class="metric-card" id="metric-teachers">
-            <div class="metric-icon blue"><i class="fas fa-chalkboard-teacher"></i></div>
-            <p class="metric-label">Total Faculty</p>
-            <div class="metric-value">--</div>
+      <!-- VIEW: Analytics (Session Specific) -->
+      <main id="view-analytics" class="view" style="display: none;">
+        <div style="margin-bottom: 24px;">
+          <button onclick="AdminDashboard.navigateToView('dashboard')" class="btn btn-outline"
+            style="padding: 6px 12px; font-size: 12px; margin-bottom: 16px;">← Back to Dashboard</button>
+        </div>
+        <div id="analytics-overview"></div>
+        <div class="glass-card" style="margin-top:40px;">
+          <h3 class="h3" style="margin-bottom:24px;">Grade Distribution</h3>
+          <div class="chart-container">
+            <canvas id="grade-distribution-chart"></canvas>
           </div>
-          <div class="metric-card" id="metric-students">
-            <div class="metric-icon purple"><i class="fas fa-user-graduate"></i></div>
-            <p class="metric-label">Total Scholars</p>
-            <div class="metric-value">--</div>
-          </div>
-          <div class="metric-card" id="metric-courses">
-            <div class="metric-icon green"><i class="fas fa-book-medical"></i></div>
-            <p class="metric-label">Total Modules</p>
-            <div class="metric-value">--</div>
-          </div>
-          <div class="metric-card" id="metric-active">
-            <div class="metric-icon orange"><i class="fas fa-clock"></i></div>
-            <p class="metric-label">Live Sessions</p>
-            <div class="metric-value">--</div>
+        </div>
+      </main>
+
+      <!-- VIEW: All Analytics (Global) -->
+      <main id="view-analytics-all" class="view" style="display: none; padding: 0;">
+        <div class="analytics-header-wrapper">
+          <header class="flex-between" style="margin-bottom: 32px;">
+            <div>
+              <h2 class="h2">Academic Performance Overview</h2>
+              <p class="p-dim">Aggregated data across all active and completed exam sessions.</p>
+            </div>
+          </header>
+
+          <div class="global-analytics-grid">
+            <!-- Left: Vertical Metrics -->
+            <div id="global-analytics-stats" style="display: flex; flex-direction: column; gap: 24px;"></div>
+
+            <!-- Right: Main Grade Chart -->
+            <div class="glass-card" style="padding: 32px; height: 100%; display: flex; flex-direction: column; background: rgba(255,255,255,0.8); backdrop-filter: blur(10px);">
+              <div class="flex-between" style="margin-bottom: 24px;">
+                <div>
+                  <h3 class="h3" style="margin-bottom: 4px;">Global Grade Distribution</h3>
+                  <p class="p-dim" style="font-size: 13px;">Frequency analysis across all student submissions.</p>
+                </div>
+                <span class="metric-label" style="font-size: 10px; opacity: 0.6;">Performance Spectrum</span>
+              </div>
+              <div class="chart-container" style="flex: 1; min-height: 250px; position: relative;">
+                <canvas id="global-grade-chart"></canvas>
+              </div>
+            </div>
           </div>
         </div>
 
-        <section class="section-card" style="margin-top: 2.5rem;">
-          <div class="section-header">
-            <h3 class="section-title"><i class="fas fa-globe"></i> Global Academic Activity</h3>
+        <div class="analytics-content-wrapper">
+          <div style="margin-bottom: 40px;">
+            <h2 class="h2" style="font-size: 1.75rem; color: #1e293b;">Detailed Session Reports</h2>
+            <p class="p-dim" style="font-size: 14px;">In-depth performance analysis for each examination session.</p>
           </div>
-          <div class="table-wrapper">
-            <table>
-              <thead>
-                <tr>
-                  <th>Title</th>
-                  <th>Module</th>
-                  <th>Div</th>
-                  <th>Scheduled</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody id="global-sessions">
-                <tr>
-                  <td colspan="5" class="text-muted" style="text-align:center; padding: 2rem;">Fetching global data...
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </section>
-      </div>
+          <div id="global-exams-list-container"></div>
+        </div>
+      </main>
 
-      <!-- VIEW: Users -->
-      <div id="tab-users" style="display: none;" class="animate-fade-in">
-        <section>
-          <div class="flex-between" style="margin-bottom: 24px;">
-            <h3 class="h3">User Management</h3>
-            <button onclick="AdminDashboard.showCreateUserModal()" class="btn btn-primary">+ Add User</button>
-          </div>
-          <div class="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Email</th>
-                  <th>Role</th>
-                  <th>Course / Div</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody id="users-list">
-                <tr>
-                  <td colspan="5" class="p-dim" style="text-align:center">Loading data...</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </section>
-      </div>
 
-      <!-- VIEW: Courses -->
-      <div id="tab-courses" style="display: none;" class="animate-fade-in">
-        <section>
-          <div class="flex-between" style="margin-bottom: 24px;">
-            <h3 class="h3">Course Management</h3>
-            <button onclick="AdminDashboard.showCreateCourseModal()" class="btn btn-primary">+ Add Course</button>
+      <!-- VIEW: Materials Management -->
+      <main id="view-materials" class="view" style="display: none;">
+        <header class="flex-between view-header-flex" style="margin-bottom: 32px;">
+          <div>
+            <h2 class="h2">Curriculum & Materials</h2>
+            <p class="p-dim">Manage and audit your division-wise academic resources.</p>
           </div>
-          <div class="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>Course Name</th>
-                  <th>Assigned Teacher</th>
-                  <th>Created At</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody id="courses-list">
-                <tr>
-                  <td colspan="4" class="p-dim" style="text-align:center">Loading data...</td>
-                </tr>
-              </tbody>
-            </table>
+          <div style="display:flex; gap:12px;">
+            <select id="filter-material-grade" class="btn btn-outline"
+              style="padding: 8px 16px;color:var(--primary-indigo);border-color:var(--primary-indigo)"
+              onchange="AdminDashboard.loadMaterials()">
+              <option value="">All Grades</option>
+              <option value="Grade 6">Grade 6</option>
+              <option value="Grade 7">Grade 7</option>
+              <option value="Grade 8">Grade 8</option>
+              <option value="Grade 9">Grade 9</option>
+              <option value="Grade 10">Grade 10</option>
+            </select>
+            <select id="filter-material-division" class="btn btn-outline"
+              style="padding: 8px 16px;color:var(--primary-indigo);border-color:var(--primary-indigo)"
+              onchange="AdminDashboard.loadMaterials()">
+              <option value="">All Divisions</option>
+              <option value="A">Div A</option>
+              <option value="B">Div B</option>
+              <option value="C">Div C</option>
+              <option value="D">Div D</option>
+              <option value="All">Global (All)</option>
+            </select>
+            <button class="btn btn-outline" onclick="AdminDashboard.showUploadMaterial()"
+              style="color:var(--primary-indigo);border-color:var(--primary-indigo)">+ Upload Material</button>
           </div>
-        </section>
-      </div>
+        </header>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th>Subject</th>
+                <th>Target</th>
+                <th>Type</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="materials-table-body"></tbody>
+          </table>
+        </div>
+      </main>
 
-    </main>
+      <!-- VIEW: Attendance & Analytics -->
+      <main id="view-students" class="view" style="display: none;">
+        <header class="flex-between view-header-flex" style="margin-bottom: 32px;">
+          <div>
+            <h2 class="h2">Student Tracking</h2>
+            <p class="p-dim">Monitor attendance and overall performance per session.</p>
+          </div>
+          <div style="display:flex; gap:12px;">
+            <button onclick="AdminDashboard.showManualAttendance()" class="btn btn-outline"
+              style="padding: 8px 16px;color:var(--primary-indigo);border-color:var(--primary-indigo)">
+              <i class="fas fa-plus"></i> Manual Attendance
+            </button>
+            <button onclick="AdminDashboard.showAddStudentModal()" class="btn btn-outline"
+              style="padding: 8px 16px;color:var(--primary-indigo);border-color:var(--primary-indigo)">
+              <i class="fas fa-user-plus"></i> Add New Student
+            </button>
+            <select id="attendance-session-select" class="btn btn-outline"
+              style="padding: 8px 16px;color:var(--primary-indigo);border-color:var(--primary-indigo)"
+              onchange="AdminDashboard.loadAttendance(this.value)">
+              <option value="">Select Session...</option>
+            </select>
+          </div>
+        </header>
+        <div id="session-attendance-container" class="table-container">
+          <h3 class="h3" style="margin-bottom: 16px; font-size: 18px;padding:1.5rem; padding-bottom: 0.5rem;">Session
+            Attendance</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Student Name</th>
+                <th>Email</th>
+                <th>Status</th>
+                <th>Time</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="attendance-table-body"></tbody>
+          </table>
+        </div>
+
+        <div id="student-roster-container" class="table-container" style="margin-top: 40px;">
+          <div class="flex-between" style="margin-bottom: 20px; padding:1.5rem; padding-bottom: 0.5rem;">
+            <h3 class="h3" style="font-size: 18px;">Master Student Tracking</h3>
+            <div style="display:flex; gap:12px;">
+              <select id="filter-student-board" class="input-control" style="padding: 6px 12px; font-size: 13px;"
+                onchange="AdminDashboard.loadStudentRoster()">
+                <option value="">All Boards</option>
+                <option value="CBSE">CBSE</option>
+                <option value="ICSE">ICSE</option>
+                <option value="State">State Board</option>
+              </select>
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Student Name</th>
+                <th>Email</th>
+                <th>Class</th>
+                <th>Board</th>
+                <th>Total Attendance</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="student-roster-table-body"></tbody>
+          </table>
+        </div>
+      </main>
+
+      <!-- VIEW: Forum -->
+      <main id="view-forum" class="view" style="display: none;">
+        <div id="admin-forum-container"></div>
+      </main>
+    </div>
   </div>
 
-  <script src="/js/shared/api.js"></script>
-  <script src="/js/shared/auth.js"></script>
-  <script src="/js/shared/utils.js"></script>
-  <script src="/js/shared/notifications.js"></script>
-  <script src="/js/components/navbar.js"></script>
-  <script src="/js/components/modal.js"></script>
-  <script src="/js/admin/admin.js"></script>
+  <!-- Shared Libs -->
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="/js/shared/api.js?v=27"></script>
+  <script src="/js/shared/auth.js?v=27"></script>
+  <script src="/js/shared/utils.js?v=27"></script>
+  <script src="/js/shared/notifications.js?v=27"></script>
+
+  <!-- Components -->
+  <script src="/js/components/navbar.js?v=27"></script>
+  <script src="/js/components/modal.js?v=27"></script>
+  <script src="/js/components/loader.js?v=27"></script>
+  <script src="/js/components/chart.js?v=27"></script>
+
+  <!-- Admin Modules -->
+  <script src="/js/admin/socket.js?v=27"></script>
+  <script src="/js/admin/upload.js?v=27"></script>
+  <script src="/js/admin/examManager.js?v=27"></script>
+  <script src="/js/admin/monitor.js?v=27"></script>
+  <script src="/js/admin/analytics.js?v=27"></script>
+  <script src="/js/admin/admin.js?v=27"></script>
 
   <script>
+    function toggleSidebar() {
+      const sidebar = document.querySelector('.sidebar');
+      const backdrop = document.querySelector('.sidebar-backdrop');
+      if (sidebar && backdrop) {
+        sidebar.classList.toggle('active');
+        backdrop.classList.toggle('active');
+      }
+    }
+
     // Strict Auth Guard - Run immediately before DOM is fully loaded
     if (!auth.isAuthenticated()) {
-      window.location.replace('/login.html');
+      window.location.replace('/admin-login.html');
     }
 
     document.addEventListener('DOMContentLoaded', () => {
       AdminDashboard.init();
+
+      // Close sidebar drawer on nav-item clicks on mobile
+      document.querySelectorAll('.sidebar .nav-item').forEach(item => {
+        item.addEventListener('click', () => {
+          const sidebar = document.querySelector('.sidebar');
+          const backdrop = document.querySelector('.sidebar-backdrop');
+          if (window.innerWidth <= 768 && sidebar && sidebar.classList.contains('active')) {
+            sidebar.classList.remove('active');
+            backdrop.classList.remove('active');
+          }
+        });
+      });
     });
   </script>
 </body>

@@ -23,7 +23,7 @@ exports.register = async (req, res) => {
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: new RegExp(`^${email.trim()}$`, 'i') });
     if (!user || !(await user.comparePassword(password))) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
@@ -51,7 +51,7 @@ const emailService = require('../services/emailService');
 exports.forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: new RegExp(`^${email.trim()}$`, 'i') });
     if (!user) {
       return res.status(404).json({ success: false, message: 'No account found with that email address.' });
     }
@@ -88,7 +88,7 @@ exports.forgotPassword = async (req, res) => {
 exports.verifyResetCode = async (req, res) => {
   try {
     const { email, code } = req.body;
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: new RegExp(`^${email.trim()}$`, 'i') });
     
     if (!user || !user.resetPasswordCode || !user.resetPasswordExpires) {
       return res.status(400).json({ success: false, message: 'Invalid or expired reset code.' });
@@ -113,7 +113,7 @@ exports.verifyResetCode = async (req, res) => {
 exports.resetPassword = async (req, res) => {
   try {
     const { email, code, newPassword } = req.body;
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: new RegExp(`^${email.trim()}$`, 'i') });
 
     if (!user || !user.resetPasswordCode || !user.resetPasswordExpires) {
       return res.status(400).json({ success: false, message: 'Invalid or expired reset code.' });

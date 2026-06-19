@@ -227,10 +227,8 @@ exports.updateSessionStatus = async (req, res) => {
 
 exports.getStudents = async (req, res) => {
   try {
-    const courseIds = req.user.courseIds || [];
     const students = await User.find({
-      role: 'student',
-      courseId: { $in: courseIds }
+      role: 'student'
     }).select('-password').lean();
 
     // Attach total attendance count

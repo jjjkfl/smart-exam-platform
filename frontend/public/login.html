@@ -33,7 +33,6 @@
     html,
     body {
       width: 100%;
-      overflow-x: hidden;
     }
 
     body {
@@ -700,9 +699,9 @@
       try {
         const result = await api.post('/auth/login', { email, password });
         
-        // Block teachers from logging in through the student portal
+        // Block admins from logging in through the student portal
         if (result.user.role === 'teacher') {
-          throw new Error('Access Denied: Educators must use the Teacher Portal to log in.');
+          throw new Error('Access Denied: Educators must use the Admin Portal to log in.');
         }
         
         auth.setSession(result.accessToken, result.user);

@@ -190,7 +190,7 @@ const ExamEngine = {
       return;
     }
 
-    // 2. Configure Readiness Check based on teacher's settings
+    // 2. Configure Readiness Check based on admin's settings
     const { requireCamera, enableAIProctoring, lockBrowser } = this.examData;
 
     if (requireCamera === false) {
@@ -246,7 +246,7 @@ const ExamEngine = {
         document.getElementById('question-area').innerHTML = `
           <div style="text-align:center; padding:60px;">
             <p style="font-size:18px; font-weight:600;">No questions available for this exam.</p>
-            <p class="p-dim" style="margin-top:8px;">Please contact your teacher.</p>
+            <p class="p-dim" style="margin-top:8px;">Please contact your admin.</p>
           </div>`;
         return;
       }

@@ -1,11 +1,11 @@
 /**
- * js/teacher/examManager.js
+ * js/admin/examManager.js
  * Session and Exam Management
  */
 
 const ExamManager = {
   showCreateSession(bankId) {
-    const courses = (window.TeacherDashboard && window.TeacherDashboard.courses) || [];
+    const courses = (window.AdminDashboard && window.AdminDashboard.courses) || [];
     const courseOptions = courses.map(c => `<option value="${c._id}">${c.courseName}</option>`).join('');
 
     Modal.show('create-session', `
@@ -96,8 +96,8 @@ const ExamManager = {
   },
 
   showEditSession(sessionId) {
-    const sessions = (window.TeacherDashboard && window.TeacherDashboard.sessions) || [];
-    const courses = (window.TeacherDashboard && window.TeacherDashboard.courses) || [];
+    const sessions = (window.AdminDashboard && window.AdminDashboard.sessions) || [];
+    const courses = (window.AdminDashboard && window.AdminDashboard.courses) || [];
     const session = sessions.find((s) => String(s._id) === String(sessionId));
     if (!session) {
       notifications.error('Session not found');
@@ -214,9 +214,9 @@ const ExamManager = {
       await api.post('/portal/teacher/sessions', payload);
       notifications.success('Exam session created successfully!');
       Modal.close();
-      if (typeof TeacherDashboard !== 'undefined') {
-        TeacherDashboard.loadDashboardData();
-        TeacherDashboard.loadMCQBanks();
+      if (typeof AdminDashboard !== 'undefined') {
+        AdminDashboard.loadDashboardData();
+        AdminDashboard.loadMCQBanks();
       }
     } catch (err) {
       notifications.error(err.message);
@@ -240,8 +240,8 @@ const ExamManager = {
       });
       notifications.success('Exam session updated successfully!');
       Modal.close();
-      if (typeof TeacherDashboard !== 'undefined') {
-        await TeacherDashboard.loadDashboardData();
+      if (typeof AdminDashboard !== 'undefined') {
+        await AdminDashboard.loadDashboardData();
       }
     } catch (err) {
       notifications.error(err.message || 'Failed to update session');

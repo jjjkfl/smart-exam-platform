@@ -1,5 +1,5 @@
 /**
- * js/teacher/upload.js
+ * js/admin/upload.js
  * DOCX Upload + MCQ Preview Controller
  * Handles file upload, shows extraction progress, displays parsed MCQs with images.
  */
@@ -410,7 +410,7 @@ const PDFUpload = {
                   class="btn btn-secondary" style="flex: 1; height: 56px; font-size: 16px; font-weight: 700; border-radius: 16px; background: rgba(37, 99, 235, 0.08); color: var(--secondary-blue); border: 1px solid rgba(37, 99, 235, 0.15); margin-top: 0;">
             🔄 Re-extract Document
           </button>
-          <button onclick="Modal.close(); if(typeof TeacherDashboard !== 'undefined') TeacherDashboard.loadMCQBanks();" 
+          <button onclick="Modal.close(); if(typeof AdminDashboard !== 'undefined') AdminDashboard.loadMCQBanks();" 
                   class="btn btn-primary" style="flex: 1.5; height: 56px; font-size: 16px; font-weight: 700; border-radius: 16px; margin-top: 0;">
             ✅ Done — Return to Dashboard
           </button>

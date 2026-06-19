@@ -71,17 +71,7 @@ const runGuardianScan = async () => {
                     );
                     tampersReverted++;
 
-                    // 1. Create AuditLog
-                    const AuditLog = require('../../models/AuditLog');
-                    await AuditLog.create({
-                        action: 'TAMPER_AUTO_REVERT',
-                        target: `Result ${result._id}`,
-                        details: `Unauthorized ${diffLabel} detected in Atlas. Database state auto-healed via Blockchain Snapshot.`,
-                        status: 'tamper_detected',
-                        severity: 'critical'
-                    });
-
-                    // 2. Notify Teachers via Socket
+                    // 1. Notify Teachers via Socket
                     const { getIO } = require('../../config/socket');
                     const io = getIO();
                     if (io) {
@@ -93,7 +83,7 @@ const runGuardianScan = async () => {
                         });
                     }
 
-                    // 3. Create System Announcement for Teachers
+                    // 2. Create System Announcement for Teachers
                     const Announcement = require('../../models/Announcement');
                     await Announcement.create({
                         title: '🔒 Security Auto-Revert Triggered',

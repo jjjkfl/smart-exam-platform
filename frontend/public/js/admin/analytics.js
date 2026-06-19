@@ -1,5 +1,5 @@
 /**
- * js/teacher/analytics.js
+ * js/admin/analytics.js
  * Exam Data Analytics — Results view with stats + student results table
  */
 

@@ -1,9 +1,9 @@
 /**
- * js/teacher/socket.js
- * Teacher Socket handler for monitoring
+ * js/admin/socket.js
+ * Admin Socket handler for monitoring
  */
 
-const TeacherSocket = {
+const AdminSocket = {
   socket: null,
   sessionId: null,
 
@@ -16,7 +16,7 @@ const TeacherSocket = {
     });
 
     this.socket.on('connect', () => {
-      console.log('Teacher connected to socket');
+      console.log('Admin connected to socket');
       this.socket.emit('exam:join', { sessionId });
     });
 
@@ -70,4 +70,4 @@ const TeacherSocket = {
   }
 };
 
-window.TeacherSocket = TeacherSocket;
+window.AdminSocket = AdminSocket;

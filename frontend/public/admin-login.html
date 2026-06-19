@@ -4,8 +4,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Teacher Login | MCQPro</title>
-  <meta name="description" content="Login to access your MCQPro teacher dashboard.">
+  <title>Admin Login | MCQPro</title>
+  <meta name="description" content="Login to access your MCQPro admin dashboard.">
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap"
     rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -440,10 +440,10 @@
     <div class="auth-illustration">
       <div class="illustration-content">
         <div class="image-card-wrapper">
-          <img src="/teacher_portal.png" alt="Educator panel illustration" class="auth-image-premium">
+          <img src="/admin_portal.png" alt="Admin panel illustration" class="auth-image-premium" onerror="this.src='/teacher_portal.png'">
         </div>
-        <h2>MCQPro for Educators</h2>
-        <p>A secure, AI-powered exam creation and proctoring suite for teachers</p>
+        <h2>Admin Command Center</h2>
+        <p>A secure, AI-powered system administration suite</p>
         <div class="illus-features">
           <div class="illus-feat"><i class="fas fa-check-circle"></i> Create & Manage Exam Papers</div>
           <div class="illus-feat"><i class="fas fa-check-circle"></i> Secure Proctoring Monitor</div>
@@ -456,19 +456,19 @@
     <div class="auth-form-container">
       <div class="auth-form-wrapper">
         <a href="javascript:location.replace('/landing.html')" class="auth-logo">
-          <i class="fas fa-graduation-cap"></i> MCQPro <span style="font-size: 0.9rem; font-weight: 500; margin-left: 0.5rem; color: var(--text-muted);">Teacher Portal</span>
+          <i class="fas fa-graduation-cap"></i> MCQPro <span style="font-size: 0.9rem; font-weight: 500; margin-left: 0.5rem; color: var(--text-muted);">Admin Portal</span>
         </a>
 
         <!-- LOGIN FORM -->
         <div id="login-form-section">
-          <h2 class="auth-title">Teacher Login</h2>
+          <h2 class="auth-title">Admin Login</h2>
           <p class="auth-subtitle">Enter your credentials to manage exams</p>
           <div id="login-error" class="error-msg" style="display:none;"></div>
           
           <form id="login-form" onsubmit="handleLogin(event)">
             <div class="auth-group">
               <label>Email Address</label>
-              <input type="email" id="login-email" name="email" class="auth-input" placeholder="teacher@school.edu"
+              <input type="email" id="login-email" name="email" class="auth-input" placeholder="admin@system.edu"
                 required autocomplete="username">
             </div>
             
@@ -595,9 +595,9 @@
       try {
         const result = await api.post('/auth/login', { email, password });
         
-        // Strict role validation: only allow role 'teacher'
+        // Strict role validation: only allow role 'teacher' (which is the admin role internally)
         if (result.user.role !== 'teacher') {
-          throw new Error('Access Denied: Only authorized educators can access the Teacher Portal.');
+          throw new Error('Access Denied: Only authorized administrators can access the Admin Portal.');
         }
         
         auth.setSession(result.accessToken, result.user);

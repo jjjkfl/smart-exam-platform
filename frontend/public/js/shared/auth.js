@@ -50,12 +50,12 @@ const auth = {
 
   logout() {
     const user = this.getUser();
-    const isTeacher = (user && user.role === 'teacher') || window.location.pathname.includes('teacher');
+    const isAdmin = (user && user.role === 'teacher') || window.location.pathname.includes('admin');
     sessionStorage.removeItem('token');
     sessionStorage.removeItem('user');
     // Use replace to prevent the user from clicking "Back" to a logged-out session
-    if (isTeacher) {
-      window.location.replace('/teacher-login.html');
+    if (isAdmin) {
+      window.location.replace('/admin-login.html');
     } else {
       window.location.replace('/login.html');
     }
@@ -63,8 +63,8 @@ const auth = {
 
   redirectByRole(role) {
     if (role === 'teacher') {
-      window.location.replace('/teacher.html');
-    } else if (role === 'admin') {
+      window.location.replace('/admin.html');
+    } else if (role === 'teacher') {
       window.location.replace('/admin.html');
     } else {
       window.location.replace('/index.html');
@@ -76,8 +76,8 @@ const auth = {
    */
   checkAuth() {
     if (!this.isAuthenticated()) {
-      if (window.location.pathname.includes('teacher')) {
-        window.location.replace('/teacher-login.html');
+      if (window.location.pathname.includes('admin')) {
+        window.location.replace('/admin-login.html');
       } else {
         window.location.replace('/login.html');
       }
@@ -92,13 +92,13 @@ const auth = {
 
     const path = window.location.pathname;
 
-    // Prevent student from accessing teacher dashboard
-    if (path.includes('teacher') && user.role !== 'teacher') {
+    // Prevent student from accessing admin dashboard
+    if (path.includes('admin') && user.role !== 'teacher') {
       this.redirectByRole(user.role);
       return false;
     }
 
-    // Prevent teacher/admin from accessing student dashboard
+    // Prevent admin/admin from accessing student dashboard
     if ((path === '/' || path.includes('index.html') || path === '/student' || path === '/student/')
       && user.role !== 'student') {
       this.redirectByRole(user.role);
@@ -114,8 +114,8 @@ window.addEventListener('pageshow', function (event) {
   // If the page is loaded from cache (e.g., via back button)
   if (event.persisted) {
     if (!auth.isAuthenticated()) {
-      if (window.location.pathname.includes('teacher')) {
-        window.location.replace('/teacher-login.html');
+      if (window.location.pathname.includes('admin')) {
+        window.location.replace('/admin-login.html');
       } else {
         window.location.replace('/login.html');
       }

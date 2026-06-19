@@ -6,7 +6,7 @@
 const CONSTANTS = {
   ROLES: {
     STUDENT: 'student',
-    TEACHER: 'teacher',
+    ADMIN: 'admin',
     ADMIN: 'admin'
   },
   BOARDS: ['CBSE', 'ICSE', 'State Board', 'TestStream'],

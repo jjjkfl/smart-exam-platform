@@ -28,12 +28,12 @@ const ExamSocket = {
     });
 
     this.socket.on('exam:ended', (data) => {
-      notifications.warn('Exam has been ended by the teacher.');
+      notifications.warn('Exam has been ended by the admin.');
       ExamEngine.submit();
     });
 
     this.socket.on('exam:paused', () => {
-      Modal.show('paused', '<p>The exam has been paused by the teacher.</p>', { title: 'Exam Paused' });
+      Modal.show('paused', '<p>The exam has been paused by the admin.</p>', { title: 'Exam Paused' });
     });
 
     this.socket.on('exam:resumed', () => {

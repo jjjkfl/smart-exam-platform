@@ -25,11 +25,11 @@ const Navbar = {
               <a href="/index.html?view=forum" class="nav-link ${activeLink === 'forum' ? 'active' : ''}">Forum</a>
               <a href="/index.html?view=exam-results" class="nav-link ${activeLink === 'results' ? 'active' : ''}">Results</a>
             ` : `
-              <a href="/teacher.html" class="nav-link ${activeLink === 'dashboard' ? 'active' : ''}">Dashboard</a>
-              <a href="/teacher.html?view=materials" class="nav-link ${activeLink === 'materials' ? 'active' : ''}">Courses</a>
-              <a href="/teacher.html?view=students" class="nav-link ${activeLink === 'students' ? 'active' : ''}">Students</a>
-              <a href="/teacher.html?view=forum" class="nav-link ${activeLink === 'forum' ? 'active' : ''}">Forum</a>
-              <a href="/teacher.html?view=analytics-all" class="nav-link ${activeLink === 'analytics' ? 'active' : ''}">Analytics</a>
+              <a href="/admin.html" class="nav-link ${activeLink === 'dashboard' ? 'active' : ''}">Dashboard</a>
+              <a href="/admin.html?view=materials" class="nav-link ${activeLink === 'materials' ? 'active' : ''}">Courses</a>
+              <a href="/admin.html?view=students" class="nav-link ${activeLink === 'students' ? 'active' : ''}">Students</a>
+              <a href="/admin.html?view=forum" class="nav-link ${activeLink === 'forum' ? 'active' : ''}">Forum</a>
+              <a href="/admin.html?view=analytics-all" class="nav-link ${activeLink === 'analytics' ? 'active' : ''}">Analytics</a>
             `}
           </div>
         </div>

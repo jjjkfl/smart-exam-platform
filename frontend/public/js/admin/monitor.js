@@ -1,5 +1,5 @@
 /**
- * js/teacher/monitor.js
+ * js/admin/monitor.js
  * Live Exam Monitoring — shows enrolled students and submissions
  */
 
@@ -13,13 +13,13 @@ const Monitor = {
     this.sessionId = params.get('sessionId');
 
     if (!this.sessionId) {
-      window.location.replace('/teacher.html');
+      window.location.replace('/admin.html');
       return;
     }
 
     Navbar.render('nav-container');
     await this.loadInitialData();
-    TeacherSocket.init(this.sessionId);
+    AdminSocket.init(this.sessionId);
   },
 
   async loadInitialData() {

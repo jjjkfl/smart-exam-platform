@@ -100,7 +100,7 @@ const PrivacyGuard = {
     // Bridge with Proctoring Engine (proctor.js)
     startHealthCheck() {
         setInterval(() => {
-            // Respect Teacher settings: Only lock if camera is REQUIRED
+            // Respect Admin settings: Only lock if camera is REQUIRED
             const requiresCamera = window.ExamEngine && window.ExamEngine.examData && window.ExamEngine.examData.requireCamera !== false;
             
             const cameraStatus = document.getElementById('camera-status-label');

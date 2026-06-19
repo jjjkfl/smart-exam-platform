@@ -675,8 +675,7 @@ const StudentDashboard = {
       const skippedCount = answers.filter(a => !a.selectedAnswer).length;
       const totalQuestions = answers.length;
       const attemptedCount = answers.filter(a => a.selectedAnswer).length;
-      const percentage = data.percentage || 0;
-      const accuracy = attemptedCount > 0 ? Math.round((correctCount / attemptedCount) * 100) : 0;
+      const percentage = totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0;
       const isPassed = percentage >= 50;
 
       content.innerHTML = `
@@ -696,56 +695,56 @@ const StudentDashboard = {
             </button>
           </div>
 
-          <!-- High-Impact Hero Stats Section -->
-          <div class="result-hero-stats-card">
-            <!-- Decorative background elements -->
-            <div style="position: absolute; top: -50%; right: -10%; width: 500px; height: 500px; background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 70%); border-radius: 50%; pointer-events: none;"></div>
+          <!-- Clean Light Theme Hero Stats Section -->
+          <div class="result-hero-stats-card" style="background: white; border-radius: 24px; padding: 3rem 4rem; color: #0f172a; display: flex; justify-content: space-between; align-items: center; margin-bottom: 3rem; box-shadow: 0 10px 40px rgba(0,0,0,0.03); border: 1px solid #f1f5f9; flex-wrap: wrap; gap: 3rem;">
             
             <div style="position: relative; z-index: 1;">
-              <p style="text-transform: uppercase; letter-spacing: 2px; font-size: 0.8rem; font-weight: 800; color: #a5b4fc; margin-bottom: 0.5rem;">Total Score Achieved</p>
-              <h2 style="font-size: 4.5rem; font-weight: 900; line-height: 1; letter-spacing: -2px;">${correctCount}<span style="font-size: 2rem; color: #818cf8; font-weight: 600; letter-spacing: 0;">/${totalQuestions}</span></h2>
-              <div style="display:inline-flex; align-items:center; gap:8px; padding:6px 16px; border-radius:100px; font-weight:800; font-size:0.85rem; margin-top:1rem; background:${isPassed ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)'}; color:${isPassed ? '#34d399' : '#fca5a5'}; border:1px solid ${isPassed ? 'rgba(52, 211, 153, 0.3)' : 'rgba(252, 165, 165, 0.3)'};">
-                ${isPassed ? '✅ EXAM PASSED' : '❌ EXAM FAILED'}
+              <p style="text-transform: uppercase; letter-spacing: 2px; font-size: 0.8rem; font-weight: 800; color: #64748b; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 8px;"><i class="fas fa-trophy" style="color: #fbbf24;"></i> Total Score Achieved</p>
+              <h2 style="font-size: 4.5rem; font-weight: 900; line-height: 1; letter-spacing: -2px; color: #0f172a;">${correctCount}<span style="font-size: 2rem; color: #94a3b8; font-weight: 600; letter-spacing: 0;">/${totalQuestions}</span></h2>
+              <div style="display:inline-flex; align-items:center; gap:8px; padding:6px 16px; border-radius:100px; font-weight:800; font-size:0.85rem; margin-top:1.5rem; background:${isPassed ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)'}; color:${isPassed ? '#059669' : '#dc2626'}; border:1px solid ${isPassed ? 'rgba(52, 211, 153, 0.2)' : 'rgba(252, 165, 165, 0.2)'};">
+                ${isPassed ? '<i class="fas fa-check-circle"></i> EXAM PASSED' : '<i class="fas fa-times-circle"></i> EXAM FAILED'}
               </div>
             </div>
             
-            <div class="result-hero-stats-right">
+            <div style="position: relative; z-index: 1; display: flex; align-items: center; gap: 4rem; flex-wrap: wrap;">
               <!-- Dynamic CSS Donut Chart -->
-              <div style="width: 140px; height: 140px; border-radius: 50%; background: conic-gradient(#10b981 0% ${totalQuestions > 0 ? (correctCount/totalQuestions)*100 : 0}%, #ef4444 ${totalQuestions > 0 ? (correctCount/totalQuestions)*100 : 0}% ${totalQuestions > 0 ? ((correctCount+wrongCount)/totalQuestions)*100 : 0}%, #6366f1 ${totalQuestions > 0 ? ((correctCount+wrongCount)/totalQuestions)*100 : 0}% 100%); display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
-                <div style="width: 100px; height: 100px; border-radius: 50%; background: #2e267c; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: inset 0 4px 10px rgba(0,0,0,0.3);">
-                  <span style="font-size: 1.5rem; font-weight: 900; color: #fff; line-height: 1;">${accuracy}%</span>
-                  <span style="font-size: 0.6rem; text-transform: uppercase; letter-spacing: 1px; color: #a5b4fc; font-weight: 700; margin-top: 2px;">Accuracy</span>
+              <div style="position: relative; display: flex; justify-content: center; align-items: center;">
+                <div style="width: 150px; height: 150px; border-radius: 50%; background: conic-gradient(#10b981 0% ${percentage}%, #ef4444 ${percentage}% ${percentage + (totalQuestions > 0 ? (wrongCount/totalQuestions)*100 : 0)}%, #e2e8f0 ${percentage + (totalQuestions > 0 ? (wrongCount/totalQuestions)*100 : 0)}% 100%); display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+                  <div style="width: 110px; height: 110px; border-radius: 50%; background: white; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: inset 0 2px 5px rgba(0,0,0,0.02);">
+                    <span style="font-size: 1.8rem; font-weight: 900; color: #0f172a; line-height: 1;">${percentage}%</span>
+                    <span style="font-size: 0.6rem; text-transform: uppercase; letter-spacing: 1px; color: #64748b; font-weight: 800; margin-top: 4px;">Percentage</span>
+                  </div>
                 </div>
               </div>
 
               <!-- Stat Boxes Grid -->
-              <div class="result-stats-boxes-grid">
-                <div style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 1.25rem; min-width: 120px; display: flex; flex-direction: column; gap: 0.5rem; backdrop-filter: blur(10px);">
-                  <div style="display: flex; align-items: center; gap: 8px; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: #a5b4fc; font-weight: 700;">
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div style="background: #f8fafc; border: 1px solid #f1f5f9; border-radius: 16px; padding: 1.25rem; min-width: 120px; display: flex; flex-direction: column; gap: 0.5rem; box-shadow: 0 2px 5px rgba(0,0,0,0.01);">
+                  <div style="display: flex; align-items: center; gap: 8px; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: #64748b; font-weight: 700;">
                     <div style="width: 10px; height: 10px; border-radius: 50%; background: #10b981;"></div> Correct
                   </div>
-                  <div style="font-size: 2rem; font-weight: 800; line-height: 1; color: #34d399;">${correctCount}</div>
+                  <div style="font-size: 2rem; font-weight: 800; line-height: 1; color: #059669;">${correctCount}</div>
                 </div>
 
-                <div style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 1.25rem; min-width: 120px; display: flex; flex-direction: column; gap: 0.5rem; backdrop-filter: blur(10px);">
-                  <div style="display: flex; align-items: center; gap: 8px; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: #a5b4fc; font-weight: 700;">
+                <div style="background: #f8fafc; border: 1px solid #f1f5f9; border-radius: 16px; padding: 1.25rem; min-width: 120px; display: flex; flex-direction: column; gap: 0.5rem; box-shadow: 0 2px 5px rgba(0,0,0,0.01);">
+                  <div style="display: flex; align-items: center; gap: 8px; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: #64748b; font-weight: 700;">
                     <div style="width: 10px; height: 10px; border-radius: 50%; background: #ef4444;"></div> Wrong
                   </div>
-                  <div style="font-size: 2rem; font-weight: 800; line-height: 1; color: #fca5a5;">${wrongCount}</div>
+                  <div style="font-size: 2rem; font-weight: 800; line-height: 1; color: #dc2626;">${wrongCount}</div>
                 </div>
 
-                <div style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 1.25rem; min-width: 120px; display: flex; flex-direction: column; gap: 0.5rem; backdrop-filter: blur(10px);">
-                  <div style="display: flex; align-items: center; gap: 8px; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: #a5b4fc; font-weight: 700;">
+                <div style="background: #f8fafc; border: 1px solid #f1f5f9; border-radius: 16px; padding: 1.25rem; min-width: 120px; display: flex; flex-direction: column; gap: 0.5rem; box-shadow: 0 2px 5px rgba(0,0,0,0.01);">
+                  <div style="display: flex; align-items: center; gap: 8px; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: #64748b; font-weight: 700;">
                     <div style="width: 10px; height: 10px; border-radius: 50%; background: #3b82f6;"></div> Attempted
                   </div>
-                  <div style="font-size: 2rem; font-weight: 800; line-height: 1; color: #93c5fd;">${attemptedCount}</div>
+                  <div style="font-size: 2rem; font-weight: 800; line-height: 1; color: #2563eb;">${attemptedCount}</div>
                 </div>
 
-                <div style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 1.25rem; min-width: 120px; display: flex; flex-direction: column; gap: 0.5rem; backdrop-filter: blur(10px);">
-                  <div style="display: flex; align-items: center; gap: 8px; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: #a5b4fc; font-weight: 700;">
-                    <div style="width: 10px; height: 10px; border-radius: 50%; background: #6366f1;"></div> Skipped
+                <div style="background: #f8fafc; border: 1px solid #f1f5f9; border-radius: 16px; padding: 1.25rem; min-width: 120px; display: flex; flex-direction: column; gap: 0.5rem; box-shadow: 0 2px 5px rgba(0,0,0,0.01);">
+                  <div style="display: flex; align-items: center; gap: 8px; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: #64748b; font-weight: 700;">
+                    <div style="width: 10px; height: 10px; border-radius: 50%; background: #cbd5e1;"></div> Skipped
                   </div>
-                  <div style="font-size: 2rem; font-weight: 800; line-height: 1; color: #a5b4fc;">${skippedCount}</div>
+                  <div style="font-size: 2rem; font-weight: 800; line-height: 1; color: #64748b;">${skippedCount}</div>
                 </div>
               </div>
             </div>
@@ -1155,7 +1154,7 @@ const StudentDashboard = {
       container.innerHTML = marks.map(m => `
         <tr class="animate-fade-in">
           <td><div style="font-weight:600;">${m.subject}</div></td>
-          <td>${m.teacherId?.name || 'Faculty Member'}</td>
+          <td>${m.adminId?.name || 'Faculty Member'}</td>
           <td><span class="badge badge-info" style="font-size:10px;">${m.examType}</span></td>
           <td>
             <div style="font-weight:700;">${m.marksObtained} / ${m.totalMarks}</div>
