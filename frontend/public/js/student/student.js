@@ -680,15 +680,15 @@ const StudentDashboard = {
       const isPassed = percentage >= 50;
 
       content.innerHTML = `
-        <div class="result-fullpage-container animate-slide-up" style="max-width: 1100px; margin: 0 auto; padding: 2rem 0 4rem;">
+        <div class="result-fullpage-container animate-slide-up">
           
           <!-- Premium Navigation Header -->
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 2.5rem; flex-wrap: wrap; gap: 1rem;">
-            <div style="display: flex; align-items: center; gap: 1.5rem;">
-              <button onclick="StudentDashboard.loadResults()" style="border-radius: 50%; width: 44px; height: 44px; padding: 0; display: flex; align-items: center; justify-content: center; border: 1px solid #e2e8f0; background: white; cursor: pointer; color: #475569; transition: all 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.02);"><i class="fas fa-arrow-left"></i></button>
-              <div>
-                <h1 style="font-size: 2.2rem; font-weight: 900; color: #0f172a; line-height: 1.2; letter-spacing: -0.5px;">${data.sessionId?.title || 'Examination Result'}</h1>
-                <p style="color: #64748b; font-weight: 600; font-size: 0.95rem; margin-top: 4px;">${data.sessionId?.subject || 'Academic Module'} &nbsp;&bull;&nbsp; Submitted ${new Date(data.createdAt || Date.now()).toLocaleDateString()}</p>
+          <div class="result-nav-header">
+            <div class="result-nav-left">
+              <button onclick="StudentDashboard.loadResults()" class="result-nav-back-btn"><i class="fas fa-arrow-left"></i></button>
+              <div class="result-header-title-wrapper">
+                <h1 class="result-header-title">${data.sessionId?.title || 'Examination Result'}</h1>
+                <p class="result-header-subtitle">${data.sessionId?.subject || 'Academic Module'} &nbsp;&bull;&nbsp; Submitted ${new Date(data.createdAt || Date.now()).toLocaleDateString()}</p>
               </div>
             </div>
             <button id="btn-download-result-pdf" class="btn btn-outline" style="font-size: 13px; font-weight:700; height:42px; border-radius:10px; display: inline-flex; align-items: center; gap: 8px; background: white;" onclick="StudentDashboard.exportResultToPDF('${data._id}')">
@@ -697,7 +697,7 @@ const StudentDashboard = {
           </div>
 
           <!-- High-Impact Hero Stats Section -->
-          <div style="background: linear-gradient(135deg, #1e1b4b 0%, #3730a3 100%); border-radius: 24px; padding: 3rem 4rem; color: white; display: flex; justify-content: space-between; align-items: center; margin-bottom: 3rem; box-shadow: 0 20px 40px rgba(55, 48, 163, 0.25); position: relative; overflow: hidden; flex-wrap: wrap; gap: 2rem;">
+          <div class="result-hero-stats-card">
             <!-- Decorative background elements -->
             <div style="position: absolute; top: -50%; right: -10%; width: 500px; height: 500px; background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 70%); border-radius: 50%; pointer-events: none;"></div>
             
@@ -709,7 +709,7 @@ const StudentDashboard = {
               </div>
             </div>
             
-            <div style="position: relative; z-index: 1; display: flex; align-items: center; gap: 3rem; flex-wrap: wrap;">
+            <div class="result-hero-stats-right">
               <!-- Dynamic CSS Donut Chart -->
               <div style="width: 140px; height: 140px; border-radius: 50%; background: conic-gradient(#10b981 0% ${totalQuestions > 0 ? (correctCount/totalQuestions)*100 : 0}%, #ef4444 ${totalQuestions > 0 ? (correctCount/totalQuestions)*100 : 0}% ${totalQuestions > 0 ? ((correctCount+wrongCount)/totalQuestions)*100 : 0}%, #6366f1 ${totalQuestions > 0 ? ((correctCount+wrongCount)/totalQuestions)*100 : 0}% 100%); display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
                 <div style="width: 100px; height: 100px; border-radius: 50%; background: #2e267c; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: inset 0 4px 10px rgba(0,0,0,0.3);">
@@ -719,7 +719,7 @@ const StudentDashboard = {
               </div>
 
               <!-- Stat Boxes Grid -->
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+              <div class="result-stats-boxes-grid">
                 <div style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 1.25rem; min-width: 120px; display: flex; flex-direction: column; gap: 0.5rem; backdrop-filter: blur(10px);">
                   <div style="display: flex; align-items: center; gap: 8px; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: #a5b4fc; font-weight: 700;">
                     <div style="width: 10px; height: 10px; border-radius: 50%; background: #10b981;"></div> Correct
@@ -752,14 +752,15 @@ const StudentDashboard = {
           </div>
 
           <!-- Professional Review Section -->
-          <div style="background: white; border-radius: 24px; padding: 3.5rem; box-shadow: 0 10px 40px rgba(0,0,0,0.03); border: 1px solid #f1f5f9;">
-            <div style="display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #f8fafc; padding-bottom: 1.5rem; margin-bottom: 3rem;">
+          <div class="result-detailed-analysis-card">
+            <div class="result-analysis-header">
                <h3 style="font-size: 1.5rem; font-weight: 800; color: #0f172a; margin: 0;">Detailed Question Analysis</h3>
                <div style="display: flex; gap: 1.5rem;">
                   <span style="font-size: 0.85rem; font-weight: 600; color: #475569;"><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#10b981; margin-right:6px;"></span>Correct (${correctCount})</span>
                   <span style="font-size: 0.85rem; font-weight: 600; color: #475569;"><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#ef4444; margin-right:6px;"></span>Incorrect (${wrongCount})</span>
                </div>
             </div>
+            <div style="display: flex; flex-direction: column; gap: 2rem;">
               ${answers.map((a, i) => {
                 const correctAnswer = a.correctAnswer ? (Array.isArray(a.correctAnswer) ? a.correctAnswer : String(a.correctAnswer).split(',').map(x => x.trim())) : [];
                 const selectedAnswerArr = a.selectedAnswer ? (Array.isArray(a.selectedAnswer) ? a.selectedAnswer : String(a.selectedAnswer).split(',').map(x => x.trim())) : [];
@@ -770,23 +771,23 @@ const StudentDashboard = {
                 const bgPulse = isSelectedCorrect ? 'rgba(16, 185, 129, 0.03)' : (a.selectedAnswer ? 'rgba(239, 68, 68, 0.03)' : '#fff');
 
                 return `
-                  <div style="border: 1px solid #e2e8f0; background: ${bgPulse}; border-radius: 16px; padding: 2rem; position: relative; overflow: hidden; transition: all 0.2s;">
+                  <div class="result-question-card-wrapper" style="background: ${bgPulse};">
                     <div style="position: absolute; top: 0; left: 0; width: 6px; height: 100%; background: ${statusColor}; border-radius: 16px 0 0 16px;"></div>
                     
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem;">
-                      <div style="display: flex; gap: 1.25rem; align-items: flex-start;">
+                    <div class="result-question-header">
+                      <div class="result-question-text-container">
                         <div style="background: white; color: #0f172a; font-weight: 800; width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.1rem; border: 1px solid #e2e8f0; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">${i + 1}</div>
                         <div style="font-size: 1.15rem; font-weight: 700; color: #1e293b; line-height: 1.6; padding-top: 6px;">
                           ${this.esc(a.questionText || '')}
                           ${a.image ? `<br><img src="${window.SERVER_URL}${a.image}" style="max-width: 100%; max-height: 220px; border-radius: 10px; border: 1px solid #e2e8f0; margin-top: 16px;" onerror="this.style.display='none'">` : ''}
                         </div>
                       </div>
-                      <div style="background: white; border: 1px solid ${statusColor}30; color: ${statusColor}; padding: 6px 14px; border-radius: 20px; font-weight: 800; font-size: 0.8rem; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 10px ${statusColor}15;">
+                      <div style="background: white; border: 1px solid ${statusColor}30; color: ${statusColor}; padding: 6px 14px; border-radius: 20px; font-weight: 800; font-size: 0.8rem; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 10px ${statusColor}15; flex-shrink: 0;">
                         <i class="fas ${statusIcon}"></i> ${statusText}
                       </div>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.25rem; margin-left: 3.75rem;">
+                    <div class="result-options-layout-grid">
                       ${(a.options || []).map(opt => {
                         const isCorrectOpt = correctAnswer.includes(opt.label);
                         const isSelectedOpt = selectedAnswerArr.includes(opt.label);
@@ -814,7 +815,7 @@ const StudentDashboard = {
                     </div>
                     
                     ${!isSelectedCorrect ? `
-                    <div style="margin-top: 2rem; margin-left: 3.75rem; padding: 1.25rem 1.5rem; background: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #3b82f6; border-radius: 12px; display: flex; align-items: flex-start; gap: 1rem;">
+                    <div class="result-feedback-layout-box">
                       <div style="color: #3b82f6; font-size: 1.25rem; margin-top: 2px;"><i class="fas fa-info-circle"></i></div>
                       <div>
                         <p style="font-size: 0.95rem; color: #334155; margin: 0;"><strong style="font-weight: 800; color: #0f172a;">Correct Answer:</strong> Option ${correctAnswer.join(', ')} - ${(a.options?.find(o => o.label === correctAnswer[0])?.text || '')}</p>
@@ -823,7 +824,7 @@ const StudentDashboard = {
                     ` : ''}
 
                     ${a.explanation ? `
-                    <div style="margin-top: 1rem; margin-left: 3.75rem; padding: 1.5rem; background: #fdf4ff; border: 1px solid #fce7f3; border-left: 4px solid #d946ef; border-radius: 12px; display: flex; align-items: flex-start; gap: 1rem;">
+                    <div class="result-explanation-layout-box">
                       <div style="color: #d946ef; font-size: 1.25rem; margin-top: 2px;"><i class="fas fa-lightbulb"></i></div>
                       <div>
                         <h4 style="font-size: 0.85rem; font-weight: 800; color: #86198f; margin: 0 0 0.5rem 0; text-transform: uppercase; letter-spacing: 1.5px;">Explanation</h4>

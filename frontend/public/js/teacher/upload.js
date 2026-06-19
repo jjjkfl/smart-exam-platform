@@ -189,16 +189,8 @@ const PDFUpload = {
     const meta = data.meta || {};
 
     let questionsHtml = questions.map((q, i) => `
-      <div class="preview-question" style="
-        background: #fff; 
-        border: 1px solid #eef2f6; 
-        border-radius: 20px; 
-        margin-bottom: 24px; 
-        padding: 32px; 
-        box-shadow: 0 4px 20px rgba(0,0,0,0.03);
-        transition: all 0.3s ease;
-      ">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+      <div class="preview-question extraction-question-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px;">
           <span style="
             background: var(--primary-soft); 
             color: var(--primary); 
@@ -236,7 +228,7 @@ const PDFUpload = {
                  onerror="this.src='/img/placeholder.png'; this.style.opacity='0.5';">
           </div>` : ''}
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+        <div class="extraction-options-grid">
           ${(q.options || []).map(opt => `
             <div style="
               display: flex; 
@@ -299,15 +291,89 @@ const PDFUpload = {
 
     Modal.show('mcq-preview', `
       <div class="preview-container">
-        <div style="
-          background: #fff; 
-          border-radius: 24px; 
-          padding: 32px; 
-          margin-bottom: 32px; 
-          border: 1px solid #eef2f6;
-          box-shadow: 0 10px 30px -5px rgba(0,0,0,0.06);
-        ">
-          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; text-align: center; align-items: center;">
+        <style>
+          .extraction-meta-card {
+            background: #fff; 
+            border-radius: 24px; 
+            padding: 32px; 
+            margin-bottom: 32px; 
+            border: 1px solid #eef2f6;
+            box-shadow: 0 10px 30px -5px rgba(0,0,0,0.06);
+          }
+          .extraction-meta-grid {
+            display: grid; 
+            grid-template-columns: repeat(3, 1fr); 
+            gap: 24px; 
+            text-align: center; 
+            align-items: center;
+          }
+          .extraction-question-card {
+            background: #fff; 
+            border: 1px solid #eef2f6; 
+            border-radius: 20px; 
+            margin-bottom: 24px; 
+            padding: 32px; 
+            box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+            transition: all 0.3s ease;
+          }
+          .extraction-options-grid {
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 16px;
+          }
+          .extraction-actions-row {
+            display: flex; 
+            gap: 16px; 
+            margin-top: 24px;
+          }
+          .extraction-scroll-wrapper {
+            max-height: 60vh; 
+            overflow-y: auto; 
+            padding: 4px 16px 4px 4px; 
+            margin-right: -16px;
+          }
+
+          @media (max-width: 768px) {
+            .extraction-meta-card {
+              padding: 16px;
+              margin-bottom: 20px;
+              border-radius: 16px;
+            }
+            .extraction-meta-grid {
+              grid-template-columns: 1fr;
+              gap: 16px;
+            }
+            .extraction-meta-grid > div {
+              border-right: none !important;
+              border-bottom: 2px solid #f1f5f9;
+              padding-bottom: 16px;
+            }
+            .extraction-meta-grid > div:last-child {
+              border-bottom: none !important;
+              padding-bottom: 0;
+              padding-top: 8px;
+            }
+            .extraction-question-card {
+              padding: 20px 16px;
+              border-radius: 16px;
+              margin-bottom: 16px;
+            }
+            .extraction-options-grid {
+              grid-template-columns: 1fr;
+              gap: 12px;
+            }
+            .extraction-actions-row {
+              flex-direction: column;
+              gap: 12px;
+            }
+            .extraction-scroll-wrapper {
+              padding: 4px;
+              margin-right: 0;
+            }
+          }
+        </style>
+        <div class="extraction-meta-card">
+          <div class="extraction-meta-grid">
             <div style="border-right: 2px solid #f1f5f9;">
               <div style="font-size: 42px; font-weight: 800; color: var(--primary); letter-spacing: -0.03em; line-height: 1;">${questions.length}</div>
               <div style="font-size: 12px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.1em; margin-top: 8px;">Questions Extracted</div>
@@ -336,16 +402,16 @@ const PDFUpload = {
             </div>
           </div>
         </div>
-        <div class="preview-scroll-custom" style="max-height: 60vh; overflow-y: auto; padding: 4px 16px 4px 4px; margin-right: -16px;">
+        <div class="extraction-scroll-wrapper preview-scroll-custom">
           ${questionsHtml}
         </div>
-        <div style="display: flex; gap: 16px; margin-top: 24px;">
+        <div class="extraction-actions-row">
           <button onclick="PDFUpload.reextract()" 
-                  class="btn btn-secondary" style="flex: 1; height: 56px; font-size: 16px; font-weight: 700; border-radius: 16px; background: rgba(37, 99, 235, 0.08); color: var(--secondary-blue); border: 1px solid rgba(37, 99, 235, 0.15);">
+                  class="btn btn-secondary" style="flex: 1; height: 56px; font-size: 16px; font-weight: 700; border-radius: 16px; background: rgba(37, 99, 235, 0.08); color: var(--secondary-blue); border: 1px solid rgba(37, 99, 235, 0.15); margin-top: 0;">
             🔄 Re-extract Document
           </button>
           <button onclick="Modal.close(); if(typeof TeacherDashboard !== 'undefined') TeacherDashboard.loadMCQBanks();" 
-                  class="btn btn-primary" style="flex: 1.5; height: 56px; font-size: 16px; font-weight: 700; border-radius: 16px;">
+                  class="btn btn-primary" style="flex: 1.5; height: 56px; font-size: 16px; font-weight: 700; border-radius: 16px; margin-top: 0;">
             ✅ Done — Return to Dashboard
           </button>
         </div>

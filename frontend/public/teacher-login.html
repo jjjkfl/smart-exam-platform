@@ -30,6 +30,12 @@
       --glass-bg: rgba(255, 255, 255, 0.7);
     }
 
+    html,
+    body {
+      width: 100%;
+      overflow-x: hidden;
+    }
+
     body {
       font-family: 'Poppins', sans-serif;
       background-color: var(--bg-light);
@@ -399,13 +405,23 @@
     @media (max-width: 768px) {
       .auth-container {
         flex-direction: column;
+        width: 100%;
+        overflow-x: hidden;
       }
 
       .auth-illustration {
         padding: 3rem 1.5rem;
         min-height: 380px;
         height: auto;
-        position: static;
+        position: relative; /* Positioned relative to allow absolute children circles to position correctly and clip */
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      .auth-form-container {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 3rem 1.5rem !important;
       }
 
       .image-card-wrapper {

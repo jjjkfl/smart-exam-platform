@@ -45,6 +45,34 @@ app.use('/api', limiter);
 app.use(cors());
 app.use(express.json());
 
+// Global Database & Cryptographic Error Interceptor
+app.use('/api', (req, res, next) => {
+  const originalJson = res.json;
+  res.json = function (body) {
+    if (body && typeof body === 'object') {
+      const message = body.message || body.error;
+      if (message && typeof message === 'string') {
+        if (
+          message.includes('SSL') ||
+          message.includes('TLS') ||
+          message.includes('alert') ||
+          message.includes('ENOTFOUND') ||
+          message.includes('ECONNRESET') ||
+          message.includes('MongoServerSelectionError') ||
+          message.includes('MongoNetworkError')
+        ) {
+          body.message = 'Database connection failed. Please verify your internet connection, ensure your public IP is whitelisted in MongoDB Atlas Network Access, or ensure local MongoDB is running.';
+          if (body.error) {
+            body.error = body.message;
+          }
+        }
+      }
+    }
+    return originalJson.call(this, body);
+  };
+  next();
+});
+
 // Static Files
 app.use(express.static(path.join(__dirname, '..', 'frontend', 'public'), { index: false }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));

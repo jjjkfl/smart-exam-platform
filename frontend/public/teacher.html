@@ -47,12 +47,19 @@
       --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
     }
 
+    html {
+      max-width: 100%;
+      overflow-x: hidden;
+    }
+
     body {
       font-family: 'Inter', 'Poppins', sans-serif;
       background: #f1f5f9; /* Slightly darker base for better contrast */
       color: var(--text-dark);
       -webkit-font-smoothing: antialiased;
       line-height: 1.6;
+      max-width: 100%;
+      overflow-x: hidden;
     }
 
     /* Professional UI Utilities */
@@ -703,6 +710,22 @@
       pointer-events: auto;
     }
 
+    .analytics-header-wrapper {
+      background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%);
+      padding: 3rem 3.5rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .analytics-content-wrapper {
+      padding: 3rem 3.5rem;
+    }
+    .global-analytics-grid {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 32px;
+      align-items: start;
+      margin-top: 32px;
+    }
+
     @media(max-width:992px) {
       .student-layout {
         grid-template-columns: 1fr !important;
@@ -744,7 +767,12 @@
       }
 
       .topbar {
-        padding: 1rem 1.5rem;
+        padding: 1rem 1.25rem;
+      }
+
+      .integrity-pill {
+        padding: .25rem .75rem !important;
+        font-size: 0.78rem !important;
       }
 
       .metrics-grid {
@@ -755,6 +783,40 @@
       .dashboard-grid {
         grid-template-columns: 1fr !important;
         gap: 2.5rem !important;
+      }
+
+      .analytics-header-wrapper {
+        padding: 2rem 1.5rem !important;
+      }
+      .analytics-content-wrapper {
+        padding: 1.5rem !important;
+      }
+      .global-analytics-grid {
+        grid-template-columns: 1fr !important;
+        gap: 24px !important;
+      }
+
+      .view-header-flex {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 1.25rem !important;
+      }
+      .view-header-flex > div[style*="display:flex"],
+      .view-header-flex > .flex-center {
+        width: 100% !important;
+        flex-wrap: wrap !important;
+        gap: 8px !important;
+      }
+      .view-header-flex > div[style*="display:flex"] > select,
+      .view-header-flex > div[style*="display:flex"] > button,
+      .view-header-flex > .flex-center > button {
+        flex: 1 1 calc(50% - 8px) !important;
+        min-width: 120px !important;
+        margin: 0 !important;
+        justify-content: center !important;
+      }
+      .view-header-flex > button {
+        width: 100% !important;
       }
     }
 
@@ -1049,7 +1111,7 @@
           <button onclick="TeacherDashboard.navigateToView('dashboard')" class="btn btn-outline"
             style="padding: 6px 12px; font-size: 12px; margin-bottom: 16px;">← Back to Dashboard</button>
         </div>
-        <header class="flex-between" style="margin-bottom: 32px;">
+        <header class="flex-between view-header-flex" style="margin-bottom: 32px;">
           <div>
             <h2 class="h2" id="session-title">Monitoring</h2>
             <p id="student-count" class="p-dim"></p>
@@ -1094,7 +1156,7 @@
 
       <!-- VIEW: All Analytics (Global) -->
       <main id="view-analytics-all" class="view" style="display: none; padding: 0;">
-        <div style="background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%); padding: 3rem 3.5rem; border-bottom: 1px solid var(--border-color);">
+        <div class="analytics-header-wrapper">
           <header class="flex-between" style="margin-bottom: 32px;">
             <div>
               <h2 class="h2">Academic Performance Overview</h2>
@@ -1102,7 +1164,7 @@
             </div>
           </header>
 
-          <div style="display: grid; grid-template-columns: 320px 1fr; gap: 32px; align-items: start; margin-top: 32px;">
+          <div class="global-analytics-grid">
             <!-- Left: Vertical Metrics -->
             <div id="global-analytics-stats" style="display: flex; flex-direction: column; gap: 24px;"></div>
 
@@ -1122,7 +1184,7 @@
           </div>
         </div>
 
-        <div style="padding: 3rem 3.5rem;">
+        <div class="analytics-content-wrapper">
           <div style="margin-bottom: 40px;">
             <h2 class="h2" style="font-size: 1.75rem; color: #1e293b;">Detailed Session Reports</h2>
             <p class="p-dim" style="font-size: 14px;">In-depth performance analysis for each examination session.</p>
@@ -1134,7 +1196,7 @@
 
       <!-- VIEW: Materials Management -->
       <main id="view-materials" class="view" style="display: none;">
-        <header class="flex-between" style="margin-bottom: 32px;">
+        <header class="flex-between view-header-flex" style="margin-bottom: 32px;">
           <div>
             <h2 class="h2">Curriculum & Materials</h2>
             <p class="p-dim">Manage and audit your division-wise academic resources.</p>
@@ -1182,7 +1244,7 @@
 
       <!-- VIEW: Attendance & Analytics -->
       <main id="view-students" class="view" style="display: none;">
-        <header class="flex-between" style="margin-bottom: 32px;">
+        <header class="flex-between view-header-flex" style="margin-bottom: 32px;">
           <div>
             <h2 class="h2">Student Tracking</h2>
             <p class="p-dim">Monitor attendance and overall performance per session.</p>

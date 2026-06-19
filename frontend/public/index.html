@@ -35,13 +35,17 @@
 
     html {
       scroll-behavior: smooth;
+      max-width: 100%;
+      overflow-x: hidden;
     }
 
     body {
       font-family: 'Outfit', sans-serif;
       background: var(--bg-light);
       color: var(--text-dark);
-      -webkit-font-smoothing: antialiased
+      -webkit-font-smoothing: antialiased;
+      max-width: 100%;
+      overflow-x: hidden;
     }
 
     /* Layout */
@@ -1011,6 +1015,16 @@
       pointer-events: auto;
     }
 
+    .analytics-content-wrapper {
+      padding: 2rem 3rem;
+    }
+
+    .split-section.reverse {
+      grid-template-columns: 1.2fr 1fr;
+      background: #fff;
+      border-top: 1px solid var(--border-color);
+    }
+
     @media(max-width:992px) {
       .student-layout {
         grid-template-columns: 1fr;
@@ -1061,6 +1075,12 @@
         gap: 2rem;
       }
 
+      .split-section.reverse {
+        grid-template-columns: 1fr !important;
+        padding: 3rem 1.5rem !important;
+        gap: 2rem !important;
+      }
+
       .split-img-side {
         height: 280px;
       }
@@ -1070,7 +1090,23 @@
       }
 
       .topbar {
-        padding: 1rem 1.5rem;
+        padding: 1rem 1.25rem;
+      }
+
+      .page-header {
+        padding: 2rem 1.25rem 1rem !important;
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 1rem !important;
+      }
+
+      .page-header h1 {
+        font-size: 28px !important;
+      }
+
+      .integrity-pill {
+        padding: .25rem .75rem !important;
+        font-size: 0.85rem !important;
       }
 
       .results-list {
@@ -1087,6 +1123,10 @@
       }
       .correct-ans-footer {
         margin-left: 1rem;
+      }
+
+      .analytics-content-wrapper {
+        padding: 1.5rem 1rem !important;
       }
     }
 
@@ -1567,6 +1607,251 @@
       background: rgba(16, 185, 129, 0.1);
       color: var(--success);
     }
+
+    /* Detailed Result Review Styling */
+    .result-fullpage-container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 4rem;
+    }
+    
+    .result-nav-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 2.5rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    
+    .result-nav-left {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+      min-width: 0;
+      flex: 1;
+    }
+
+    .result-nav-back-btn {
+      border-radius: 50%;
+      width: 44px;
+      height: 44px;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid #e2e8f0;
+      background: white;
+      cursor: pointer;
+      color: #475569;
+      transition: all 0.2s;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+      flex-shrink: 0;
+    }
+
+    .result-header-title-wrapper {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .result-header-title {
+      font-size: 2.2rem;
+      font-weight: 900;
+      color: #0f172a;
+      line-height: 1.2;
+      letter-spacing: -0.5px;
+      word-wrap: break-word;
+    }
+
+    .result-header-subtitle {
+      color: #64748b;
+      font-weight: 600;
+      font-size: 0.95rem;
+      margin-top: 4px;
+    }
+    
+    .result-hero-stats-card {
+      background: linear-gradient(135deg, #1e1b4b 0%, #3730a3 100%);
+      border-radius: 24px;
+      padding: 3rem 4rem;
+      color: white;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 3rem;
+      box-shadow: 0 20px 40px rgba(55, 48, 163, 0.25);
+      position: relative;
+      overflow: hidden;
+      flex-wrap: wrap;
+      gap: 2rem;
+    }
+
+    .result-hero-stats-right {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      gap: 3rem;
+      flex-wrap: wrap;
+    }
+    
+    .result-stats-boxes-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .result-detailed-analysis-card {
+      background: white;
+      border-radius: 24px;
+      padding: 3.5rem;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.03);
+      border: 1px solid #f1f5f9;
+    }
+
+    .result-analysis-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      border-bottom: 2px solid #f8fafc;
+      padding-bottom: 1.5rem;
+      margin-bottom: 3rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .result-question-card-wrapper {
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 2rem;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.2s;
+    }
+
+    .result-question-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .result-question-text-container {
+      display: flex;
+      gap: 1.25rem;
+      align-items: flex-start;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .result-options-layout-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.25rem;
+      margin-left: 3.75rem;
+    }
+
+    .result-feedback-layout-box {
+      margin-top: 2rem;
+      margin-left: 3.75rem;
+      padding: 1.25rem 1.5rem;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-left: 4px solid #3b82f6;
+      border-radius: 12px;
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+
+    .result-explanation-layout-box {
+      margin-top: 1rem;
+      margin-left: 3.75rem;
+      padding: 1.5rem;
+      background: #fdf4ff;
+      border: 1px solid #fce7f3;
+      border-left: 4px solid #d946ef;
+      border-radius: 12px;
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+
+    @media (max-width: 992px) {
+      .result-fullpage-container {
+        padding: 1.5rem 1rem 3rem;
+      }
+      
+      .result-hero-stats-card {
+        padding: 2rem;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+      }
+
+      .result-detailed-analysis-card {
+        padding: 2rem 1.5rem;
+      }
+
+      .result-question-card-wrapper {
+        padding: 1.5rem;
+      }
+
+      .result-options-layout-grid {
+        grid-template-columns: 1fr;
+        margin-left: 0;
+        gap: 1rem;
+      }
+
+      .result-feedback-layout-box,
+      .result-explanation-layout-box {
+        margin-left: 0;
+        padding: 1.25rem;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .result-nav-header {
+        margin-bottom: 1.5rem;
+      }
+      .result-header-title {
+        font-size: 1.6rem;
+      }
+      .result-header-subtitle {
+        font-size: 0.85rem;
+      }
+      .result-hero-stats-right {
+        gap: 1.5rem;
+        flex-direction: column;
+        width: 100%;
+        align-items: center;
+      }
+      .result-stats-boxes-grid {
+        width: 100%;
+      }
+      .result-analysis-header {
+        flex-direction: column;
+        align-items: flex-start;
+        margin-bottom: 2rem;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .result-stats-boxes-grid {
+        grid-template-columns: 1fr;
+      }
+      .result-hero-stats-card {
+        padding: 1.5rem 1rem;
+      }
+      .result-detailed-analysis-card {
+        padding: 1.5rem 1rem;
+      }
+      .result-question-card-wrapper {
+        padding: 1.25rem 1rem;
+      }
+    }
   </style>
 </head>
 
@@ -1737,8 +2022,7 @@
         </div>
 
         <!-- Second image strip -->
-        <div
-          style="display:grid;grid-template-columns:1.2fr 1fr;gap:3rem;align-items:center;padding:5rem 3rem;background:#fff;border-top:1px solid var(--border-color)">
+        <div class="split-section reverse">
           <div>
             <h3 style="font-size:1.65rem;font-weight:700;margin-bottom:1rem">Security &amp; Privacy First</h3>
             <p style="font-size:1.05rem;color:var(--text-muted);line-height:1.7;margin-bottom:1.5rem">Your data is
@@ -1808,7 +2092,7 @@
           </button>
         </div>
 
-        <div style="padding: 2rem 3rem;">
+        <div class="analytics-content-wrapper">
           <!-- Section: Personal Performance -->
           <h3 class="analytics-summary-title">
             <i class="fas fa-user-graduate" style="color: var(--primary-indigo);"></i> Personal Standing & Metrics
