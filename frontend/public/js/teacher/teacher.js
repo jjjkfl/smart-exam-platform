@@ -575,9 +575,10 @@ const TeacherDashboard = {
         const passRate = stats.total > 0 ? ((stats.passed / stats.total) * 100).toFixed(1) : '0.0';
 
         return `
-          <div class="glass-card" id="report-card-${session._id}" style="margin-bottom: 48px; padding: 40px;">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px;">
-              <div>
+        return `
+          <div class="glass-card report-card" id="report-card-${session._id}">
+            <div class="report-header">
+              <div class="report-header-left">
                 <h3 class="h3" style="font-size: 1.5rem; margin-bottom: 8px; color: #1e293b;">${normalized.sessionTitle}</h3>
                 <div style="display: flex; gap: 16px; align-items: center;">
                   <span class="status-pill status-success" style="padding: 4px 12px; font-size: 11px;">Completed</span>
@@ -586,7 +587,7 @@ const TeacherDashboard = {
                   </p>
                 </div>
               </div>
-              <div style="display:flex; gap:8px;">
+              <div class="report-header-actions">
                 <button class="btn btn-outline" style="font-size: 12px; padding: 8px 16px; border-color: #10b981; color: #10b981;" onclick="TeacherDashboard.exportToExcel('${session._id}')">
                   <i class="fas fa-file-excel"></i> Export Excel
                 </button>
@@ -596,9 +597,9 @@ const TeacherDashboard = {
               </div>
             </div>
             
-            <div style="display: grid; grid-template-columns: 240px 1fr; gap: 32px; margin-bottom: 40px; align-items: start;">
+            <div class="report-grid">
               <!-- Left: Session Metrics (Vertical) -->
-              <div style="display: flex; flex-direction: column; gap: 12px;">
+              <div class="report-metrics">
                 <div class="glass-card metric-card" style="padding: 16px; border: 1px solid rgba(16,185,129,0.1); background: rgba(16,185,129,0.02); flex: 1;">
                   <p class="p-dim" style="font-size:10px; font-weight:700; text-transform:uppercase; margin-bottom: 4px;">Pass Rate</p>
                   <div class="metric-value" style="font-size:22px; color: #10b981; margin:0;">${passRate}%</div>
@@ -616,9 +617,9 @@ const TeacherDashboard = {
                   <div class="metric-value" style="font-size:22px; color: #ef4444; margin:0;">${stats.lowScore || 0}%</div>
                 </div>
               </div>
-
+ 
               <!-- Right: Session Grade Distribution -->
-              <div style="background: rgba(0,0,0,0.01); padding: 24px; border-radius: 16px; border: 1px solid rgba(0,0,0,0.03); height: 100%; display: flex; flex-direction: column;">
+              <div class="report-chart-container">
                 <div class="flex-between" style="margin-bottom: 20px;">
                   <h4 style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Grade Distribution</h4>
                   <span style="font-size: 10px; color: var(--text-muted); opacity: 0.6;">Session Analysis</span>

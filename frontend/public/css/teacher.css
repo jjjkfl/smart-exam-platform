@@ -148,9 +148,13 @@
 /* ─── Content Grid ───────────────────────────────────────── */
 .dashboard-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 1.5rem;
   margin-top: 2rem;
+}
+
+.dashboard-grid > * {
+  min-width: 0;
 }
 
 .section-card {
@@ -605,7 +609,10 @@
   }
 
   .dashboard-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .dashboard-grid > * {
+    min-width: 0 !important;
   }
 }
 

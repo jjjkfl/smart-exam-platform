@@ -681,10 +681,13 @@
     /* Prevent horizontal overflow on dashboard tables grid */
     .dashboard-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
       gap: 2.5rem;
       margin-top: 2.5rem;
       width: 100%;
+    }
+    .dashboard-grid > * {
+      min-width: 0;
     }
 
     .mobile-menu-toggle {
@@ -724,6 +727,9 @@
       gap: 32px;
       align-items: start;
       margin-top: 32px;
+    }
+    .global-analytics-grid > * {
+      min-width: 0;
     }
 
     @media(max-width:992px) {
@@ -781,8 +787,14 @@
       }
 
       .dashboard-grid {
-        grid-template-columns: 1fr !important;
+        grid-template-columns: minmax(0, 1fr) !important;
         gap: 2.5rem !important;
+      }
+      .dashboard-grid > * {
+        min-width: 0 !important;
+      }
+      .glass-card {
+        padding: 1.5rem !important;
       }
 
       .analytics-header-wrapper {
@@ -794,6 +806,9 @@
       .global-analytics-grid {
         grid-template-columns: 1fr !important;
         gap: 24px !important;
+      }
+      .global-analytics-grid > * {
+        min-width: 0 !important;
       }
 
       .view-header-flex {
@@ -939,6 +954,136 @@
       background: #000;
       color: #fff;
       font-weight: 600;
+    }
+
+    /* Global Analytics Stats & Chart Responsiveness */
+    .global-analytics-stats-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+    
+    .global-analytics-chart-card {
+      padding: 32px;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+
+    /* Report Card & Layout Classes */
+    .report-card {
+      margin-bottom: 48px;
+      padding: 40px !important;
+    }
+    
+    .report-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 40px;
+      gap: 1.5rem;
+    }
+    
+    .report-header-left {
+      flex: 1;
+    }
+    
+    .report-header-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    
+    .report-grid {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      gap: 32px;
+      margin-bottom: 40px;
+      align-items: start;
+    }
+    
+    .report-metrics {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .report-chart-container {
+      background: rgba(0, 0, 0, 0.01);
+      padding: 24px;
+      border-radius: 16px;
+      border: 1px solid rgba(0, 0, 0, 0.03);
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    @media (max-width: 992px) {
+      .global-analytics-stats-wrapper {
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 16px !important;
+      }
+      
+      .global-analytics-chart-card {
+        padding: 1.5rem !important;
+      }
+      
+      .report-card {
+        padding: 1.5rem !important;
+        margin-bottom: 24px !important;
+      }
+      
+      .report-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1.25rem;
+        margin-bottom: 24px;
+      }
+      
+      .report-header-actions {
+        width: 100%;
+      }
+      
+      .report-header-actions button,
+      .report-header-actions .btn {
+        flex: 1 1 calc(50% - 4px) !important;
+        justify-content: center !important;
+      }
+      
+      .report-grid {
+        grid-template-columns: 1fr !important;
+        gap: 24px !important;
+        margin-bottom: 24px !important;
+      }
+      
+      .report-metrics {
+        display: grid !important;
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 12px !important;
+      }
+      
+      .report-chart-container {
+        padding: 16px !important;
+      }
+    }
+    
+    @media (max-width: 768px) {
+      .global-analytics-stats-wrapper {
+        grid-template-columns: 1fr !important;
+      }
+      
+      .report-metrics {
+        grid-template-columns: 1fr !important;
+      }
+      
+      .report-header-actions button,
+      .report-header-actions .btn {
+        flex: 1 1 100% !important;
+      }
     }
   </style>
 </head>
@@ -1166,10 +1311,10 @@
 
           <div class="global-analytics-grid">
             <!-- Left: Vertical Metrics -->
-            <div id="global-analytics-stats" style="display: flex; flex-direction: column; gap: 24px;"></div>
+            <div id="global-analytics-stats" class="global-analytics-stats-wrapper"></div>
 
             <!-- Right: Main Grade Chart -->
-            <div class="glass-card" style="padding: 32px; height: 100%; display: flex; flex-direction: column; background: rgba(255,255,255,0.8); backdrop-filter: blur(10px);">
+            <div class="glass-card global-analytics-chart-card">
               <div class="flex-between" style="margin-bottom: 24px;">
                 <div>
                   <h3 class="h3" style="margin-bottom: 4px;">Global Grade Distribution</h3>
