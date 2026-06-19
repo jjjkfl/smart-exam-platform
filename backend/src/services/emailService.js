@@ -2,11 +2,22 @@ const nodemailer = require('nodemailer');
 
 let transporter;
 
-const createTransporter = () => {
+const createTransporter = async () => {
   if (transporter) return transporter;
 
   if (!process.env.SMTP_HOST) {
-    throw new Error('SMTP_HOST is not defined in .env. Please configure your SMTP settings and restart the server.');
+    console.log('No SMTP_HOST found in .env. Creating an ethereal test account for development...');
+    const testAccount = await nodemailer.createTestAccount();
+    transporter = nodemailer.createTransport({
+      host: "smtp.ethereal.email",
+      port: 587,
+      secure: false,
+      auth: {
+        user: testAccount.user,
+        pass: testAccount.pass,
+      },
+    });
+    return transporter;
   }
 
   transporter = nodemailer.createTransport({
@@ -32,10 +43,14 @@ const createTransporter = () => {
  * @returns {Promise<void>}
  */
 exports.sendEmail = async (options) => {
-  const mailTransporter = createTransporter();
+  const mailTransporter = await createTransporter();
+  
+  const fromAddress = process.env.SMTP_USER 
+    ? `"MCQPro Admin" <${process.env.SMTP_USER}>` 
+    : '"MCQPro Admin" <admin@mcqpro.com>';
   
   const mailOptions = {
-    from: `"MCQPro Admin" <${process.env.SMTP_USER}>`,
+    from: fromAddress,
     to: options.to,
     subject: options.subject,
     text: options.text,
