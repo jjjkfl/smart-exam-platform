@@ -7,7 +7,7 @@ const userSchema = new mongoose.Schema({
   password: { type: String, required: true },
   role: { 
     type: String, 
-    enum: ['student', 'teacher'], 
+    enum: ['student', 'teacher', 'admin', 'school_admin'], 
     default: 'student' 
   },
   courseId: { type: mongoose.Schema.Types.ObjectId, ref: 'Course' }, // For students
