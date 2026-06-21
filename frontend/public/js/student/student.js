@@ -48,6 +48,7 @@ const StudentDashboard = {
     try {
       await this.renderAll();
       this.checkUnreadMessages();
+      this.startExamStateScheduler();
     } catch (err) {
       console.error('Dashboard stabilization check failed:', err);
     }
@@ -534,7 +535,7 @@ const StudentDashboard = {
               <div class="meta-pill"><i class="fas fa-book-open"></i> ${e.subject || 'General'}</div>
               <div class="meta-pill"><i class="far fa-clock"></i> ${utils.formatDateTimeRange(e.scheduledStart || e.startTime, e.duration || e.durationMinutes)}</div>
             </div>
-            <button onclick="StudentDashboard.joinExam('${e._id}')" class="btn btn-primary" style="${buttonStyle}" ${disabledAttr}>${buttonText}</button>
+            <button onclick="StudentDashboard.joinExam('${e._id}')" class="exam-action-btn btn btn-primary" data-exam-id="${e._id}" data-start-time="${start.getTime()}" data-end-time="${end.getTime()}" style="${buttonStyle}" ${disabledAttr}>${buttonText}</button>
           </div>
         </div>
       `;
@@ -549,17 +550,17 @@ const StudentDashboard = {
       const board = localStorage.getItem('mcqpro_selected_board') || '';
       const res = await api.get(`/portal/student/exams?board=${board}`);
       const exams = res.data || [];
-      const activeExams = exams.filter(e => e.status === 'active');
+      const activeExams = exams.filter(e => e.status === 'active' || e.status === 'pending');
 
       if (activeExams.length === 0) {
         container.innerHTML = `
           <div style="grid-column: 1/-1; padding: 40px; text-align: center; background: #fff; border-radius: 20px; border: 1px dashed #cbd5e1;">
-            <p class="p-dim">No active exams right now. Check back later!</p>
+            <p class="p-dim">No active or upcoming exams right now. Check back later!</p>
           </div>`;
         return;
       }
 
-      // Show top 3 active exams on dashboard
+      // Show top 3 active/upcoming exams on dashboard
       container.innerHTML = activeExams.slice(0, 3).map(e => {
         const now = new Date();
         const start = new Date(e.scheduledStart || e.startTime);
@@ -593,7 +594,7 @@ const StudentDashboard = {
                 <div class="meta-pill"><i class="fas fa-book-open"></i> ${e.subject || 'General'}</div>
                 <div class="meta-pill"><i class="far fa-clock"></i> ${utils.formatDateTimeRange(e.scheduledStart || e.startTime, e.duration || e.durationMinutes)}</div>
               </div>
-              <button onclick="StudentDashboard.joinExam('${e._id}')" class="btn btn-primary" style="${buttonStyle}" ${disabledAttr}>${buttonText}</button>
+              <button onclick="StudentDashboard.joinExam('${e._id}')" class="exam-action-btn btn btn-primary" data-exam-id="${e._id}" data-start-time="${start.getTime()}" data-end-time="${end.getTime()}" style="${buttonStyle}" ${disabledAttr}>${buttonText}</button>
             </div>
           </div>
         `;
@@ -1381,6 +1382,44 @@ const StudentDashboard = {
     if (j === 2 && k !== 12) return `${n}nd`;
     if (j === 3 && k !== 13) return `${n}rd`;
     return `${n}th`;
+  },
+
+  startExamStateScheduler() {
+    if (this._examStateInterval) {
+      clearInterval(this._examStateInterval);
+    }
+
+    this._examStateInterval = setInterval(() => {
+      const now = Date.now();
+      const buttons = document.querySelectorAll('.exam-action-btn');
+      
+      buttons.forEach(btn => {
+        const start = parseInt(btn.getAttribute('data-start-time'), 10);
+        const end = parseInt(btn.getAttribute('data-end-time'), 10);
+        
+        if (isNaN(start) || isNaN(end)) return;
+
+        if (now < start) {
+          if (btn.innerText !== 'Upcoming') {
+            btn.innerText = 'Upcoming';
+            btn.disabled = true;
+            btn.style.cssText = 'background: #cbd5e1; border-color: #cbd5e1; color: #64748b; cursor: not-allowed;';
+          }
+        } else if (now >= start && now <= end) {
+          if (btn.innerText !== 'Take Test') {
+            btn.innerText = 'Take Test';
+            btn.disabled = false;
+            btn.style.cssText = 'cursor: pointer;';
+          }
+        } else if (now > end) {
+          if (btn.innerText !== 'Expired') {
+            btn.innerText = 'Expired';
+            btn.disabled = true;
+            btn.style.cssText = 'background: #f1f5f9; border-color: #e2e8f0; color: #94a3b8; cursor: not-allowed;';
+          }
+        }
+      });
+    }, 2000);
   }
 };
 

@@ -34,7 +34,7 @@ exports.getDashboard = async (req, res) => {
       Session.find({
         $or: [
           { status: 'active' },
-          { status: 'pending', startTime: { $lte: new Date() } }
+          { status: 'pending' }
         ],
         startTime: { $gte: new Date(Date.now() - 3600000) }
       })
@@ -147,7 +147,7 @@ exports.getAvailableExams = async (req, res) => {
         {
           $or: [
             { status: 'active' },
-            { status: 'pending', startTime: { $lte: now } }
+            { status: 'pending' }
           ]
         }
       ]
@@ -165,21 +165,9 @@ exports.getAvailableExams = async (req, res) => {
       });
     }
 
-    const exams = await Session.find(query).sort({ startTime: -1 }).lean();
-    
-    const safeExams = exams.map(exam => {
-      if (exam.questions) {
-        exam.questions = exam.questions.map(q => {
-          const isMSQ = q.correctAnswer && q.correctAnswer.includes(',');
-          const safeQ = { ...q, isMSQ };
-          delete safeQ.correctAnswer;
-          return safeQ;
-        });
-      }
-      return exam;
-    });
+    const exams = await Session.find(query).select('-questions').sort({ startTime: -1 }).lean();
 
-    res.json({ success: true, data: safeExams });
+    res.json({ success: true, data: exams });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
