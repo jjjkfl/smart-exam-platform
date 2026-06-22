@@ -20,14 +20,13 @@ const runAuditPulse = async () => {
     try {
         logger.info('AuditPulse: Starting database state integrity check...');
 
-        // 1. Efficiently stream ONLY resultHashes in canonical order
+        // 1. Read resultHashes in canonical order
         const leafHashes = [];
-        const cursor = Result.find({}, { resultHash: 1, _id: 1, isSealed: 1 })
+        const rows = await Result.find({}, { resultHash: 1, _id: 1, isSealed: 1 })
                              .sort({ _id: 1 })
-                             .lean()
-                             .cursor();
+                             .lean();
 
-        for (let r = await cursor.next(); r != null; r = await cursor.next()) {
+        for (const r of rows) {
             let h = r.resultHash;
             // Fallback for legacy records without a pre-computed hash
             if (!h) {

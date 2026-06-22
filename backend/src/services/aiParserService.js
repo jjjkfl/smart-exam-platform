@@ -551,67 +551,6 @@ JSON format:
   }
 };
 
-const claudeTextExtractBatched = async (text, subject = 'General', targetCount = 20) => {
-  if (targetCount <= 30) {
-    return claudeTextExtract(text, subject, targetCount);
-  }
-
-  logger.info(`[Large Extraction] Requested target count is ${targetCount}. Initializing batched extraction...`);
-
-  // Split text by typical question numbering boundaries
-  const blocks = text.split(
-    /(?=\r?\n\s*(?:Q(?:uestion)?\.?\s*\d+[\.\)\:\-]?|\d+[\.\)\:\-])\s+|^(?:Q(?:uestion)?\.?\s*\d+[\.\)\:\-]?|\d+[\.\)\:\-])\s+)/i
-  );
-
-  const chunks = [];
-  if (blocks.length > 5) {
-    const BATCH_SIZE = 30;
-    for (let i = 0; i < blocks.length; i += BATCH_SIZE) {
-      const batchBlocks = blocks.slice(i, i + BATCH_SIZE);
-      chunks.push({
-        text: batchBlocks.join('\n\n'),
-        count: batchBlocks.length
-      });
-    }
-  } else {
-    // Fallback: split by size if no clear numbering structure is found
-    const CHUNK_SIZE = 25000;
-    let index = 0;
-    while (index < text.length) {
-      const chunkText = text.substring(index, index + CHUNK_SIZE);
-      const lastNewline = chunkText.lastIndexOf('\n');
-      const actualLength = (lastNewline > CHUNK_SIZE * 0.8) ? lastNewline : chunkText.length;
-      chunks.push({
-        text: text.substring(index, index + actualLength),
-        count: Math.min(30, Math.ceil(targetCount / (text.length / CHUNK_SIZE)))
-      });
-      index += actualLength;
-    }
-  }
-
-  logger.info(`[Large Extraction] Partitioned document into ${chunks.length} chunks.`);
-
-  const allQuestions = [];
-  const CONCURRENCY = 3;
-
-  for (let i = 0; i < chunks.length; i += CONCURRENCY) {
-    const batch = chunks.slice(i, i + CONCURRENCY);
-    logger.info(`[Large Extraction] Processing chunks ${i + 1} to ${Math.min(chunks.length, i + CONCURRENCY)} of ${chunks.length}...`);
-
-    const promises = batch.map(chunk => claudeTextExtract(chunk.text, subject, chunk.count));
-    const results = await Promise.all(promises);
-
-    results.forEach(qs => {
-      if (Array.isArray(qs)) {
-        allQuestions.push(...qs);
-      }
-    });
-  }
-
-  logger.info(`[Large Extraction] Batched extraction finished. Extracted ${allQuestions.length} questions.`);
-  return allQuestions;
-};
-
 /* ══════════════════════════════════════════════════════════════════
    SECTION 5  —  HTML → MCQ  STRUCTURED PARSER  (DOCX mode)
 ══════════════════════════════════════════════════════════════════ */
@@ -1306,7 +1245,7 @@ const associatePdfImagesByPage = (questions, pdfImages, rawText) => {
  * @param {number}  count        — max questions to return
  * @param {string}  originalName — original filename (used for extension)
  */
-const _extractMCQsFromDocumentInternal = async (filePath, subject = 'General', count = 20, originalName = '') => {
+exports.extractMCQsFromDocument = async (filePath, subject = 'General', count = 20, originalName = '') => {
   const ext = path.extname(originalName || filePath).toLowerCase();
   logger.info(`[MCQ Engine v4] Processing: ${originalName || filePath}  ext=${ext}  count=${count}`);
 
@@ -1402,7 +1341,7 @@ const _extractMCQsFromDocumentInternal = async (filePath, subject = 'General', c
       if (process.env.ANTHROPIC_API_KEY) {
         try {
           logger.info(`[DOCX] Attempting Claude Text extraction...`);
-          const aiQs = (await claudeTextExtractBatched(rawText, subject, count)).filter(isValidMCQ).map(sanitizeMCQ);
+          const aiQs = (await claudeTextExtract(rawText, subject, count)).filter(isValidMCQ).map(sanitizeMCQ);
           if (aiQs.length >= count) {
             return { questions: aiQs.slice(0, count), meta: { model: 'claude-text-docx' } };
           }
@@ -1567,7 +1506,7 @@ const _extractMCQsFromDocumentInternal = async (filePath, subject = 'General', c
       if (text.length > 50 && process.env.ANTHROPIC_API_KEY && bestLocalQs.length < count) {
         try {
           logger.info(`[PDF] Attempting Claude Text extraction...`);
-          let aiQs = (await claudeTextExtractBatched(text, subject, count)).filter(isValidMCQ).map(sanitizeMCQ);
+          let aiQs = (await claudeTextExtract(text, subject, count)).filter(isValidMCQ).map(sanitizeMCQ);
           aiQs = associatePdfImagesByPage(aiQs, pdfImages, text);
           if (aiQs.length >= count) {
             return { questions: aiQs.slice(0, count), meta: { model: 'claude-text-pdf' } };
@@ -1607,253 +1546,8 @@ const _extractMCQsFromDocumentInternal = async (filePath, subject = 'General', c
 
   } catch (err) {
     logger.error(`[MCQ Engine] CRITICAL: ${err.message}\n${err.stack}`);
-    throw err;
+    throw err;   // Let the controller handle the error response
   }
-};
-
-/* ══════════════════════════════════════════════════════════════════
-   SELF-HEALING / RE-EXTRACTION SYSTEM
-══════════════════════════════════════════════════════════════════ */
-
-const getQuestionNumber = (qText, fallbackIdx) => {
-  const m = qText.match(/^\s*(?:Q(?:uestion)?\.?\s*|^\s*)(\d+)[\.\)\:\-]/i);
-  return m ? parseInt(m[1], 10) : fallbackIdx + 1000;
-};
-
-const detectMissingQuestions = (questions, rawText, targetCount) => {
-  if (!rawText) return { missingCount: 0, missingIndices: [], totalInDoc: 0 };
-
-  // Find all question numbers in raw text (e.g. "Q1.", "1.", "Question 2:")
-  const rx = /(?:^|\n|\r)\s*(?:Q(?:uestion)?\.?\s*|^\s*)(\d+)[\.\)\:\-]\s+/gi;
-  let match;
-  const docQuestionNums = new Set();
-  while ((match = rx.exec(rawText)) !== null) {
-    const num = parseInt(match[1], 10);
-    if (num > 0 && num <= 100) { // filter out page numbers, years, etc.
-      docQuestionNums.add(num);
-    }
-  }
-
-  if (docQuestionNums.size === 0) {
-    // If no numbered questions, check if we got fewer than targetCount
-    const missingCount = Math.max(0, targetCount - questions.length);
-    return { missingCount, missingIndices: [], totalInDoc: questions.length + missingCount };
-  }
-
-  const extractedNums = new Set();
-  questions.forEach((q, idx) => {
-    const startM = q.questionText.match(/^\s*(?:Q(?:uestion)?\.?\s*|^\s*)(\d+)[\.\)\:\-]/i);
-    if (startM) {
-      extractedNums.add(parseInt(startM[1], 10));
-    } else {
-      // Fallback: search within first 20 chars of question text
-      const numberMatch = q.questionText.substring(0, 20).match(/\b(\d+)\b/);
-      if (numberMatch) {
-        extractedNums.add(parseInt(numberMatch[1], 10));
-      }
-    }
-  });
-
-  const missingIndices = [];
-  const maxDocNum = Math.max(...docQuestionNums);
-  for (let i = 1; i <= maxDocNum; i++) {
-    if (docQuestionNums.has(i) && !extractedNums.has(i)) {
-      missingIndices.push(i);
-    }
-  }
-
-  return {
-    missingCount: missingIndices.length,
-    missingIndices: missingIndices,
-    totalInDoc: docQuestionNums.size,
-    maxDocNum: maxDocNum
-  };
-};
-
-const reextractMissingQuestions = async (text, alreadyExtracted, missingIndices, subject, targetCount) => {
-  const anthropic = getAnthropic();
-  try {
-    const prompt = `You are an expert MCQ extractor for the MCQ Pro platform.
-We have already successfully extracted the following ${alreadyExtracted.length} questions from the document:
-${alreadyExtracted.map((q, i) => `${i+1}. ${q.questionText.substring(0, 120)}...`).join('\n')}
-
-The document contains more questions. The following question numbers or sections are missing: ${missingIndices.join(', ')}.
-Please analyze the text below and extract ONLY the remaining/missing questions (especially matching the missing numbers ${missingIndices.join(', ')}).
-Do NOT re-extract the questions that have already been listed above.
-
-Return ONLY a valid JSON array of the newly extracted questions:
-[
-  {
-    "questionText": "Full question text here (start with the question number, e.g. '3. What is...')",
-    "image": "",
-    "options": [
-      { "label": "A", "text": "Option A text", "image": "" },
-      { "label": "B", "text": "Option B text", "image": "" },
-      { "label": "C", "text": "Option C text", "image": "" },
-      { "label": "D", "text": "Option D text", "image": "" }
-    ],
-    "correctAnswer": "A",
-    "explanation": "Rationale",
-    "difficulty": "medium",
-    "topic": "topic",
-    "marks": 1
-  }
-]
-
-TEXT:
-${text.substring(0, 300000)}`;
-
-    const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 8192,
-      messages: [{ role: 'user', content: prompt }]
-    });
-
-    const raw = response.content.filter(b => b.type === 'text').map(b => b.text).join('');
-    return parseJSONSafe(raw);
-  } catch (err) {
-    logger.error(`[Claude Re-extract] API error: ${err.message}`);
-    return [];
-  }
-};
-
-const reextractMoreQuestions = async (text, alreadyExtracted, subject, targetCount) => {
-  const anthropic = getAnthropic();
-  const missingCount = targetCount - alreadyExtracted.length;
-  try {
-    const prompt = `You are an expert MCQ extractor for the MCQ Pro platform.
-We have already successfully extracted the following ${alreadyExtracted.length} questions:
-${alreadyExtracted.map((q, i) => `${i+1}. ${q.questionText.substring(0, 120)}...`).join('\n')}
-
-We need to extract a total of ${targetCount} questions, meaning we are missing ${missingCount} questions.
-Please analyze the text below and extract the remaining ${missingCount} questions, starting from after the last extracted question.
-Do NOT duplicate any of the questions already extracted.
-
-Return ONLY a valid JSON array of the newly extracted questions in the same format:
-[
-  {
-    "questionText": "Full question text here",
-    "image": "",
-    "options": [
-      { "label": "A", "text": "Option A text", "image": "" },
-      { "label": "B", "text": "Option B text", "image": "" },
-      { "label": "C", "text": "Option C text", "image": "" },
-      { "label": "D", "text": "Option D text", "image": "" }
-    ],
-    "correctAnswer": "A",
-    "explanation": "Rationale",
-    "difficulty": "medium",
-    "topic": "topic",
-    "marks": 1
-  }
-]
-
-TEXT:
-${text.substring(0, 300000)}`;
-
-    const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 8192,
-      messages: [{ role: 'user', content: prompt }]
-    });
-
-    const raw = response.content.filter(b => b.type === 'text').map(b => b.text).join('');
-    return parseJSONSafe(raw);
-  } catch (err) {
-    logger.error(`[Claude Re-extract More] API error: ${err.message}`);
-    return [];
-  }
-};
-
-exports.extractMCQsFromDocument = async (filePath, subject = 'General', count = 20, originalName = '') => {
-  // 1. Run internal extraction
-  const result = await _extractMCQsFromDocumentInternal(filePath, subject, count, originalName);
-  let questions = result.questions || [];
-  const meta = result.meta || {};
-  
-  // Get raw text from the file for numbering analysis
-  let rawText = '';
-  try {
-    const ext = path.extname(originalName || filePath).toLowerCase();
-    if (ext === '.docx' || ext === '.doc') {
-      rawText = await extractWordTextFn(filePath);
-    } else if (ext === '.pdf') {
-      const pdfData = await pdfParse(fs.readFileSync(filePath));
-      rawText = pdfData.text || '';
-    }
-  } catch (err) {
-    logger.warn(`[Self-Heal] Could not extract raw text for verification: ${err.message}`);
-  }
-
-  // 2. Detect missing questions
-  const detection = detectMissingQuestions(questions, rawText, count);
-  meta.detectedTotalInDoc = detection.totalInDoc;
-  meta.detectedMissingCount = detection.missingCount;
-  meta.detectedMissingIndices = detection.missingIndices;
-
-  logger.info(`[Self-Heal] Extraction finished. Found ${questions.length} questions. Detection: Total in doc ≈ ${detection.totalInDoc}, Missing ≈ ${detection.missingCount}`);
-
-  // 3. Re-extract if there are missing questions and API is available
-  if (detection.missingCount > 0 && process.env.ANTHROPIC_API_KEY) {
-    logger.info(`[Self-Heal] Triggering re-extraction for missing questions: ${detection.missingIndices.join(', ')}`);
-    try {
-      const newQs = await reextractMissingQuestions(rawText, questions, detection.missingIndices, subject, count);
-      const validatedNewQs = newQs.filter(isValidMCQ).map(sanitizeMCQ);
-      
-      if (validatedNewQs.length > 0) {
-        logger.info(`[Self-Heal] Re-extracted ${validatedNewQs.length} missing questions!`);
-        
-        // Merge the lists
-        const merged = [...questions, ...validatedNewQs];
-        
-        // De-duplicate by question text similarity
-        const uniqueMerged = [];
-        const seenTexts = new Set();
-        merged.forEach(q => {
-          const cleanText = q.questionText.replace(/\s+/g, ' ').trim().toLowerCase().substring(0, 100);
-          if (!seenTexts.has(cleanText)) {
-            seenTexts.add(cleanText);
-            uniqueMerged.push(q);
-          }
-        });
-        
-        // Sort sequentially
-        uniqueMerged.sort((a, b) => {
-          return getQuestionNumber(a.questionText, 0) - getQuestionNumber(b.questionText, 0);
-        });
-        
-        questions = uniqueMerged;
-        meta.reextractedCount = validatedNewQs.length;
-        meta.selfHealed = true;
-      } else {
-        logger.info(`[Self-Heal] Re-extraction did not return any new valid questions.`);
-      }
-    } catch (err) {
-      logger.error(`[Self-Heal] Re-extraction failed: ${err.message}`);
-    }
-  } else if (questions.length < count && process.env.ANTHROPIC_API_KEY) {
-    // If not numbered but count is still less than requested, try to extract more from end
-    const missingCount = count - questions.length;
-    logger.info(`[Self-Heal] Extracted ${questions.length}/${count} questions. Attempting to extract ${missingCount} more from document...`);
-    try {
-      const newQs = await reextractMoreQuestions(rawText, questions, subject, count);
-      const validatedNewQs = newQs.filter(isValidMCQ).map(sanitizeMCQ);
-      
-      if (validatedNewQs.length > 0) {
-        logger.info(`[Self-Heal] Extracted ${validatedNewQs.length} additional questions!`);
-        questions = [...questions, ...validatedNewQs];
-        meta.reextractedCount = validatedNewQs.length;
-        meta.selfHealed = true;
-      }
-    } catch (err) {
-      logger.error(`[Self-Heal] Additional extraction failed: ${err.message}`);
-    }
-  }
-  
-  // Cap at count if needed
-  result.questions = questions.slice(0, count);
-  result.meta = meta;
-  return result;
 };
 
 /* ══════════════════════════════════════════════════════════════════

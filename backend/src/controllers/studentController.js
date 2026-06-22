@@ -1,4 +1,3 @@
-const mongoose = require('mongoose');
 const Session = require('../models/Session');
 const Result = require('../models/Result');
 const ResultSnapshot = require('../models/ResultSnapshot');
@@ -19,23 +18,42 @@ const scoreToGpa = (avgPercent) => {
 exports.getDashboard = async (req, res) => {
   try {
     const student = req.user;
-    const courseId = student.courseId || null;
+    if (!student.courseId) {
+      return res.json({
+        success: true,
+        data: {
+          profile: {
+            name: student.name,
+            section: 'No course',
+            gpa: 0,
+            attendance: 0,
+            sessionsLogged: 0,
+            totalSessions: 0,
+            rank: 0,
+            totalPeers: 0,
+            tasks: 0
+          },
+          subjectPerformance: [],
+          tasks: [],
+          recentResults: [],
+          upcomingExams: []
+        }
+      });
+    }
+
+    const courseId = student.courseId;
     const studentId = student._id;
 
     const [
       upcomingExams,
       recentResults,
-      avgScoreRow,
-      subjectPerformance,
+      myResults,
       attendanceCount,
       totalSessions,
-      peerAvgs
+      courseResults
     ] = await Promise.all([
       Session.find({
-        $or: [
-          { status: 'active' },
-          { status: 'pending' }
-        ],
+        status: 'active',
         startTime: { $gte: new Date(Date.now() - 3600000) }
       })
         .sort({ startTime: 1 })
@@ -46,47 +64,44 @@ exports.getDashboard = async (req, res) => {
         .sort({ createdAt: -1 })
         .limit(3)
         .lean(),
-      Result.aggregate([
-        { $match: { studentId } },
-        { $group: { _id: null, avg: { $avg: '$score' } } }
-      ]),
-      Result.aggregate([
-        { $match: { studentId: new mongoose.Types.ObjectId(String(studentId)) } },
-        {
-          $lookup: {
-            from: 'sessions',
-            localField: 'sessionId',
-            foreignField: '_id',
-            as: 'sess'
-          }
-        },
-        { $unwind: { path: '$sess', preserveNullAndEmptyArrays: true } },
-        {
-          $addFields: {
-            subj: {
-              $cond: {
-                if: { $and: [{ $ne: ['$sess.subject', ''] }, { $ne: ['$sess.subject', null] }] },
-                then: '$sess.subject',
-                else: 'General'
-              }
-            }
-          }
-        },
-        { $group: { _id: '$subj', avgScore: { $avg: '$score' } } },
-        { $project: { _id: 0, subject: '$_id', score: { $round: ['$avgScore', 0] } } },
-        { $sort: { subject: 1 } }
-      ]),
+      Result.find({ studentId }).select('score sessionId').lean(),
       Attendance.countDocuments({ studentId, status: 'present' }),
       Session.countDocuments({ courseId, division: student.division }),
-      Result.aggregate([
-        { $match: { courseId: courseId ? new mongoose.Types.ObjectId(String(courseId)) : null } },
-        { $group: { _id: '$studentId', avgScore: { $avg: '$score' } } },
-        { $sort: { avgScore: -1 } }
-      ])
+      Result.find({ courseId }).select('studentId score').lean()
     ]);
 
-    const avgScore = avgScoreRow[0] && avgScoreRow[0].avg != null ? avgScoreRow[0].avg : 0;
+    // Average score (was a $group/$avg aggregation)
+    const avgScore = myResults.length
+      ? myResults.reduce((a, r) => a + (r.score || 0), 0) / myResults.length
+      : 0;
     const gpa = scoreToGpa(avgScore);
+
+    // Per-subject performance (was $lookup + $group on session.subject)
+    const sessIds = [...new Set(myResults.map((r) => String(r.sessionId)).filter(Boolean))];
+    const subjSessions = sessIds.length
+      ? await Session.find({ _id: { $in: sessIds } }).select('subject').lean()
+      : [];
+    const subjById = Object.fromEntries(
+      subjSessions.map((s) => [String(s._id), (s.subject && s.subject !== '') ? s.subject : 'General'])
+    );
+    const subjBuckets = {};
+    myResults.forEach((r) => {
+      const subj = subjById[String(r.sessionId)] || 'General';
+      (subjBuckets[subj] = subjBuckets[subj] || []).push(r.score || 0);
+    });
+    const subjectPerformance = Object.entries(subjBuckets)
+      .map(([subject, scores]) => ({ subject, score: Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) }))
+      .sort((a, b) => a.subject.localeCompare(b.subject));
+
+    // Peer ranking within the course (was $group by studentId + $sort)
+    const peerBuckets = {};
+    courseResults.forEach((r) => {
+      const k = String(r.studentId);
+      (peerBuckets[k] = peerBuckets[k] || []).push(r.score || 0);
+    });
+    const peerAvgs = Object.entries(peerBuckets)
+      .map(([sid, scores]) => ({ _id: sid, avgScore: scores.reduce((a, b) => a + b, 0) / scores.length }))
+      .sort((a, b) => b.avgScore - a.avgScore);
 
     const totalPeers = peerAvgs.length;
     const rankIdx = peerAvgs.findIndex((a) => String(a._id) === String(studentId));
@@ -104,7 +119,7 @@ exports.getDashboard = async (req, res) => {
       data: {
         profile: {
           name: student.name,
-          section: courseId ? `Course ${String(courseId).slice(-6)} — Div ${student.division || 'N/A'}` : `General — Div ${student.division || 'N/A'}`,
+          section: `Course ${String(courseId).slice(-6)} — Div ${student.division || 'N/A'}`,
           gpa,
           attendance: attendanceCount,
           sessionsLogged: attendanceCount, // Using attendance as proxy for sessions logged for now
@@ -141,33 +156,33 @@ exports.getCourses = async (req, res) => {
 exports.getAvailableExams = async (req, res) => {
   try {
     const { board } = req.query;
-    const now = new Date();
-    const query = {
-      $and: [
-        {
-          $or: [
-            { status: 'active' },
-            { status: 'pending' }
-          ]
-        }
-      ]
-    };
+    const query = { status: 'active' };
     
     if (board && board !== 'None' && board !== 'All') {
-      query.$and.push({
-        $or: [
-          { board: board },
-          { board: 'All' },
-          { board: '' },
-          { board: { $exists: false } },
-          { board: null }
-        ]
-      });
+      query.$or = [
+        { board: board },
+        { board: 'All' },
+        { board: '' },
+        { board: { $exists: false } },
+        { board: null }
+      ];
     }
 
-    const exams = await Session.find(query).select('-questions').sort({ startTime: -1 }).lean();
+    const exams = await Session.find(query).lean();
+    
+    const safeExams = exams.map(exam => {
+      if (exam.questions) {
+        exam.questions = exam.questions.map(q => {
+          const isMSQ = q.correctAnswer && q.correctAnswer.includes(',');
+          const safeQ = { ...q, isMSQ };
+          delete safeQ.correctAnswer;
+          return safeQ;
+        });
+      }
+      return exam;
+    });
 
-    res.json({ success: true, data: exams });
+    res.json({ success: true, data: safeExams });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -338,7 +353,7 @@ exports.submitExam = async (req, res) => {
 
 exports.getMyResults = async (req, res) => {
   try {
-    const results = await Result.find({ studentId: req.user._id }).populate('sessionId', 'title').sort({ createdAt: -1 });
+    const results = await Result.find({ studentId: req.user._id }).populate('sessionId', 'title');
     res.json({ success: true, data: results });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -407,7 +422,8 @@ exports.getResultDetail = async (req, res) => {
     let totalExamsTaken = 1;
 
     try {
-      const peerResults = await Result.find({ sessionId: result.sessionId._id }).select('score timeTaken studentId').lean();
+      const sessId = result.sessionId && result.sessionId._id ? result.sessionId._id : result.sessionId;
+      const peerResults = await Result.find({ sessionId: sessId }).select('score timeTaken studentId').lean();
       if (peerResults && peerResults.length > 0) {
         totalExamsTaken = peerResults.length;
         const scores = peerResults.map(r => r.score || 0);
@@ -498,173 +514,3 @@ exports.getMyMarks = async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 };
-
-exports.getGlobalAnalytics = async (req, res) => {
-  try {
-    const student = req.user;
-    const studentId = student._id;
-    // Global Analytics is dedicated to live/global examinations (courseId: null)
-    // to ensure it works for all students (both newly registered and existing)
-    const courseId = null;
-    const courseMatch = null;
-
-    // 1. Get student results
-    const studentResults = await Result.find({ studentId }).lean();
-    const totalExamsTaken = studentResults.length;
-    const studentScores = studentResults.map(r => r.score || 0);
-    const avgScore = totalExamsTaken > 0 ? studentScores.reduce((a, b) => a + b, 0) / totalExamsTaken : 0;
-    const gpa = scoreToGpa(avgScore);
-
-    // 2. Class Rank & Peers in Course (tenant boundaries)
-    const peerAvgs = await Result.aggregate([
-      { $match: { courseId: courseMatch } },
-      { $group: { _id: '$studentId', avgScore: { $avg: '$score' } } },
-      { $sort: { avgScore: -1 } }
-    ]);
-    const totalPeers = peerAvgs.length;
-    const rankIdx = peerAvgs.findIndex((a) => String(a._id) === String(studentId));
-    const rank = rankIdx >= 0 ? rankIdx + 1 : 0;
-
-    // 3. Tenant Statistics
-    const tenantStatsRow = await Result.aggregate([
-      { $match: { courseId: courseMatch } },
-      {
-        $group: {
-          _id: null,
-          avgScore: { $avg: '$score' },
-          maxScore: { $max: '$score' },
-          totalSubmissions: { $sum: 1 },
-          passed: { $sum: { $cond: [{ $gte: ['$score', 50] }, 1, 0] } }
-        }
-      }
-    ]);
-
-    const tenantStats = {
-      avgScore: tenantStatsRow[0] && tenantStatsRow[0].avgScore != null ? Math.round(tenantStatsRow[0].avgScore * 10) / 10 : 0,
-      highestScore: tenantStatsRow[0] && tenantStatsRow[0].maxScore != null ? tenantStatsRow[0].maxScore : 0,
-      totalSubmissions: tenantStatsRow[0] && tenantStatsRow[0].totalSubmissions != null ? tenantStatsRow[0].totalSubmissions : 0,
-      passRate: tenantStatsRow[0] && tenantStatsRow[0].totalSubmissions ? Math.round((tenantStatsRow[0].passed / tenantStatsRow[0].totalSubmissions) * 1000) / 10 : 0
-    };
-
-    // 4. Subject Performance: Student Avg vs Tenant Avg
-    const studentSubjectStats = await Result.aggregate([
-      { $match: { studentId: new mongoose.Types.ObjectId(String(studentId)) } },
-      {
-        $lookup: {
-          from: 'sessions',
-          localField: 'sessionId',
-          foreignField: '_id',
-          as: 'sess'
-        }
-      },
-      { $unwind: '$sess' },
-      {
-        $group: {
-          _id: { $ifNull: ['$sess.subject', 'General'] },
-          avgScore: { $avg: '$score' },
-          examCount: { $sum: 1 }
-        }
-      }
-    ]);
-
-    const tenantSubjectStats = await Result.aggregate([
-      { $match: { courseId: courseMatch } },
-      {
-        $lookup: {
-          from: 'sessions',
-          localField: 'sessionId',
-          foreignField: '_id',
-          as: 'sess'
-        }
-      },
-      { $unwind: '$sess' },
-      {
-        $group: {
-          _id: { $ifNull: ['$sess.subject', 'General'] },
-          avgScore: { $avg: '$score' }
-        }
-      }
-    ]);
-
-    const subjectPerformance = studentSubjectStats.map(s => {
-      const tStat = tenantSubjectStats.find(t => String(t._id) === String(s._id));
-      return {
-        subject: s._id,
-        studentAvg: Math.round(s.avgScore),
-        tenantAvg: tStat ? Math.round(tStat.avgScore) : 0,
-        examCount: s.examCount
-      };
-    });
-
-    // 5. Recent Tenant Exams with comparative stats
-    const sessions = await Session.find({ courseId, status: 'completed' }).sort({ startTime: -1 }).limit(10).lean();
-    const sessionStats = await Result.aggregate([
-      { $match: { sessionId: { $in: sessions.map(s => s._id) } } },
-      {
-        $group: {
-          _id: '$sessionId',
-          avgScore: { $avg: '$score' },
-          maxScore: { $max: '$score' },
-          totalSubmissions: { $sum: 1 },
-          studentResult: {
-            $push: {
-              $cond: [
-                { $eq: ['$studentId', new mongoose.Types.ObjectId(String(studentId))] },
-                '$score',
-                '$$REMOVE'
-              ]
-            }
-          }
-        }
-      }
-    ]);
-
-    const recentExams = sessions.map(s => {
-      const stats = sessionStats.find(st => String(st._id) === String(s._id));
-      return {
-        _id: s._id,
-        title: s.title,
-        subject: s.subject || 'General',
-        startTime: s.startTime,
-        avgScore: stats ? Math.round(stats.avgScore) : 0,
-        maxScore: stats ? Math.round(stats.maxScore) : 0,
-        studentScore: stats && stats.studentResult.length > 0 ? stats.studentResult[0] : null,
-        submissionCount: stats ? stats.totalSubmissions : 0
-      };
-    });
-
-    // 6. Student's Grade distribution
-    const gradeBreakdown = { 'A+': 0, 'A': 0, 'B': 0, 'C': 0, 'D': 0, 'F': 0 };
-    studentResults.forEach(r => {
-      const score = r.score || 0;
-      let grade = 'F';
-      if (score >= 90) grade = 'A+';
-      else if (score >= 80) grade = 'A';
-      else if (score >= 70) grade = 'B';
-      else if (score >= 60) grade = 'C';
-      else if (score >= 50) grade = 'D';
-      gradeBreakdown[grade]++;
-    });
-
-    res.json({
-      success: true,
-      data: {
-        studentStats: {
-          gpa: Math.round(gpa * 100) / 100,
-          totalExamsTaken,
-          avgScore: Math.round(avgScore * 10) / 10,
-          rank,
-          totalPeers
-        },
-        tenantStats,
-        subjectPerformance,
-        recentExams,
-        gradeBreakdown
-      }
-    });
-  } catch (err) {
-    console.error('[Student Analytics Error]', err);
-    res.status(500).json({ success: false, message: 'Failed to compute student analytics: ' + err.message });
-  }
-};
-

@@ -26,16 +26,15 @@ const runGuardianScan = async () => {
     // Lazy-require to avoid circular dependencies / model load order issues
     const Result = require('../../models/Result');
     const ResultSnapshot = require('../../models/ResultSnapshot');
-    const mongoose = require('mongoose');
 
     try {
-        const cursor = ResultSnapshot.find().lean().cursor();
+        const snapshots = await ResultSnapshot.find({}).lean();
         let snapshotCount = 0;
         let tampersFound = 0;
         let tampersReverted = 0;
         guardianStats.totalScans++;
 
-        for (let snapshot = await cursor.next(); snapshot != null; snapshot = await cursor.next()) {
+        for (const snapshot of snapshots) {
             snapshotCount++;
             const result = await Result.findById(snapshot.resultId).lean();
             if (!result) continue;
@@ -51,8 +50,8 @@ const runGuardianScan = async () => {
                 logger.warn(`🚨 Guardian: TAMPER on result ${result._id} | ${diffLabel}`);
 
                 try {
-                    // Revert directly via native driver to bypass any middleware
-                    await mongoose.connection.db.collection('results').updateOne(
+                    // Revert the tampered row back to its immutable snapshot values
+                    await Result.updateOne(
                         { _id: snapshot.resultId },
                         {
                             $set: {
@@ -71,7 +70,17 @@ const runGuardianScan = async () => {
                     );
                     tampersReverted++;
 
-                    // 1. Notify Teachers via Socket
+                    // 1. Create AuditLog
+                    const AuditLog = require('../../models/AuditLog');
+                    await AuditLog.create({
+                        action: 'TAMPER_AUTO_REVERT',
+                        target: `Result ${result._id}`,
+                        details: `Unauthorized ${diffLabel} detected in Atlas. Database state auto-healed via Blockchain Snapshot.`,
+                        status: 'tamper_detected',
+                        severity: 'critical'
+                    });
+
+                    // 2. Notify Teachers via Socket
                     const { getIO } = require('../../config/socket');
                     const io = getIO();
                     if (io) {
@@ -83,7 +92,7 @@ const runGuardianScan = async () => {
                         });
                     }
 
-                    // 2. Create System Announcement for Teachers
+                    // 3. Create System Announcement for Teachers
                     const Announcement = require('../../models/Announcement');
                     await Announcement.create({
                         title: '🔒 Security Auto-Revert Triggered',

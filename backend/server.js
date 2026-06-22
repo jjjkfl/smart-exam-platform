@@ -9,7 +9,6 @@ const portalRoutes = require('./src/routes/portalRoutes');
 const initSocket = require('./src/config/socket');
 const { initAuditPulse } = require('./src/services/blockchain/auditPulse');
 const { initChangeStreamGuardian } = require('./src/services/blockchain/changeStreamGuardian');
-const { initExamScheduler } = require('./src/services/examScheduler');
 
 const helmet = require('helmet');
 const mongoSanitize = require('express-mongo-sanitize');
@@ -17,7 +16,7 @@ const xss = require('xss-clean');
 const rateLimit = require('express-rate-limit');
 
 const app = express();
-connectDB();
+const dbReady = connectDB();
 
 // Security Middleware
 // Security Middleware (Relaxed CSP for Inline Handlers)
@@ -45,36 +44,10 @@ app.use('/api', limiter);
 app.use(cors());
 app.use(express.json());
 
-// Global Database & Cryptographic Error Interceptor
-app.use('/api', (req, res, next) => {
-  const originalJson = res.json;
-  res.json = function (body) {
-    if (body && typeof body === 'object') {
-      const message = body.message || body.error;
-      if (message && typeof message === 'string') {
-        if (
-          message.includes('SSL') ||
-          message.includes('TLS') ||
-          message.includes('alert') ||
-          message.includes('ENOTFOUND') ||
-          message.includes('ECONNRESET') ||
-          message.includes('MongoServerSelectionError') ||
-          message.includes('MongoNetworkError')
-        ) {
-          body.message = 'Database connection failed. Please verify your internet connection, ensure your public IP is whitelisted in MongoDB Atlas Network Access, or ensure local MongoDB is running.';
-          if (body.error) {
-            body.error = body.message;
-          }
-        }
-      }
-    }
-    return originalJson.call(this, body);
-  };
-  next();
-});
-
 // Static Files
-app.use(express.static(path.join(__dirname, '..', 'frontend', 'public'), { index: false }));
+// Frontend directory: defaults to ../frontend/public, override with FRONTEND_DIR env var
+const FRONTEND_DIR = process.env.FRONTEND_DIR || path.join(__dirname, '..', 'frontend', 'public');
+app.use(express.static(FRONTEND_DIR, { index: false }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // API Routes
@@ -87,20 +60,21 @@ app.use('/api', (req, res) => {
 });
 
 // SPA Fallbacks
-app.get('/', (req, res) => res.sendFile(path.join(__dirname, '..', 'frontend', 'public', 'landing.html')));
-app.get('/login', (req, res) => res.sendFile(path.join(__dirname, '..', 'frontend', 'public', 'login.html')));
-app.get('/teacher-login', (req, res) => res.sendFile(path.join(__dirname, '..', 'frontend', 'public', 'teacher-login.html')));
-app.get('/student', (req, res) => res.sendFile(path.join(__dirname, '..', 'frontend', 'public', 'index.html')));
-app.get('/teacher', (req, res) => res.sendFile(path.join(__dirname, '..', 'frontend', 'public', 'teacher.html')));
-app.get('/exam', (req, res) => res.sendFile(path.join(__dirname, '..', 'frontend', 'public', 'exam.html')));
+app.get('/', (req, res) => res.sendFile(path.join(FRONTEND_DIR, 'landing.html')));
+app.get('/login', (req, res) => res.sendFile(path.join(FRONTEND_DIR, 'login.html')));
+app.get('/teacher-login', (req, res) => res.sendFile(path.join(FRONTEND_DIR, 'teacher-login.html')));
+app.get('/student', (req, res) => res.sendFile(path.join(FRONTEND_DIR, 'index.html')));
+app.get('/teacher', (req, res) => res.sendFile(path.join(FRONTEND_DIR, 'teacher.html')));
+app.get('/exam', (req, res) => res.sendFile(path.join(FRONTEND_DIR, 'exam.html')));
 
-// Initialize Blockchain Audit Pulse (Super-Strength Integrity)
-initAuditPulse(5 * 60 * 1000); // 5 minute pulse
-
-// Initialize Change Stream Guardian (Self-Healing Immutable Results)
-// Note: Requires MongoDB with replica set (rs) mode for Change Streams
-setTimeout(initChangeStreamGuardian, 3000); // Start after DB is ready
-initExamScheduler();
+// Start background integrity services only AFTER the database is connected and
+// tables are synced (Sequelize, unlike Mongoose, does not buffer queries).
+dbReady.then(() => {
+  // Blockchain Audit Pulse (Super-Strength Integrity)
+  initAuditPulse(5 * 60 * 1000); // 5 minute pulse
+  // Self-Healing Guardian: periodically reverts any tampered result rows
+  setTimeout(initChangeStreamGuardian, 3000);
+}).catch(() => { /* connectDB already logs + exits on failure */ });
 
 const PORT = process.env.PORT || 5000;
 const httpServer = http.createServer(app);

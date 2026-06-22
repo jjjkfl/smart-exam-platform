@@ -1,4 +1,3 @@
-const mongoose = require('mongoose');
 const fs = require('fs').promises;
 const path = require('path');
 const crypto = require('crypto');
@@ -42,19 +41,17 @@ exports.getDashboard = async (req, res) => {
         ? await Course.find({ _id: { $in: courseIds } }).select('courseName driveLink')
         : [];
 
-    const teacherSessionIds = await Session.find({ creatorId: teacher._id }).distinct('_id');
-
     const [activeSessions, totalSessions, totalStudents, totalMCQBanks, sessions, recentResultDocs] =
       await Promise.all([
-        Session.countDocuments({ creatorId: teacher._id, status: 'active' }),
-        Session.countDocuments({ creatorId: teacher._id }),
-        User.countDocuments({ role: 'student', courseId: { $in: courseIds } }),
+        Session.countDocuments({ status: 'active' }),
+        Session.countDocuments({}),
+        User.countDocuments({ role: 'student' }),
         MCQBank.countDocuments({ createdBy: teacher._id }),
-        Session.find({ creatorId: teacher._id })
+        Session.find({})
           .sort({ startTime: -1 })
           .limit(8)
           .lean(),
-        Result.find({ sessionId: { $in: teacherSessionIds } })
+        Result.find({})
           .sort({ createdAt: -1 })
           .limit(5)
           .populate('studentId', 'name')
@@ -63,13 +60,11 @@ exports.getDashboard = async (req, res) => {
       ]);
 
     const sessionIds = sessions.map((s) => s._id);
-    const submissionCounts = sessionIds.length
-      ? await Result.aggregate([
-        { $match: { sessionId: { $in: sessionIds } } },
-        { $group: { _id: '$sessionId', count: { $sum: 1 } } }
-      ])
+    const subResults = sessionIds.length
+      ? await Result.find({ sessionId: { $in: sessionIds } }).select('sessionId').lean()
       : [];
-    const countMap = Object.fromEntries(submissionCounts.map((c) => [String(c._id), c.count]));
+    const countMap = {};
+    subResults.forEach((r) => { const k = String(r.sessionId); countMap[k] = (countMap[k] || 0) + 1; });
 
     const recentSessions = sessions.map((s) => ({
       _id: s._id,
@@ -136,7 +131,6 @@ exports.createSession = async (req, res) => {
       duration: durationMinutes,
       courseId: courseId ? courseId : null,
       board: board || 'All',
-      creatorId: req.user._id,
       requireCamera: requireCamera !== undefined ? requireCamera : true,
       enableAIProctoring: enableAIProctoring !== undefined ? enableAIProctoring : true,
       lockBrowser: lockBrowser !== undefined ? lockBrowser : true,
@@ -170,7 +164,7 @@ exports.updateCourseDrive = async (req, res) => {
 
 exports.getSessions = async (req, res) => {
   try {
-    const sessions = await Session.find({ creatorId: req.user._id }).sort('-createdAt');
+    const sessions = await Session.find({}).sort('-createdAt');
     res.json({ success: true, data: sessions });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -185,7 +179,7 @@ exports.updateSession = async (req, res) => {
     if (scheduledStart) updateData.startTime = new Date(scheduledStart);
 
     const session = await Session.findOneAndUpdate(
-      { _id: req.params.id, creatorId: req.user._id },
+      { _id: req.params.id },
       updateData,
       { new: true }
     );
@@ -200,7 +194,7 @@ exports.updateSession = async (req, res) => {
 exports.deleteSession = async (req, res) => {
   try {
     const session = await Session.findOneAndDelete({
-      _id: req.params.id, creatorId: req.user._id
+      _id: req.params.id
     });
     if (!session) return res.status(404).json({ success: false, message: 'Session not found' });
 
@@ -214,7 +208,7 @@ exports.updateSessionStatus = async (req, res) => {
   try {
     const { status } = req.body;
     const session = await Session.findOneAndUpdate(
-      { _id: req.params.sessionId, creatorId: req.user._id },
+      { _id: req.params.sessionId },
       { status },
       { new: true }
     );
@@ -326,8 +320,8 @@ const PASS_SCORE = 60;
 
 exports.getGeneralAnalytics = async (req, res) => {
   try {
-    const teacherSessionIds = await Session.find({ creatorId: req.user._id }).distinct('_id');
-    if (teacherSessionIds.length === 0) {
+    const courseIds = (req.user.courseIds || []).map(id => String(id));
+    if (courseIds.length === 0) {
       return res.json({
         success: true,
         data: {
@@ -340,26 +334,34 @@ exports.getGeneralAnalytics = async (req, res) => {
       });
     }
 
-    // 1. Efficient Summary & Grade Breakdown in ONE Aggregation
-    const [analytics] = await Result.aggregate([
-      { $match: { sessionId: { $in: teacherSessionIds } } },
-      {
-        $group: {
-          _id: null,
-          totalSubmissions: { $sum: 1 },
-          avgScore: { $avg: '$score' },
-          passed: { $sum: { $cond: [{ $gte: ['$score', PASS_SCORE] }, 1, 0] } },
-          A: { $sum: { $cond: [{ $gte: ['$score', 90] }, 1, 0] } },
-          B: { $sum: { $cond: [{ $and: [{ $gte: ['$score', 80] }, { $lt: ['$score', 90] }] }, 1, 0] } },
-          C: { $sum: { $cond: [{ $and: [{ $gte: ['$score', 70] }, { $lt: ['$score', 80] }] }, 1, 0] } },
-          D: { $sum: { $cond: [{ $and: [{ $gte: ['$score', 60] }, { $lt: ['$score', 70] }] }, 1, 0] } },
-          F: { $sum: { $cond: [{ $lt: ['$score', 60] }, 1, 0] } }
+    // 1. Summary & grade breakdown (computed in JS; was a $group aggregation)
+    const summaryResults = await Result.find({ courseId: { $in: courseIds } }).select('score').lean();
+    const _grades = { A: 0, B: 0, C: 0, D: 0, F: 0 };
+    let _passed = 0;
+    let _sum = 0;
+    summaryResults.forEach((r) => {
+      const s = r.score || 0;
+      _sum += s;
+      if (s >= PASS_SCORE) _passed++;
+      if (s >= 90) _grades.A++;
+      else if (s >= 80) _grades.B++;
+      else if (s >= 70) _grades.C++;
+      else if (s >= 60) _grades.D++;
+      else _grades.F++;
+    });
+    const analytics = summaryResults.length
+      ? {
+          totalSubmissions: summaryResults.length,
+          avgScore: _sum / summaryResults.length,
+          passed: _passed,
+          ..._grades,
         }
-      }
-    ]);
+      : null;
 
-    // 2. Optimized Session Retrieval (Only fetch sessions created by this teacher)
-    const sessions = await Session.find({ creatorId: req.user._id })
+    // 2. Optimized Session Retrieval (Only fetch sessions for teacher's courses if available)
+    const sessions = await Session.find({ 
+      $or: [{ courseId: { $in: courseIds } }, { courseId: { $exists: false } }] 
+    })
     .sort({ startTime: -1 })
     .limit(20) // Limit to recent sessions for dashboard performance
     .lean();
@@ -367,9 +369,10 @@ exports.getGeneralAnalytics = async (req, res) => {
     // 3. Optimized Result Retrieval (ONLY fetch results for the sessions we are looking at)
     const sessionIds = sessions.map(s => s._id);
     const sessionResults = await Result.find({ 
-      sessionId: { $in: sessionIds }
+      sessionId: { $in: sessionIds },
+      courseId: { $in: courseIds }
     })
-    .select('sessionId score studentId correctCount totalQuestions timeTaken violationCount createdAt') // LEAN Projection
+    .select('sessionId score studentId createdAt') // LEAN Projection
     .populate('studentId', 'name email')
     .lean();
 
@@ -412,8 +415,7 @@ exports.getGeneralAnalytics = async (req, res) => {
 exports.getSessionResults = async (req, res) => {
   try {
     const session = await Session.findOne({
-      _id: req.params.sessionId,
-      creatorId: req.user._id
+      _id: req.params.sessionId
     });
     if (!session) {
       return res.status(404).json({ success: false, message: 'Session not found' });
@@ -512,7 +514,7 @@ exports.uploadMCQ = async (req, res) => {
   const filePath = req.file.path;
   try {
     const { title, subject, numQuestions, board } = req.body;
-    const n = Math.min(1000, Math.max(1, parseInt(String(numQuestions || 20), 10) || 20));
+    const n = Math.min(500, Math.max(1, parseInt(String(numQuestions || 20), 10) || 20));
 
     // Using the unified aiParserService which handles DOCX, PDF, Images, and Regex fallbacks
     const { questions: rawQuestions, meta } = await aiParserSvc.extractMCQsFromDocument(

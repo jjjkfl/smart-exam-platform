@@ -144,13 +144,9 @@ exports.getAttendance = async (req, res) => {
 exports.markAttendance = async (req, res) => {
     try {
         const { sessionId, studentId, status } = req.body;
-        const mongoose = require('mongoose');
 
         const att = await Attendance.findOneAndUpdate(
-            {
-                sessionId: new mongoose.Types.ObjectId(sessionId),
-                studentId: new mongoose.Types.ObjectId(studentId)
-            },
+            { sessionId, studentId },
             { status, markedAt: Date.now() },
             { upsert: true, new: true }
         );
